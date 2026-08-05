@@ -14,7 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bloklar: {
+        Row: {
+          blok_adi: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blok_adi: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blok_adi?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      gorevler: {
+        Row: {
+          aciklama: string | null
+          aciliyet: string
+          blok_id: string
+          durum: string
+          id: string
+          is_basligi: string
+          olusturma_tarihi: string
+          personel_id: string | null
+        }
+        Insert: {
+          aciklama?: string | null
+          aciliyet?: string
+          blok_id: string
+          durum?: string
+          id?: string
+          is_basligi: string
+          olusturma_tarihi?: string
+          personel_id?: string | null
+        }
+        Update: {
+          aciklama?: string | null
+          aciliyet?: string
+          blok_id?: string
+          durum?: string
+          id?: string
+          is_basligi?: string
+          olusturma_tarihi?: string
+          personel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gorevler_blok_id_fkey"
+            columns: ["blok_id"]
+            isOneToOne: false
+            referencedRelation: "bloklar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gorevler_personel_id_fkey"
+            columns: ["personel_id"]
+            isOneToOne: false
+            referencedRelation: "personel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      is_loglari: {
+        Row: {
+          foto_url: string | null
+          gorev_id: string
+          id: string
+          personel_notu: string | null
+          tamamlanma_tarihi: string
+        }
+        Insert: {
+          foto_url?: string | null
+          gorev_id: string
+          id?: string
+          personel_notu?: string | null
+          tamamlanma_tarihi?: string
+        }
+        Update: {
+          foto_url?: string | null
+          gorev_id?: string
+          id?: string
+          personel_notu?: string | null
+          tamamlanma_tarihi?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "is_loglari_gorev_id_fkey"
+            columns: ["gorev_id"]
+            isOneToOne: false
+            referencedRelation: "gorevler"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personel: {
+        Row: {
+          ad_soyad: string
+          aktif: boolean
+          created_at: string
+          id: string
+          pin_kodu: string
+          rol: string
+          telefon: string
+        }
+        Insert: {
+          ad_soyad: string
+          aktif?: boolean
+          created_at?: string
+          id?: string
+          pin_kodu: string
+          rol?: string
+          telefon: string
+        }
+        Update: {
+          ad_soyad?: string
+          aktif?: boolean
+          created_at?: string
+          id?: string
+          pin_kodu?: string
+          rol?: string
+          telefon?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
