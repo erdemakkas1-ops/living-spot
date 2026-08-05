@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PanelRouteImport } from './routes/panel'
 import { Route as SahaIndexRouteImport } from './routes/saha.index'
+import { Route as SahaGorevIdRouteImport } from './routes/saha.$gorevId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,34 +29,43 @@ const SahaIndexRoute = SahaIndexRouteImport.update({
   path: '/saha/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SahaGorevIdRoute = SahaGorevIdRouteImport.update({
+  id: '/saha/$gorevId',
+  path: '/saha/$gorevId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/panel': typeof PanelRoute
+  '/saha/$gorevId': typeof SahaGorevIdRoute
   '/saha/': typeof SahaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/panel': typeof PanelRoute
+  '/saha/$gorevId': typeof SahaGorevIdRoute
   '/saha': typeof SahaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/panel': typeof PanelRoute
+  '/saha/$gorevId': typeof SahaGorevIdRoute
   '/saha/': typeof SahaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/panel' | '/saha/'
+  fullPaths: '/' | '/panel' | '/saha/$gorevId' | '/saha/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/panel' | '/saha'
-  id: '__root__' | '/' | '/panel' | '/saha/'
+  to: '/' | '/panel' | '/saha/$gorevId' | '/saha'
+  id: '__root__' | '/' | '/panel' | '/saha/$gorevId' | '/saha/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PanelRoute: typeof PanelRoute
+  SahaGorevIdRoute: typeof SahaGorevIdRoute
   SahaIndexRoute: typeof SahaIndexRoute
 }
 
@@ -82,12 +92,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SahaIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/saha/$gorevId': {
+      id: '/saha/$gorevId'
+      path: '/saha/$gorevId'
+      fullPath: '/saha/$gorevId'
+      preLoaderRoute: typeof SahaGorevIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PanelRoute: PanelRoute,
+  SahaGorevIdRoute: SahaGorevIdRoute,
   SahaIndexRoute: SahaIndexRoute,
 }
 export const routeTree = rootRouteImport
