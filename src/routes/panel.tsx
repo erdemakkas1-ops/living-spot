@@ -350,7 +350,20 @@ function PanelSayfasi() {
                   <TableRow key={g.id} className="align-middle">
                     <TableCell className="font-semibold">{g.bloklar?.blok_adi}</TableCell>
                     <TableCell className="max-w-[280px]">
-                      <p className="truncate font-medium">{g.is_basligi}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-medium">{g.is_basligi}</p>
+                        {g.is_loglari.length > 0 && (
+                          <button
+                            type="button"
+                            title="Saha fotoğrafını görüntüle"
+                            aria-label="Saha fotoğrafını görüntüle"
+                            onClick={() => setDetay(g)}
+                            className="shrink-0 cursor-pointer rounded-md p-1 text-primary transition-colors hover:bg-accent"
+                          >
+                            <Camera className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                       <p className="truncate text-xs text-muted-foreground">
                         {new Date(g.olusturma_tarihi).toLocaleString("tr-TR")}
                       </p>
@@ -421,7 +434,20 @@ function PanelSayfasi() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-2 font-semibold leading-snug">{g.is_basligi}</p>
+                    <div className="mt-2 flex items-start gap-2">
+                      <p className="font-semibold leading-snug">{g.is_basligi}</p>
+                      {g.is_loglari.length > 0 && (
+                        <button
+                          type="button"
+                          title="Saha fotoğrafını görüntüle"
+                          aria-label="Saha fotoğrafını görüntüle"
+                          onClick={() => setDetay(g)}
+                          className="shrink-0 cursor-pointer rounded-md p-1 text-primary transition-colors hover:bg-accent"
+                        >
+                          <Camera className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {new Date(g.olusturma_tarihi).toLocaleString("tr-TR")}
                     </p>
