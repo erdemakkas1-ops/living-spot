@@ -144,6 +144,7 @@ function GorevDetay() {
           <>
             <section className="rounded-2xl bg-card p-4 shadow-card">
               <div className="flex flex-wrap items-center gap-2">
+                <IsTuruRozeti turu={g.is_turu} />
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-bold ${DURUM_SINIF[g.durum]}`}
                 >
