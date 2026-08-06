@@ -79,6 +79,9 @@ export const IS_TURU_SINIF: Record<IsTuru, string> = {
   elektrik: "bg-is-turu-elektrik text-is-turu-elektrik-foreground",
   sihhi_tesisat: "bg-is-turu-sihhi-tesisat text-is-turu-sihhi-tesisat-foreground",
   tadilat: "bg-is-turu-tadilat text-is-turu-tadilat-foreground",
+  genel: "bg-is-turu-genel text-is-turu-genel-foreground",
+};
+
 export const IS_BASLIKLARI: Record<IsTuru, string[]> = {
   peyzaj: ["Bahçe bakımı", "Çim biçme", "Ağaç/çalı budama", "Çiçeklendirme", "Sulama sistemi kontrolü", "Peyzaj temizliği"],
   bakim: ["Asansör bakımı", "Isıtma sistemi kontrolü", "Havalandırma kontrolü", "Yangın sistemi kontrolü", "Jeneratör kontrolü", "Kapı/pencere bakımı"],
