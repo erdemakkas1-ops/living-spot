@@ -1,4 +1,26 @@
-import { supabase } from "@/integrations/supabase/client";
+/**
+ * Tarayıcı tarafı saha API'si. Veritabanına doğrudan erişim yoktur;
+ * tüm sorgular yetki kontrolü yapan sunucu fonksiyonları üzerinden geçer.
+ */
+import {
+  bloklariGetirFn,
+  fotoUrlAlFn,
+  fotoYukleFn,
+  girisYapFn,
+  gorevDurumGuncelleFn,
+  gorevGetirFn,
+  gorevOlusturFn,
+  gorevTamamlaFn,
+  konumGonderFn,
+  mesaiDurumuGetirFn,
+  mesaiDurumuGuncelleFn,
+  personelDurumlariFn,
+  personelGetirFn,
+  personelGorevleriniGetirFn,
+  sonKonumlariGetirFn,
+  tumGorevleriGetirFn,
+} from "./saha-api.functions";
+import { tokenOku, tokenYaz } from "./saha-session";
 import type {
   AnlikDurum,
   Blok,
@@ -8,59 +30,35 @@ import type {
   PersonelKonum,
 } from "./saha-types";
 
-const GOREV_SELECT =
-  "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, is_turu, olusturma_tarihi, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
+function token() {
+  const t = tokenOku();
+  if (!t) throw new Error("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
+  return t;
+}
 
 export async function girisYap(telefon: string, pin: string): Promise<Personel> {
-  const { data, error } = await supabase
-    .from("personel")
-    .select("id, ad_soyad, rol, telefon, aktif")
-    .eq("telefon", telefon.trim())
-    .eq("pin_kodu", pin.trim())
-    .maybeSingle();
-  if (error) throw new Error("Giriş sırasında bir hata oluştu.");
-  if (!data) throw new Error("Telefon veya PIN kodu hatalı.");
-  return data as Personel;
+  const sonuc = await girisYapFn({ data: { telefon, pin } });
+  tokenYaz(sonuc.token);
+  return sonuc.personel as Personel;
 }
 
 const dogalSiralama = new Intl.Collator("tr", { numeric: true, sensitivity: "base" });
 
 export async function bloklariGetir(): Promise<Blok[]> {
-  const { data, error } = await supabase
-    .from("bloklar")
-    .select("id, blok_adi")
-    .order("blok_adi");
-  if (error) throw error;
-  return ((data ?? []) as Blok[]).sort((a, b) => dogalSiralama.compare(a.blok_adi, b.blok_adi));
+  const data = await bloklariGetirFn({ data: { token: token() } });
+  return (data as Blok[]).slice().sort((a, b) => dogalSiralama.compare(a.blok_adi, b.blok_adi));
 }
 
 export async function personelGetir(): Promise<Personel[]> {
-  const { data, error } = await supabase
-    .from("personel")
-    .select("id, ad_soyad, rol, telefon, aktif, mesai_durumu, durum_guncelleme")
-    .eq("rol", "personel")
-    .order("ad_soyad");
-  if (error) throw error;
-  return (data ?? []) as Personel[];
+  return (await personelGetirFn({ data: { token: token() } })) as Personel[];
 }
 
-export async function mesaiDurumuGuncelle(personelId: string, durum: MesaiDurumu) {
-  const { error } = await supabase
-    .from("personel")
-    .update({ mesai_durumu: durum, durum_guncelleme: new Date().toISOString() })
-    .eq("id", personelId);
-  if (error) throw error;
+export async function mesaiDurumuGuncelle(_personelId: string, durum: MesaiDurumu) {
+  await mesaiDurumuGuncelleFn({ data: { token: token(), durum } });
 }
 
-export async function mesaiDurumuGetir(personelId: string): Promise<MesaiDurumu> {
-  const { data, error } = await supabase
-    .from("personel")
-    .select("mesai_durumu")
-    .eq("id", personelId)
-    .maybeSingle();
-  if (error) throw error;
-  return ((data as { mesai_durumu?: MesaiDurumu } | null)?.mesai_durumu ??
-    "calisiyor") as MesaiDurumu;
+export async function mesaiDurumuGetir(_personelId?: string): Promise<MesaiDurumu> {
+  return (await mesaiDurumuGetirFn({ data: { token: token() } })) as MesaiDurumu;
 }
 
 export type PersonelAnlikDurum = {
@@ -75,10 +73,12 @@ const CANLI_ESIK_MS = 15 * 60 * 1000;
 
 /** Aktif saha personelinin anlık durumunu (çalışıyor / molada / çevrimdışı) döner. */
 export async function personelAnlikDurumlariGetir(): Promise<PersonelAnlikDurum[]> {
-  const [personeller, konumlar] = await Promise.all([personelGetir(), sonKonumlariGetir()]);
-  const sonKonum = new Map(konumlar.map((k) => [k.personel_id, k.kayit_tarihi]));
+  const { personeller, konumlar } = await personelDurumlariFn({ data: { token: token() } });
+  const sonKonum = new Map(
+    (konumlar as PersonelKonum[]).map((k) => [k.personel_id, k.kayit_tarihi]),
+  );
 
-  return personeller
+  return (personeller as Personel[])
     .filter((p) => p.aktif)
     .map((p) => {
       const gorulme = sonKonum.get(p.id) ?? null;
@@ -96,32 +96,15 @@ export async function personelAnlikDurumlariGetir(): Promise<PersonelAnlikDurum[
 }
 
 export async function tumGorevleriGetir(): Promise<Gorev[]> {
-  const { data, error } = await supabase
-    .from("gorevler")
-    .select(GOREV_SELECT)
-    .order("olusturma_tarihi", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as unknown as Gorev[];
+  return (await tumGorevleriGetirFn({ data: { token: token() } })) as Gorev[];
 }
 
-export async function personelGorevleriniGetir(personelId: string): Promise<Gorev[]> {
-  const { data, error } = await supabase
-    .from("gorevler")
-    .select(GOREV_SELECT)
-    .eq("personel_id", personelId)
-    .order("olusturma_tarihi", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as unknown as Gorev[];
+export async function personelGorevleriniGetir(_personelId?: string): Promise<Gorev[]> {
+  return (await personelGorevleriniGetirFn({ data: { token: token() } })) as Gorev[];
 }
 
 export async function gorevGetir(id: string): Promise<Gorev | null> {
-  const { data, error } = await supabase
-    .from("gorevler")
-    .select(GOREV_SELECT)
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as unknown as Gorev) ?? null;
+  return (await gorevGetirFn({ data: { token: token(), id } })) as Gorev | null;
 }
 
 export async function gorevOlustur(input: {
@@ -132,30 +115,44 @@ export async function gorevOlustur(input: {
   aciliyet: string;
   is_turu: string;
 }) {
-  const { error } = await supabase.from("gorevler").insert(input);
-  if (error) throw error;
+  await gorevOlusturFn({ data: { token: token(), ...input } as never });
 }
 
 export async function gorevDurumGuncelle(id: string, durum: string) {
-  const { error } = await supabase.from("gorevler").update({ durum }).eq("id", id);
-  if (error) throw error;
+  await gorevDurumGuncelleFn({ data: { token: token(), id, durum } as never });
+}
+
+function dosyadanBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const okuyucu = new FileReader();
+    okuyucu.onload = () => {
+      const sonuc = String(okuyucu.result);
+      resolve(sonuc.slice(sonuc.indexOf(",") + 1));
+    };
+    okuyucu.onerror = () => reject(new Error("Fotoğraf okunamadı."));
+    okuyucu.readAsDataURL(file);
+  });
 }
 
 export async function fotoYukle(gorevId: string, file: File): Promise<string> {
-  const uzanti = file.name.split(".").pop() || "jpg";
-  const yol = `${gorevId}/${Date.now()}.${uzanti}`;
-  const { error } = await supabase.storage.from("is-fotolari").upload(yol, file, {
-    contentType: file.type || "image/jpeg",
+  if (file.size > 10 * 1024 * 1024) throw new Error("Fotoğraf 10MB'dan büyük olamaz.");
+  const uzanti = (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").slice(0, 5) || "jpg";
+  const base64 = await dosyadanBase64(file);
+  const { yol } = await fotoYukleFn({
+    data: {
+      token: token(),
+      gorevId,
+      base64,
+      contentType: file.type || "image/jpeg",
+      uzanti,
+    },
   });
-  if (error) throw error;
   return yol;
 }
 
 export async function fotoUrlAl(yol: string): Promise<string | null> {
-  const { data } = await supabase.storage
-    .from("is-fotolari")
-    .createSignedUrl(yol, 60 * 60);
-  return data?.signedUrl ?? null;
+  const { url } = await fotoUrlAlFn({ data: { token: token(), yol } });
+  return url;
 }
 
 export async function gorevTamamla(input: {
@@ -163,13 +160,7 @@ export async function gorevTamamla(input: {
   fotoYolu: string;
   not: string;
 }) {
-  const { error } = await supabase.from("is_loglari").insert({
-    gorev_id: input.gorevId,
-    foto_url: input.fotoYolu,
-    personel_notu: input.not,
-  });
-  if (error) throw error;
-  await gorevDurumGuncelle(input.gorevId, "tamamlandi");
+  await gorevTamamlaFn({ data: { token: token(), ...input } });
 }
 
 export async function konumGonder(input: {
@@ -178,27 +169,19 @@ export async function konumGonder(input: {
   boylam: number;
   dogruluk?: number | null;
 }) {
-  const { error } = await supabase.from("personel_konumlari").insert({
-    personel_id: input.personel_id,
-    enlem: input.enlem,
-    boylam: input.boylam,
-    dogruluk: input.dogruluk ?? null,
+  await konumGonderFn({
+    data: {
+      token: token(),
+      enlem: input.enlem,
+      boylam: input.boylam,
+      dogruluk: input.dogruluk ?? null,
+    },
   });
-  if (error) throw error;
 }
 
 export async function sonKonumlariGetir(): Promise<PersonelKonum[]> {
-  const { data, error } = await supabase
-    .from("personel_konumlari")
-    .select("id, personel_id, enlem, boylam, dogruluk, kayit_tarihi, personel(ad_soyad, telefon)")
-    .order("kayit_tarihi", { ascending: false })
-    .limit(500);
-  if (error) throw error;
-  const enYeni = new Map<string, PersonelKonum>();
-  for (const k of (data ?? []) as unknown as PersonelKonum[]) {
-    if (!enYeni.has(k.personel_id)) enYeni.set(k.personel_id, k);
-  }
-  return [...enYeni.values()].sort((a, b) =>
-    (a.personel?.ad_soyad ?? "").localeCompare(b.personel?.ad_soyad ?? "", "tr"),
-  );
+  const data = (await sonKonumlariGetirFn({ data: { token: token() } })) as PersonelKonum[];
+  return data
+    .slice()
+    .sort((a, b) => (a.personel?.ad_soyad ?? "").localeCompare(b.personel?.ad_soyad ?? "", "tr"));
 }
