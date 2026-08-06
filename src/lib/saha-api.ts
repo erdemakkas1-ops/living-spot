@@ -16,13 +16,15 @@ export async function girisYap(telefon: string, pin: string): Promise<Personel> 
   return data as Personel;
 }
 
+const dogalSiralama = new Intl.Collator("tr", { numeric: true, sensitivity: "base" });
+
 export async function bloklariGetir(): Promise<Blok[]> {
   const { data, error } = await supabase
     .from("bloklar")
     .select("id, blok_adi")
     .order("blok_adi");
   if (error) throw error;
-  return (data ?? []) as Blok[];
+  return ((data ?? []) as Blok[]).sort((a, b) => dogalSiralama.compare(a.blok_adi, b.blok_adi));
 }
 
 export async function personelGetir(): Promise<Personel[]> {
