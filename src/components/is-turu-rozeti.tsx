@@ -1,5 +1,4 @@
-import type { IsTuru } from "./saha-types";
-import { IS_TURU_ETIKET, IS_TURU_SINIF } from "./saha-types";
+import { IS_TURU_ETIKET, IS_TURU_SINIF, type IsTuru } from "@/lib/saha-types";
 
 export function IsTuruRozeti({ turu }: { turu: IsTuru | null | undefined }) {
   const t = turu ?? "genel";
