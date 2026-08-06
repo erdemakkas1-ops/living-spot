@@ -68,7 +68,7 @@ import {
   tumGorevleriGetir,
 } from "@/lib/saha-api";
 import { oturumSil, useOturum } from "@/lib/saha-session";
-import { DURUM_ETIKET, DURUM_SINIF, type Gorev, type IsTuru } from "@/lib/saha-types";
+import { DURUM_ETIKET, DURUM_SINIF, IS_BASLIKLARI, type Gorev, type IsTuru } from "@/lib/saha-types";
 
 export const Route = createFileRoute("/panel")({
   ssr: false,
