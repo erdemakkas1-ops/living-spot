@@ -561,10 +561,10 @@ function GorevAtamaModali({
   const [acik, setAcik] = useState(false);
   const [blokId, setBlokId] = useState("");
   const [personelId, setPersonelId] = useState("");
+  const [isTuru, setIsTuru] = useState<IsTuru | "">("");
   const [baslik, setBaslik] = useState("");
   const [aciklama, setAciklama] = useState("");
   const [aciliyet, setAciliyet] = useState("normal");
-  const [isTuru, setIsTuru] = useState<IsTuru>("genel");
 
   const mut = useMutation({
     mutationFn: gorevOlustur,
@@ -574,10 +574,10 @@ function GorevAtamaModali({
       setAcik(false);
       setBlokId("");
       setPersonelId("");
+      setIsTuru("");
       setBaslik("");
       setAciklama("");
       setAciliyet("normal");
-      setIsTuru("genel");
     },
     onError: () => toast.error("Görev atanamadı, tekrar deneyin."),
   });
