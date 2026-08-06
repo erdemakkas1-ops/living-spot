@@ -50,7 +50,10 @@ export function RaporIndir({ gorevler }: { gorevler: Gorev[] }) {
   const bosMu = gorevler.length === 0;
 
   async function excelIndir() {
-    if (bosMu) return toast.error("Raporlanacak kayıt yok.");
+    if (bosMu) {
+      toast.error("Raporlanacak kayıt yok.");
+      return;
+    }
     const XLSX = await import("xlsx");
     const ws = XLSX.utils.aoa_to_sheet([BASLIKLAR, ...satirlar(gorevler)]);
     ws["!cols"] = [14, 28, 34, 20, 10, 14, 20, 20, 10].map((w) => ({ wch: w }));
@@ -61,7 +64,10 @@ export function RaporIndir({ gorevler }: { gorevler: Gorev[] }) {
   }
 
   function pdfIndir() {
-    if (bosMu) return toast.error("Raporlanacak kayıt yok.");
+    if (bosMu) {
+      toast.error("Raporlanacak kayıt yok.");
+      return;
+    }
     const tarih = new Date().toLocaleString("tr-TR");
     const govde = satirlar(gorevler)
       .map(
