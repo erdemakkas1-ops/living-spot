@@ -59,6 +59,7 @@ import { FotoMenusu } from "@/components/foto-menusu";
 import { KonumTakibi } from "@/components/konum-takibi";
 import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import { RaporIndir } from "@/components/rapor-indir";
+import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import { FotoGoruntuleyici } from "@/components/foto-goruntuleyici";
 import {
   bloklariGetir,
