@@ -564,6 +564,7 @@ function GorevAtamaModali({
   const [baslik, setBaslik] = useState("");
   const [aciklama, setAciklama] = useState("");
   const [aciliyet, setAciliyet] = useState("normal");
+  const [isTuru, setIsTuru] = useState<IsTuru>("genel");
 
   const mut = useMutation({
     mutationFn: gorevOlustur,
@@ -576,6 +577,7 @@ function GorevAtamaModali({
       setBaslik("");
       setAciklama("");
       setAciliyet("normal");
+      setIsTuru("genel");
     },
     onError: () => toast.error("Görev atanamadı, tekrar deneyin."),
   });
@@ -609,6 +611,7 @@ function GorevAtamaModali({
               is_basligi: baslik.trim().slice(0, 120),
               aciklama: aciklama.trim().slice(0, 1000),
               aciliyet,
+              is_turu: isTuru,
             });
           }}
           className="space-y-4"
