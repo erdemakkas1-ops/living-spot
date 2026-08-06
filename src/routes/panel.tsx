@@ -105,15 +105,15 @@ function PanelSayfasi() {
   const [sekme, setSekme] = useState<"tumu" | "acil">("tumu");
 
   const liste = gorevler.data ?? [];
+  const aktifPersonelSayisi = (personeller.data ?? []).filter(
+    (p) => p.aktif && p.rol === "personel",
+  ).length;
 
   const istatistik = useMemo(() => {
     const bekleyen = liste.filter((g) => g.durum === "bekliyor").length;
     const devam = liste.filter((g) => g.durum === "devam_ediyor").length;
     const tamam = liste.filter((g) => g.durum === "tamamlandi").length;
-    const aktifPersonel = new Set(
-      liste.filter((g) => g.durum === "devam_ediyor" && g.personel_id).map((g) => g.personel_id),
-    ).size;
-    return { toplam: liste.length, bekleyen, devam, tamam, aktifPersonel };
+    return { toplam: liste.length, bekleyen, devam, tamam };
   }, [liste]);
 
   const filtreli = liste.filter((g) => {
@@ -227,8 +227,8 @@ function PanelSayfasi() {
           />
           <OzetKart
             baslik="Aktif Pers."
-            uzunBaslik="Sahada Aktif Personel"
-            deger={istatistik.aktifPersonel}
+            uzunBaslik="Aktif Saha Personeli"
+            deger={aktifPersonelSayisi}
             ikon={<Users className="h-5 w-5" />}
             renk="text-status-devam"
           />
