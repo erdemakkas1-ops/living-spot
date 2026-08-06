@@ -9,11 +9,13 @@ import {
   Clock,
   HardHat,
   LogOut,
+  MapPin,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { personelGorevleriniGetir } from "@/lib/saha-api";
+import { useKonumPaylas } from "@/lib/konum-takip";
 import { oturumSil, useOturum } from "@/lib/saha-session";
 import { DURUM_ETIKET, DURUM_SINIF } from "@/lib/saha-types";
 
@@ -56,6 +58,15 @@ function SahaListesi() {
   const acikIsler = liste.filter((g) => g.durum !== "tamamlandi");
   const bitenIsler = liste.filter((g) => g.durum === "tamamlandi");
 
+  const konumDurum = useKonumPaylas(kullanici?.id, !!kullanici && kullanici.rol === "personel");
+  const konumMetin: Record<string, string> = {
+    kapali: "Konum paylaşımı kapalı",
+    bekleniyor: "Konum alınıyor...",
+    aktif: "Konum paylaşımı açık",
+    izin_yok: "Konum izni verilmedi",
+    hata: "Konum alınamadı",
+  };
+
   return (
     <div className="min-h-screen bg-background pb-10">
       <header className="bg-gradient-navy px-4 pt-6 pb-8">
@@ -68,6 +79,12 @@ function SahaListesi() {
             <div className="mt-2">
               <BaglantiRozeti className="bg-navy-foreground/10 text-navy-foreground" />
             </div>
+            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-navy-foreground/70">
+              <MapPin
+                className={`h-3.5 w-3.5 ${konumDurum === "aktif" ? "text-status-tamam" : ""}`}
+              />
+              {konumMetin[konumDurum]}
+            </p>
           </div>
           <Button
             variant="secondary"
