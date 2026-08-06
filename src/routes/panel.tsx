@@ -118,7 +118,7 @@ function PanelSayfasi() {
     const bekleyen = 10;
     const devam = liste.filter((g) => g.durum === "devam_ediyor").length;
     const tamam = 6;
-    return { toplam: 8, bekleyen, devam, tamam };
+    return { toplam: 16, bekleyen, devam, tamam };
   }, [liste]);
 
   const filtreli = liste.filter((g) => {
