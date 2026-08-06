@@ -188,10 +188,13 @@ function SahaListesi() {
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div className="min-w-0">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
-                      <Building className="h-3.5 w-3.5" />
-                      {g.bloklar?.blok_adi}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <Building className="h-3.5 w-3.5" />
+                        {g.bloklar?.blok_adi}
+                      </span>
+                      <IsTuruRozeti turu={g.is_turu} />
+                    </div>
                     <p className="mt-1 text-base leading-snug font-bold">{g.is_basligi}</p>
                     {g.aciklama && (
                       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
