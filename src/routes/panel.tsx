@@ -601,14 +601,14 @@ function GorevAtamaModali({
           id="gorev-atama"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!blokId || !personelId) {
-              toast.error("Blok ve personel seçimi zorunludur.");
+            if (!blokId || !personelId || !isTuru || !baslik) {
+              toast.error("Blok, personel, iş türü ve iş başlığı seçimi zorunludur.");
               return;
             }
             mut.mutate({
               blok_id: blokId,
               personel_id: personelId,
-              is_basligi: baslik.trim().slice(0, 120),
+              is_basligi: baslik,
               aciklama: aciklama.trim().slice(0, 1000),
               aciliyet,
               is_turu: isTuru,
