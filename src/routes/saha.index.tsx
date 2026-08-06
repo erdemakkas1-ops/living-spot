@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -7,6 +7,7 @@ import {
   CheckCircle,
   ChevronRight,
   Clock,
+  Coffee,
   HardHat,
   LogOut,
   MapPin,
@@ -14,10 +15,14 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
-import { personelGorevleriniGetir } from "@/lib/saha-api";
+import {
+  mesaiDurumuGetir,
+  mesaiDurumuGuncelle,
+  personelGorevleriniGetir,
+} from "@/lib/saha-api";
 import { useKonumPaylas } from "@/lib/konum-takip";
 import { oturumSil, useOturum } from "@/lib/saha-session";
-import { DURUM_ETIKET, DURUM_SINIF } from "@/lib/saha-types";
+import { DURUM_ETIKET, DURUM_SINIF, type MesaiDurumu } from "@/lib/saha-types";
 
 export const Route = createFileRoute("/saha/")({
   ssr: false,
@@ -59,6 +64,22 @@ function SahaListesi() {
   const bitenIsler = liste.filter((g) => g.durum === "tamamlandi");
 
   const konumDurum = useKonumPaylas(kullanici?.id, !!kullanici && kullanici.rol === "personel");
+
+  const [mesai, setMesai] = useState<MesaiDurumu>("calisiyor");
+  useEffect(() => {
+    if (!kullanici?.id) return;
+    void mesaiDurumuGetir(kullanici.id)
+      .then(setMesai)
+      .catch(() => setMesai("calisiyor"));
+  }, [kullanici?.id]);
+
+  const molaDegistir = () => {
+    if (!kullanici?.id) return;
+    const yeni: MesaiDurumu = mesai === "molada" ? "calisiyor" : "molada";
+    setMesai(yeni);
+    void mesaiDurumuGuncelle(kullanici.id, yeni).catch(() => setMesai(mesai));
+  };
+
   const konumMetin: Record<string, string> = {
     kapali: "Konum paylaşımı kapalı",
     bekleniyor: "Konum alınıyor...",
@@ -86,18 +107,42 @@ function SahaListesi() {
               {konumMetin[konumDurum]}
             </p>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="shrink-0"
-            onClick={() => {
-              oturumSil();
-              navigate({ to: "/" });
-            }}
-          >
-            <LogOut className="h-4 w-4" />
-            Çıkış
-          </Button>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="shrink-0"
+              onClick={() => {
+                oturumSil();
+                navigate({ to: "/" });
+              }}
+            >
+              <LogOut className="h-4 w-4" />
+              Çıkış
+            </Button>
+            <Button
+              size="sm"
+              variant={mesai === "molada" ? "default" : "outline"}
+              className={
+                mesai === "molada"
+                  ? "shrink-0"
+                  : "shrink-0 border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10"
+              }
+              onClick={molaDegistir}
+            >
+              {mesai === "molada" ? (
+                <>
+                  <HardHat className="h-4 w-4" />
+                  İşe Dön
+                </>
+              ) : (
+                <>
+                  <Coffee className="h-4 w-4" />
+                  Molaya Çık
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </header>
 
