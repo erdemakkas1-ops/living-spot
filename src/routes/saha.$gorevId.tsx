@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
+import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import { gorevDurumGuncelle, gorevGetir, gorevTamamla, fotoYukle } from "@/lib/saha-api";
 import { useOturum } from "@/lib/saha-session";
 import { DURUM_ETIKET, DURUM_SINIF } from "@/lib/saha-types";

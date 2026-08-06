@@ -15,6 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
+import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import {
   mesaiDurumuGetir,
   mesaiDurumuGuncelle,
