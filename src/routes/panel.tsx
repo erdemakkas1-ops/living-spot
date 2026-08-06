@@ -543,35 +543,6 @@ function BildirimMenusu({ gorevler }: { gorevler: Gorev[] }) {
   );
 }
 
-function OzetKartEski({
-  baslik,
-  uzunBaslik,
-  deger,
-  ikon,
-  renk = "text-primary",
-}: {
-  baslik: string;
-  uzunBaslik: string;
-  deger: number;
-  ikon: React.ReactNode;
-  renk?: string;
-}) {
-  return (
-    <div className="rounded-2xl bg-card p-3 shadow-card sm:p-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-xs font-medium text-muted-foreground sm:hidden" title={uzunBaslik}>
-          {baslik}
-        </p>
-        <p className="hidden min-w-0 truncate text-xs font-medium text-muted-foreground sm:block">
-          {uzunBaslik}
-        </p>
-        <span className={`shrink-0 ${renk}`}>{ikon}</span>
-      </div>
-      <p className="mt-1 text-2xl font-bold tracking-tight sm:mt-2 sm:text-3xl">{deger}</p>
-    </div>
-  );
-}
-
 function GorevAtamaModali({
   bloklar,
   personeller,
