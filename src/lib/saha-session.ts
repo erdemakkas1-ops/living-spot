@@ -17,7 +17,14 @@ export function oturumOku(): Personel | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Personel) : null;
+    if (!raw) return null;
+    // Oturum kaydı olsa da imzalı token yoksa (eski sürümden kalan kayıt)
+    // oturum geçersizdir; yeniden PIN girişi gerekir.
+    if (!window.localStorage.getItem(TOKEN_KEY)) {
+      window.localStorage.removeItem(KEY);
+      return null;
+    }
+    return JSON.parse(raw) as Personel;
   } catch {
     return null;
   }
