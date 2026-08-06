@@ -358,6 +358,9 @@ function PanelSayfasi() {
                 {filtreli.map((g) => (
                   <TableRow key={g.id} className="align-middle">
                     <TableCell className="font-semibold">{g.bloklar?.blok_adi}</TableCell>
+                    <TableCell>
+                      <IsTuruRozeti turu={g.is_turu} />
+                    </TableCell>
                     <TableCell className="max-w-[280px]">
                       <div className="flex items-center gap-2">
                         <p className="truncate font-medium">{g.is_basligi}</p>
