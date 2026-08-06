@@ -9,7 +9,7 @@ import type {
 } from "./saha-types";
 
 const GOREV_SELECT =
-  "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, olusturma_tarihi, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
+  "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, is_turu, olusturma_tarihi, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
 
 export async function girisYap(telefon: string, pin: string): Promise<Personel> {
   const { data, error } = await supabase
@@ -130,6 +130,7 @@ export async function gorevOlustur(input: {
   is_basligi: string;
   aciklama: string;
   aciliyet: string;
+  is_turu: string;
 }) {
   const { error } = await supabase.from("gorevler").insert(input);
   if (error) throw error;
