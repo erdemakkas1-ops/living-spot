@@ -436,10 +436,11 @@ function PanelSayfasi() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-md bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
                         {g.bloklar?.blok_adi ?? "—"}
                       </span>
+                      <IsTuruRozeti turu={g.is_turu} />
                       {g.aciliyet === "acil" && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-destructive/12 px-2 py-0.5 text-xs font-bold text-destructive">
                           <AlertCircle className="h-3 w-3" /> Acil
