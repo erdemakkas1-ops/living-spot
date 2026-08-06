@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/table";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { BildirimMenusu } from "@/components/bildirim-menusu";
+import { FotoMenusu } from "@/components/foto-menusu";
 import { RaporIndir } from "@/components/rapor-indir";
 import { FotoGoruntuleyici } from "@/components/foto-goruntuleyici";
 import {
@@ -188,6 +189,7 @@ function PanelSayfasi() {
               {kullanici?.ad_soyad}
             </span>
             <BildirimMenusu gorevler={liste} />
+            <FotoMenusu gorevler={liste} />
             <Button
               variant="secondary"
               size="sm"
