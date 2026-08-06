@@ -136,7 +136,7 @@ function GirisSayfasi() {
         </form>
 
         <p className="mt-6 text-center text-xs leading-relaxed text-navy-foreground/60">
-          Demo giriş — Yönetim: 05001112233 / 1234
+          Demo giriş — Yönetim: 05233236611 / 1234
           <br />
           Saha personeli: 05310000001 / 1111
         </p>
