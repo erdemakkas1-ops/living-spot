@@ -142,6 +142,41 @@ export type Database = {
         }
         Relationships: []
       }
+      personel_konumlari: {
+        Row: {
+          boylam: number
+          dogruluk: number | null
+          enlem: number
+          id: string
+          kayit_tarihi: string
+          personel_id: string
+        }
+        Insert: {
+          boylam: number
+          dogruluk?: number | null
+          enlem: number
+          id?: string
+          kayit_tarihi?: string
+          personel_id: string
+        }
+        Update: {
+          boylam?: number
+          dogruluk?: number | null
+          enlem?: number
+          id?: string
+          kayit_tarihi?: string
+          personel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personel_konumlari_personel_id_fkey"
+            columns: ["personel_id"]
+            isOneToOne: false
+            referencedRelation: "personel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
