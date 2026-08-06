@@ -69,8 +69,6 @@ export type PersonelAnlikDurum = {
   son_gorulme: string | null;
 };
 
-const CANLI_ESIK_MS = 15 * 60 * 1000;
-
 /** Aktif saha personelinin anlık durumunu (çalışıyor / molada / çevrimdışı) döner. */
 export async function personelAnlikDurumlariGetir(): Promise<PersonelAnlikDurum[]> {
   const { personeller, konumlar } = await personelDurumlariFn({ data: { token: token() } });
@@ -82,15 +80,20 @@ export async function personelAnlikDurumlariGetir(): Promise<PersonelAnlikDurum[
     .filter((p) => p.aktif)
     .map((p) => {
       const gorulme = sonKonum.get(p.id) ?? null;
-      const canliMi = !!gorulme && Date.now() - new Date(gorulme).getTime() < CANLI_ESIK_MS;
+      // Mesai durumu personelin kendi bildirimi olduğu için esas alınır;
+      // konum kaydı yalnızca "son görülme" bilgisi olarak gösterilir.
       const durum: AnlikDurum =
-        p.mesai_durumu === "molada" ? "molada" : canliMi ? "calisiyor" : "cevrimdisi";
+        p.mesai_durumu === "molada"
+          ? "molada"
+          : p.mesai_durumu === "cevrimdisi"
+            ? "cevrimdisi"
+            : "calisiyor";
       return {
         id: p.id,
         ad_soyad: p.ad_soyad,
         telefon: p.telefon,
         durum,
-        son_gorulme: gorulme,
+        son_gorulme: gorulme ?? p.durum_guncelleme ?? null,
       };
     });
 }
