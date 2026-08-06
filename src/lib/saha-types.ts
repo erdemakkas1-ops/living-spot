@@ -72,14 +72,14 @@ export const IS_TURU_ETIKET: Record<IsTuru, string> = {
 };
 
 export const IS_TURU_SINIF: Record<IsTuru, string> = {
-  peyzaj: "bg-is-turu-peyzaj text-is-turu-peyzaj-foreground",
-  bakim: "bg-is-turu-bakim text-is-turu-bakim-foreground",
-  temizlik: "bg-is-turu-temizlik text-is-turu-temizlik-foreground",
-  guvenlik: "bg-is-turu-guvenlik text-is-turu-guvenlik-foreground",
-  elektrik: "bg-is-turu-elektrik text-is-turu-elektrik-foreground",
-  sihhi_tesisat: "bg-is-turu-sihhi-tesisat text-is-turu-sihhi-tesisat-foreground",
-  tadilat: "bg-is-turu-tadilat text-is-turu-tadilat-foreground",
-  genel: "bg-is-turu-genel text-is-turu-genel-foreground",
+  peyzaj: "bg-muted text-muted-foreground",
+  bakim: "bg-muted text-muted-foreground",
+  temizlik: "bg-muted text-muted-foreground",
+  guvenlik: "bg-muted text-muted-foreground",
+  elektrik: "bg-muted text-muted-foreground",
+  sihhi_tesisat: "bg-muted text-muted-foreground",
+  tadilat: "bg-muted text-muted-foreground",
+  genel: "bg-muted text-muted-foreground",
 };
 
 export const IS_BASLIKLARI: Record<IsTuru, string[]> = {
