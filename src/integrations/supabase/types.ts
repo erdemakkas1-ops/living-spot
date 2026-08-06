@@ -117,7 +117,9 @@ export type Database = {
           ad_soyad: string
           aktif: boolean
           created_at: string
+          durum_guncelleme: string
           id: string
+          mesai_durumu: string
           pin_kodu: string
           rol: string
           telefon: string
@@ -126,7 +128,9 @@ export type Database = {
           ad_soyad: string
           aktif?: boolean
           created_at?: string
+          durum_guncelleme?: string
           id?: string
+          mesai_durumu?: string
           pin_kodu: string
           rol?: string
           telefon: string
@@ -135,7 +139,9 @@ export type Database = {
           ad_soyad?: string
           aktif?: boolean
           created_at?: string
+          durum_guncelleme?: string
           id?: string
+          mesai_durumu?: string
           pin_kodu?: string
           rol?: string
           telefon?: string
