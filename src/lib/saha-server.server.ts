@@ -89,7 +89,7 @@ export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelK
 
 export async function konumGonderSunucu(
   token: unknown,
-  input: { enlem: number; boylam: number; dogruluk?: number | null },
+  input: { enlem: number; boylam: number; dogruluk?: number | null | undefined },
 ) {
   const claims = await tokenDogrula(token);
   const sb = await db();

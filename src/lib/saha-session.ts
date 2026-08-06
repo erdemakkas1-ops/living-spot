@@ -2,6 +2,16 @@ import { useEffect, useState } from "react";
 import type { Personel } from "./saha-types";
 
 const KEY = "saha-oturum";
+const TOKEN_KEY = "saha-token";
+
+export function tokenOku(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(TOKEN_KEY) ?? "";
+}
+
+export function tokenYaz(token: string) {
+  window.localStorage.setItem(TOKEN_KEY, token);
+}
 
 export function oturumOku(): Personel | null {
   if (typeof window === "undefined") return null;
@@ -20,6 +30,7 @@ export function oturumYaz(p: Personel) {
 
 export function oturumSil() {
   window.localStorage.removeItem(KEY);
+  window.localStorage.removeItem(TOKEN_KEY);
   window.dispatchEvent(new Event("saha-oturum-degisti"));
 }
 
