@@ -106,7 +106,6 @@ function PanelSayfasi() {
   const [durumFiltre, setDurumFiltre] = useState("hepsi");
   const [arama, setArama] = useState("");
   const [detay, setDetay] = useState<Gorev | null>(null);
-  const [sekme, setSekme] = useState<"tumu" | "acil">("tumu");
 
   const liste = gorevler.data ?? [];
   const aktifPersonelSayisi = (personeller.data ?? []).filter(
@@ -121,8 +120,6 @@ function PanelSayfasi() {
   }, [liste]);
 
   const filtreli = liste.filter((g) => {
-    const acilAktif = g.aciliyet === "acil" && g.durum !== "tamamlandi";
-    if (sekme === "acil" ? !acilAktif : acilAktif) return false;
     if (blokFiltre !== "hepsi" && g.blok_id !== blokFiltre) return false;
     if (durumFiltre !== "hepsi" && g.durum !== durumFiltre) return false;
     if (arama.trim()) {
@@ -132,10 +129,6 @@ function PanelSayfasi() {
     }
     return true;
   });
-
-  const acilSayisi = liste.filter(
-    (g) => g.aciliyet === "acil" && g.durum !== "tamamlandi",
-  ).length;
 
   return (
     <div className="min-h-screen bg-background">
