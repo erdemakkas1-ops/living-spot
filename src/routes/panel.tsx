@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   AlertCircle,
+  Bell,
   Building,
   Camera,
   CheckCircle,
@@ -179,6 +180,7 @@ function PanelSayfasi() {
             <span className="hidden text-sm font-medium text-navy-foreground/80 md:inline">
               {kullanici?.ad_soyad}
             </span>
+            <BildirimMenusu gorevler={liste} />
             <Button
               variant="secondary"
               size="sm"
