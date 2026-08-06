@@ -122,7 +122,8 @@ function PanelSayfasi() {
   }, [liste]);
 
   const filtreli = liste.filter((g) => {
-    if (sekme === "acil" && !(g.aciliyet === "acil" && g.durum !== "tamamlandi")) return false;
+    const acilAktif = g.aciliyet === "acil" && g.durum !== "tamamlandi";
+    if (sekme === "acil" ? !acilAktif : acilAktif) return false;
     if (blokFiltre !== "hepsi" && g.blok_id !== blokFiltre) return false;
     if (durumFiltre !== "hepsi" && g.durum !== durumFiltre) return false;
     if (arama.trim()) {
