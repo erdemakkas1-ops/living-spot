@@ -82,12 +82,7 @@ export async function personelAnlikDurumlariGetir(): Promise<PersonelAnlikDurum[
       const gorulme = sonKonum.get(p.id) ?? null;
       // Mesai durumu personelin kendi bildirimi olduğu için esas alınır;
       // konum kaydı yalnızca "son görülme" bilgisi olarak gösterilir.
-      const durum: AnlikDurum =
-        p.mesai_durumu === "molada"
-          ? "molada"
-          : p.mesai_durumu === "cevrimdisi"
-            ? "cevrimdisi"
-            : "calisiyor";
+      const durum: AnlikDurum = p.mesai_durumu === "molada" ? "molada" : "calisiyor";
       return {
         id: p.id,
         ad_soyad: p.ad_soyad,
