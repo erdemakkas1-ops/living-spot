@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/table";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { BildirimMenusu } from "@/components/bildirim-menusu";
+import { RaporIndir } from "@/components/rapor-indir";
 import { FotoGoruntuleyici } from "@/components/foto-goruntuleyici";
 import {
   bloklariGetir,
@@ -272,10 +273,13 @@ function PanelSayfasi() {
                 )}
               </button>
             </div>
-            <GorevAtamaModali
-              bloklar={bloklar.data ?? []}
-              personeller={personeller.data ?? []}
-            />
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <RaporIndir gorevler={filtreli} />
+              <GorevAtamaModali
+                bloklar={bloklar.data ?? []}
+                personeller={personeller.data ?? []}
+              />
+            </div>
           </div>
 
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
