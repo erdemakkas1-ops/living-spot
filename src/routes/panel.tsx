@@ -68,7 +68,7 @@ import {
   tumGorevleriGetir,
 } from "@/lib/saha-api";
 import { oturumSil, useOturum } from "@/lib/saha-session";
-import { DURUM_ETIKET, DURUM_SINIF, type Gorev, type IsTuru } from "@/lib/saha-types";
+import { DURUM_ETIKET, DURUM_SINIF, IS_BASLIKLARI, type Gorev, type IsTuru } from "@/lib/saha-types";
 
 export const Route = createFileRoute("/panel")({
   ssr: false,
@@ -561,10 +561,10 @@ function GorevAtamaModali({
   const [acik, setAcik] = useState(false);
   const [blokId, setBlokId] = useState("");
   const [personelId, setPersonelId] = useState("");
+  const [isTuru, setIsTuru] = useState<IsTuru | "">("");
   const [baslik, setBaslik] = useState("");
   const [aciklama, setAciklama] = useState("");
   const [aciliyet, setAciliyet] = useState("normal");
-  const [isTuru, setIsTuru] = useState<IsTuru>("genel");
 
   const mut = useMutation({
     mutationFn: gorevOlustur,
@@ -574,10 +574,10 @@ function GorevAtamaModali({
       setAcik(false);
       setBlokId("");
       setPersonelId("");
+      setIsTuru("");
       setBaslik("");
       setAciklama("");
       setAciliyet("normal");
-      setIsTuru("genel");
     },
     onError: () => toast.error("Görev atanamadı, tekrar deneyin."),
   });
@@ -601,14 +601,14 @@ function GorevAtamaModali({
           id="gorev-atama"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!blokId || !personelId) {
-              toast.error("Blok ve personel seçimi zorunludur.");
+            if (!blokId || !personelId || !isTuru || !baslik) {
+              toast.error("Blok, personel, iş türü ve iş başlığı seçimi zorunludur.");
               return;
             }
             mut.mutate({
               blok_id: blokId,
               personel_id: personelId,
-              is_basligi: baslik.trim().slice(0, 120),
+              is_basligi: baslik,
               aciklama: aciklama.trim().slice(0, 1000),
               aciliyet,
               is_turu: isTuru,
@@ -649,32 +649,16 @@ function GorevAtamaModali({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="baslik">İş Başlığı</Label>
-            <Input
-              id="baslik"
-              value={baslik}
-              onChange={(e) => setBaslik(e.target.value)}
-              required
-              maxLength={120}
-              placeholder="Örn: Asansör arıza kontrolü"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="aciklama">Açıklama</Label>
-            <Textarea
-              id="aciklama"
-              value={aciklama}
-              onChange={(e) => setAciklama(e.target.value)}
-              maxLength={1000}
-              rows={3}
-              placeholder="İşin detayları, kat bilgisi, gerekli malzeme..."
-            />
-          </div>
-          <div className="space-y-2">
             <Label>İş Türü</Label>
-            <Select value={isTuru} onValueChange={(v) => setIsTuru(v as IsTuru)}>
+            <Select
+              value={isTuru}
+              onValueChange={(v) => {
+                setIsTuru(v as IsTuru);
+                setBaslik("");
+              }}
+            >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="İş türü seçin" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="peyzaj">Peyzaj</SelectItem>
@@ -687,6 +671,35 @@ function GorevAtamaModali({
                 <SelectItem value="genel">Genel</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="baslik">İş Başlığı</Label>
+            <Select value={baslik} onValueChange={setBaslik} disabled={!isTuru}>
+              <SelectTrigger id="baslik">
+                <SelectValue
+                  placeholder={isTuru ? "İş başlığı seçin" : "Önce iş türü seçin"}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {isTuru &&
+                  IS_BASLIKLARI[isTuru].map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="aciklama">Açıklama</Label>
+            <Textarea
+              id="aciklama"
+              value={aciklama}
+              onChange={(e) => setAciklama(e.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="İşin detayları, kat bilgisi, gerekli malzeme..."
+            />
           </div>
           <div className="space-y-2">
             <Label>Aciliyet</Label>

@@ -82,6 +82,17 @@ export const IS_TURU_SINIF: Record<IsTuru, string> = {
   genel: "bg-is-turu-genel text-is-turu-genel-foreground",
 };
 
+export const IS_BASLIKLARI: Record<IsTuru, string[]> = {
+  peyzaj: ["Bahçe bakımı", "Çim biçme", "Ağaç/çalı budama", "Çiçeklendirme", "Sulama sistemi kontrolü", "Peyzaj temizliği"],
+  bakim: ["Asansör bakımı", "Isıtma sistemi kontrolü", "Havalandırma kontrolü", "Yangın sistemi kontrolü", "Jeneratör kontrolü", "Kapı/pencere bakımı"],
+  temizlik: ["Genel temizlik", "Merdiven temizliği", "Otopark temizliği", "Sıva temizliği", "Cam temizliği", "Çöp toplama"],
+  guvenlik: ["Güvenlik devriyesi", "Kamera sistemi kontrolü", "Gece kontrolü", "Yangın tatbikatı", "Misafir yönlendirme", "Kapı giriş kontrolü"],
+  elektrik: ["Elektrik arızası", "Aydınlatma kontrolü", "Pano kontrolü", "Elektrik tesisatı bakımı", "Yıldırım sistem kontrolü", "Güç kaynağı kontrolü"],
+  sihhi_tesisat: ["Su kaçağı", "Tıkanıklık açma", "Sıhhi tesisat kontrolü", "Pis su arıtma kontrolü", "Hidrofor kontrolü", "Musluk/batarya kontrolü"],
+  tadilat: ["Boya-badana", "Seramik tamiratı", "Sıva tamiratı", "Kapı kilidi tamiri", "Mermer parlatma", "Tavan tamiratı"],
+  genel: ["Genel kontrol", "Anahtar teslim kontrolü", "Depo sayımı", "Araç kontrolü", "Yönetim talimatı", "Dış mekan kontrolü"],
+};
+
 export type PersonelKonum = {
   id: string;
   personel_id: string;
