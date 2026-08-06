@@ -649,32 +649,16 @@ function GorevAtamaModali({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="baslik">İş Başlığı</Label>
-            <Input
-              id="baslik"
-              value={baslik}
-              onChange={(e) => setBaslik(e.target.value)}
-              required
-              maxLength={120}
-              placeholder="Örn: Asansör arıza kontrolü"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="aciklama">Açıklama</Label>
-            <Textarea
-              id="aciklama"
-              value={aciklama}
-              onChange={(e) => setAciklama(e.target.value)}
-              maxLength={1000}
-              rows={3}
-              placeholder="İşin detayları, kat bilgisi, gerekli malzeme..."
-            />
-          </div>
-          <div className="space-y-2">
             <Label>İş Türü</Label>
-            <Select value={isTuru} onValueChange={(v) => setIsTuru(v as IsTuru)}>
+            <Select
+              value={isTuru}
+              onValueChange={(v) => {
+                setIsTuru(v as IsTuru);
+                setBaslik("");
+              }}
+            >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="İş türü seçin" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="peyzaj">Peyzaj</SelectItem>
@@ -687,6 +671,35 @@ function GorevAtamaModali({
                 <SelectItem value="genel">Genel</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="baslik">İş Başlığı</Label>
+            <Select value={baslik} onValueChange={setBaslik} disabled={!isTuru}>
+              <SelectTrigger id="baslik">
+                <SelectValue
+                  placeholder={isTuru ? "İş başlığı seçin" : "Önce iş türü seçin"}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {isTuru &&
+                  IS_BASLIKLARI[isTuru].map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="aciklama">Açıklama</Label>
+            <Textarea
+              id="aciklama"
+              value={aciklama}
+              onChange={(e) => setAciklama(e.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="İşin detayları, kat bilgisi, gerekli malzeme..."
+            />
           </div>
           <div className="space-y-2">
             <Label>Aciliyet</Label>
