@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Coffee, HardHat, PowerOff, Users } from "lucide-react";
+import { ChevronDown, ChevronUp, Coffee, HardHat, PowerOff, Users } from "lucide-react";
+import { useState } from "react";
 
 import { personelAnlikDurumlariGetir } from "@/lib/saha-api";
 import type { AnlikDurum } from "@/lib/saha-types";
@@ -41,6 +42,7 @@ function gecenSure(tarih: string | null) {
 const SIRA: AnlikDurum[] = ["calisiyor", "molada", "cevrimdisi"];
 
 export function PersonelDurumCubugu() {
+  const [acik, setAcik] = useState(true);
   const durumlar = useQuery({
     queryKey: ["personel-anlik-durum"],
     queryFn: personelAnlikDurumlariGetir,
@@ -65,51 +67,65 @@ export function PersonelDurumCubugu() {
             {liste.length} aktif personel · 60 saniyede bir yenilenir
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {sayilar.map(({ durum, adet }) => (
-            <span
-              key={durum}
-              className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-bold"
-            >
-              <span className={`h-2 w-2 rounded-full ${NOKTA[durum]}`} />
-              {KISA[durum]}
-              <span className="text-muted-foreground">{adet}</span>
-            </span>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-2">
+            {sayilar.map(({ durum, adet }) => (
+              <span
+                key={durum}
+                className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-bold"
+              >
+                <span className={`h-2 w-2 rounded-full ${NOKTA[durum]}`} />
+                {KISA[durum]}
+                <span className="text-muted-foreground">{adet}</span>
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setAcik((v) => !v)}
+            aria-label={acik ? "Durum çubuğunu gizle" : "Durum çubuğunu göster"}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {acik ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
         </div>
       </div>
 
-      {durumlar.isLoading ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">Durumlar yükleniyor...</p>
-      ) : liste.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          Kayıtlı aktif personel bulunmuyor.
-        </p>
-      ) : (
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {[...liste]
-            .sort((a, b) => SIRA.indexOf(a.durum) - SIRA.indexOf(b.durum))
-            .map((p) => {
-              const Ikon = IKON[p.durum];
-              return (
-                <li
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-xl bg-muted/50 px-3 py-2.5"
-                >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-card text-muted-foreground">
-                    <Ikon className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{p.ad_soyad}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {ETIKET[p.durum]} · {gecenSure(p.son_gorulme)}
-                    </p>
-                  </div>
-                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${NOKTA[p.durum]}`} />
-                </li>
-              );
-            })}
-        </ul>
+      {acik && (
+        <>
+          {durumlar.isLoading ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Durumlar yükleniyor...</p>
+          ) : liste.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Kayıtlı aktif personel bulunmuyor.
+            </p>
+          ) : (
+            <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {[...liste]
+                .sort((a, b) => SIRA.indexOf(a.durum) - SIRA.indexOf(b.durum))
+                .map((p) => {
+                  const Ikon = IKON[p.durum];
+                  return (
+                    <li
+                      key={p.id}
+                      className="flex items-center gap-3 rounded-xl bg-muted/50 px-3 py-2.5"
+                    >
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-card text-muted-foreground">
+                        <Ikon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{p.ad_soyad}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {ETIKET[p.durum]} · {gecenSure(p.son_gorulme)}
+                        </p>
+                      </div>
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${NOKTA[p.durum]}`} />
+                    </li>
+                  );
+                })}
+            </ul>
+          )}
+        </>
       )}
     </section>
   );
