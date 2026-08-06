@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
+import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import { gorevDurumGuncelle, gorevGetir, gorevTamamla, fotoYukle } from "@/lib/saha-api";
 import { useOturum } from "@/lib/saha-session";
 import { DURUM_ETIKET, DURUM_SINIF } from "@/lib/saha-types";
@@ -143,6 +144,7 @@ function GorevDetay() {
           <>
             <section className="rounded-2xl bg-card p-4 shadow-card">
               <div className="flex flex-wrap items-center gap-2">
+                <IsTuruRozeti turu={g.is_turu} />
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-bold ${DURUM_SINIF[g.durum]}`}
                 >

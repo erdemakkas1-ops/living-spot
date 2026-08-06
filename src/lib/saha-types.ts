@@ -3,6 +3,15 @@ export type MesaiDurumu = "calisiyor" | "molada";
 export type AnlikDurum = "calisiyor" | "molada" | "cevrimdisi";
 export type Durum = "bekliyor" | "devam_ediyor" | "tamamlandi";
 export type Aciliyet = "normal" | "acil";
+export type IsTuru =
+  | "peyzaj"
+  | "bakim"
+  | "temizlik"
+  | "guvenlik"
+  | "elektrik"
+  | "sihhi_tesisat"
+  | "tadilat"
+  | "genel";
 
 export type Blok = { id: string; blok_adi: string };
 
@@ -32,6 +41,7 @@ export type Gorev = {
   aciklama: string | null;
   durum: Durum;
   aciliyet: Aciliyet;
+  is_turu: IsTuru;
   olusturma_tarihi: string;
   bloklar: { blok_adi: string } | null;
   personel: { ad_soyad: string } | null;
@@ -48,6 +58,28 @@ export const DURUM_SINIF: Record<Durum, string> = {
   bekliyor: "bg-status-bekliyor text-status-bekliyor-foreground",
   devam_ediyor: "bg-status-devam text-status-devam-foreground",
   tamamlandi: "bg-status-tamam text-status-tamam-foreground",
+};
+
+export const IS_TURU_ETIKET: Record<IsTuru, string> = {
+  peyzaj: "Peyzaj",
+  bakim: "Bakım",
+  temizlik: "Temizlik",
+  guvenlik: "Güvenlik",
+  elektrik: "Elektrik",
+  sihhi_tesisat: "Sıhhi Tesisat",
+  tadilat: "Tadilat",
+  genel: "Genel",
+};
+
+export const IS_TURU_SINIF: Record<IsTuru, string> = {
+  peyzaj: "bg-is-turu-peyzaj text-is-turu-peyzaj-foreground",
+  bakim: "bg-is-turu-bakim text-is-turu-bakim-foreground",
+  temizlik: "bg-is-turu-temizlik text-is-turu-temizlik-foreground",
+  guvenlik: "bg-is-turu-guvenlik text-is-turu-guvenlik-foreground",
+  elektrik: "bg-is-turu-elektrik text-is-turu-elektrik-foreground",
+  sihhi_tesisat: "bg-is-turu-sihhi-tesisat text-is-turu-sihhi-tesisat-foreground",
+  tadilat: "bg-is-turu-tadilat text-is-turu-tadilat-foreground",
+  genel: "bg-is-turu-genel text-is-turu-genel-foreground",
 };
 
 export type PersonelKonum = {

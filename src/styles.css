@@ -71,6 +71,22 @@
   --color-status-tamam: var(--status-tamam);
   --color-status-tamam-foreground: var(--status-tamam-foreground);
   --color-surface-soft: var(--surface-soft);
+  --color-is-turu-peyzaj: var(--is-turu-peyzaj);
+  --color-is-turu-peyzaj-foreground: var(--is-turu-peyzaj-foreground);
+  --color-is-turu-bakim: var(--is-turu-bakim);
+  --color-is-turu-bakim-foreground: var(--is-turu-bakim-foreground);
+  --color-is-turu-temizlik: var(--is-turu-temizlik);
+  --color-is-turu-temizlik-foreground: var(--is-turu-temizlik-foreground);
+  --color-is-turu-guvenlik: var(--is-turu-guvenlik);
+  --color-is-turu-guvenlik-foreground: var(--is-turu-guvenlik-foreground);
+  --color-is-turu-elektrik: var(--is-turu-elektrik);
+  --color-is-turu-elektrik-foreground: var(--is-turu-elektrik-foreground);
+  --color-is-turu-sihhi-tesisat: var(--is-turu-sihhi-tesisat);
+  --color-is-turu-sihhi-tesisat-foreground: var(--is-turu-sihhi-tesisat-foreground);
+  --color-is-turu-tadilat: var(--is-turu-tadilat);
+  --color-is-turu-tadilat-foreground: var(--is-turu-tadilat-foreground);
+  --color-is-turu-genel: var(--is-turu-genel);
+  --color-is-turu-genel-foreground: var(--is-turu-genel-foreground);
 }
 
 :root {
@@ -108,6 +124,22 @@
   --status-tamam: oklch(0.62 0.15 152);
   --status-tamam-foreground: oklch(0.99 0.004 160);
   --surface-soft: oklch(0.968 0.008 250);
+  --is-turu-peyzaj: oklch(0.75 0.13 145);
+  --is-turu-peyzaj-foreground: oklch(0.25 0.08 145);
+  --is-turu-bakim: oklch(0.72 0.12 255);
+  --is-turu-bakim-foreground: oklch(0.25 0.08 255);
+  --is-turu-temizlik: oklch(0.78 0.14 75);
+  --is-turu-temizlik-foreground: oklch(0.3 0.08 60);
+  --is-turu-guvenlik: oklch(0.65 0.18 25);
+  --is-turu-guvenlik-foreground: oklch(0.99 0.005 25);
+  --is-turu-elektrik: oklch(0.85 0.15 95);
+  --is-turu-elektrik-foreground: oklch(0.3 0.08 80);
+  --is-turu-sihhi-tesisat: oklch(0.75 0.12 195);
+  --is-turu-sihhi-tesisat-foreground: oklch(0.25 0.08 195);
+  --is-turu-tadilat: oklch(0.65 0.1 55);
+  --is-turu-tadilat-foreground: oklch(0.99 0.005 55);
+  --is-turu-genel: oklch(0.85 0.02 250);
+  --is-turu-genel-foreground: oklch(0.35 0.05 250);
   --gradient-navy: linear-gradient(155deg, oklch(0.24 0.062 262), oklch(0.34 0.09 258));
   --shadow-card: 0 1px 2px oklch(0.24 0.062 262 / 0.06), 0 8px 24px -12px oklch(0.24 0.062 262 / 0.18);
   --chart-1: oklch(0.646 0.222 41.116);
@@ -144,6 +176,22 @@
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
+  --is-turu-peyzaj: oklch(0.45 0.12 145);
+  --is-turu-peyzaj-foreground: oklch(0.99 0.005 145);
+  --is-turu-bakim: oklch(0.45 0.12 255);
+  --is-turu-bakim-foreground: oklch(0.99 0.005 255);
+  --is-turu-temizlik: oklch(0.5 0.13 75);
+  --is-turu-temizlik-foreground: oklch(0.99 0.005 75);
+  --is-turu-guvenlik: oklch(0.45 0.18 25);
+  --is-turu-guvenlik-foreground: oklch(0.99 0.005 25);
+  --is-turu-elektrik: oklch(0.5 0.14 95);
+  --is-turu-elektrik-foreground: oklch(0.3 0.08 80);
+  --is-turu-sihhi-tesisat: oklch(0.45 0.12 195);
+  --is-turu-sihhi-tesisat-foreground: oklch(0.99 0.005 195);
+  --is-turu-tadilat: oklch(0.45 0.1 55);
+  --is-turu-tadilat-foreground: oklch(0.99 0.005 55);
+  --is-turu-genel: oklch(0.35 0.02 250);
+  --is-turu-genel-foreground: oklch(0.99 0.005 250);
   --ring: oklch(0.551 0.027 264.364);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);

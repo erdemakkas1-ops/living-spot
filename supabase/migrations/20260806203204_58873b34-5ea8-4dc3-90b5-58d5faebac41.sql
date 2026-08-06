@@ -1,0 +1,1 @@
+UPDATE public.gorevler SET is_turu = 'sihhi_tesisat' WHERE is_basligi = 'su kaçağı';

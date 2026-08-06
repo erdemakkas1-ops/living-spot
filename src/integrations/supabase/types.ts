@@ -40,6 +40,7 @@ export type Database = {
           durum: string
           id: string
           is_basligi: string
+          is_turu: string
           olusturma_tarihi: string
           personel_id: string | null
         }
@@ -50,6 +51,7 @@ export type Database = {
           durum?: string
           id?: string
           is_basligi: string
+          is_turu?: string
           olusturma_tarihi?: string
           personel_id?: string | null
         }
@@ -60,6 +62,7 @@ export type Database = {
           durum?: string
           id?: string
           is_basligi?: string
+          is_turu?: string
           olusturma_tarihi?: string
           personel_id?: string | null
         }

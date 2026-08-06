@@ -59,6 +59,7 @@ import { FotoMenusu } from "@/components/foto-menusu";
 import { KonumTakibi } from "@/components/konum-takibi";
 import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import { RaporIndir } from "@/components/rapor-indir";
+import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import { FotoGoruntuleyici } from "@/components/foto-goruntuleyici";
 import {
   bloklariGetir,
@@ -67,7 +68,7 @@ import {
   tumGorevleriGetir,
 } from "@/lib/saha-api";
 import { oturumSil, useOturum } from "@/lib/saha-session";
-import { DURUM_ETIKET, DURUM_SINIF, type Gorev } from "@/lib/saha-types";
+import { DURUM_ETIKET, DURUM_SINIF, type Gorev, type IsTuru } from "@/lib/saha-types";
 
 export const Route = createFileRoute("/panel")({
   ssr: false,
@@ -331,6 +332,7 @@ function PanelSayfasi() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Blok</TableHead>
+                  <TableHead>İş Türü</TableHead>
                   <TableHead>İş Tanımı</TableHead>
                   <TableHead>Personel</TableHead>
                   <TableHead>Aciliyet</TableHead>
@@ -356,6 +358,9 @@ function PanelSayfasi() {
                 {filtreli.map((g) => (
                   <TableRow key={g.id} className="align-middle">
                     <TableCell className="font-semibold">{g.bloklar?.blok_adi}</TableCell>
+                    <TableCell>
+                      <IsTuruRozeti turu={g.is_turu} />
+                    </TableCell>
                     <TableCell className="max-w-[280px]">
                       <div className="flex items-center gap-2">
                         <p className="truncate font-medium">{g.is_basligi}</p>
@@ -431,10 +436,11 @@ function PanelSayfasi() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-md bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
                         {g.bloklar?.blok_adi ?? "—"}
                       </span>
+                      <IsTuruRozeti turu={g.is_turu} />
                       {g.aciliyet === "acil" && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-destructive/12 px-2 py-0.5 text-xs font-bold text-destructive">
                           <AlertCircle className="h-3 w-3" /> Acil
@@ -558,6 +564,7 @@ function GorevAtamaModali({
   const [baslik, setBaslik] = useState("");
   const [aciklama, setAciklama] = useState("");
   const [aciliyet, setAciliyet] = useState("normal");
+  const [isTuru, setIsTuru] = useState<IsTuru>("genel");
 
   const mut = useMutation({
     mutationFn: gorevOlustur,
@@ -570,6 +577,7 @@ function GorevAtamaModali({
       setBaslik("");
       setAciklama("");
       setAciliyet("normal");
+      setIsTuru("genel");
     },
     onError: () => toast.error("Görev atanamadı, tekrar deneyin."),
   });
@@ -603,6 +611,7 @@ function GorevAtamaModali({
               is_basligi: baslik.trim().slice(0, 120),
               aciklama: aciklama.trim().slice(0, 1000),
               aciliyet,
+              is_turu: isTuru,
             });
           }}
           className="space-y-4"
@@ -660,6 +669,24 @@ function GorevAtamaModali({
               rows={3}
               placeholder="İşin detayları, kat bilgisi, gerekli malzeme..."
             />
+          </div>
+          <div className="space-y-2">
+            <Label>İş Türü</Label>
+            <Select value={isTuru} onValueChange={(v) => setIsTuru(v as IsTuru)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="peyzaj">Peyzaj</SelectItem>
+                <SelectItem value="bakim">Bakım</SelectItem>
+                <SelectItem value="temizlik">Temizlik</SelectItem>
+                <SelectItem value="guvenlik">Güvenlik</SelectItem>
+                <SelectItem value="elektrik">Elektrik</SelectItem>
+                <SelectItem value="sihhi_tesisat">Sıhhi Tesisat</SelectItem>
+                <SelectItem value="tadilat">Tadilat</SelectItem>
+                <SelectItem value="genel">Genel</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>Aciliyet</Label>
