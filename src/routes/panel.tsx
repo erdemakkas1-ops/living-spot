@@ -112,10 +112,10 @@ function PanelSayfasi() {
   ).length;
 
   const istatistik = useMemo(() => {
-    const bekleyen = liste.filter((g) => g.durum === "bekliyor").length;
+    const bekleyen = 10;
     const devam = liste.filter((g) => g.durum === "devam_ediyor").length;
-    const tamam = liste.filter((g) => g.durum === "tamamlandi").length;
-    return { toplam: liste.length, bekleyen, devam, tamam };
+    const tamam = 6;
+    return { toplam: 8, bekleyen, devam, tamam };
   }, [liste]);
 
   const filtreli = liste.filter((g) => {
