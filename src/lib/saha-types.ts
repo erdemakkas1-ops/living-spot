@@ -1,4 +1,6 @@
 export type Rol = "ik" | "personel";
+export type MesaiDurumu = "calisiyor" | "molada";
+export type AnlikDurum = "calisiyor" | "molada" | "cevrimdisi";
 export type Durum = "bekliyor" | "devam_ediyor" | "tamamlandi";
 export type Aciliyet = "normal" | "acil";
 
@@ -10,6 +12,8 @@ export type Personel = {
   rol: Rol;
   telefon: string;
   aktif: boolean;
+  mesai_durumu?: MesaiDurumu;
+  durum_guncelleme?: string;
 };
 
 export type IsLog = {
