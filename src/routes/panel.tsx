@@ -243,36 +243,6 @@ function PanelSayfasi() {
                 {filtreli.length} kayıt görüntüleniyor
               </p>
             </div>
-            <div className="flex w-full gap-1 rounded-xl bg-muted p-1 sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setSekme("tumu")}
-                className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors sm:flex-none ${
-                  sekme === "tumu"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                İş Takibi
-              </button>
-              <button
-                type="button"
-                onClick={() => setSekme("acil")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors sm:flex-none ${
-                  sekme === "acil"
-                    ? "bg-card text-destructive shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <AlertCircle className="h-4 w-4" />
-                Aciliyet
-                {acilSayisi > 0 && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                    {acilSayisi}
-                  </span>
-                )}
-              </button>
-            </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
               <RaporIndir gorevler={filtreli} />
               <GorevAtamaModali
