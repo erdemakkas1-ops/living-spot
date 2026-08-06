@@ -671,6 +671,24 @@ function GorevAtamaModali({
             />
           </div>
           <div className="space-y-2">
+            <Label>İş Türü</Label>
+            <Select value={isTuru} onValueChange={(v) => setIsTuru(v as IsTuru)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="peyzaj">Peyzaj</SelectItem>
+                <SelectItem value="bakim">Bakım</SelectItem>
+                <SelectItem value="temizlik">Temizlik</SelectItem>
+                <SelectItem value="guvenlik">Güvenlik</SelectItem>
+                <SelectItem value="elektrik">Elektrik</SelectItem>
+                <SelectItem value="sihhi_tesisat">Sıhhi Tesisat</SelectItem>
+                <SelectItem value="tadilat">Tadilat</SelectItem>
+                <SelectItem value="genel">Genel</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label>Aciliyet</Label>
             <Select value={aciliyet} onValueChange={setAciliyet}>
               <SelectTrigger>
