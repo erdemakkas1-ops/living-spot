@@ -45,3 +45,13 @@ export const DURUM_SINIF: Record<Durum, string> = {
   devam_ediyor: "bg-status-devam text-status-devam-foreground",
   tamamlandi: "bg-status-tamam text-status-tamam-foreground",
 };
+
+export type PersonelKonum = {
+  id: string;
+  personel_id: string;
+  enlem: number;
+  boylam: number;
+  dogruluk: number | null;
+  kayit_tarihi: string;
+  personel: { ad_soyad: string; telefon: string } | null;
+};

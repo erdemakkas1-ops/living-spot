@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Blok, Gorev, Personel } from "./saha-types";
+import type { Blok, Gorev, Personel, PersonelKonum } from "./saha-types";
 
 const GOREV_SELECT =
   "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, olusturma_tarihi, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
@@ -111,4 +111,35 @@ export async function gorevTamamla(input: {
   });
   if (error) throw error;
   await gorevDurumGuncelle(input.gorevId, "tamamlandi");
+}
+
+export async function konumGonder(input: {
+  personel_id: string;
+  enlem: number;
+  boylam: number;
+  dogruluk?: number | null;
+}) {
+  const { error } = await supabase.from("personel_konumlari").insert({
+    personel_id: input.personel_id,
+    enlem: input.enlem,
+    boylam: input.boylam,
+    dogruluk: input.dogruluk ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function sonKonumlariGetir(): Promise<PersonelKonum[]> {
+  const { data, error } = await supabase
+    .from("personel_konumlari")
+    .select("id, personel_id, enlem, boylam, dogruluk, kayit_tarihi, personel(ad_soyad, telefon)")
+    .order("kayit_tarihi", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  const enYeni = new Map<string, PersonelKonum>();
+  for (const k of (data ?? []) as unknown as PersonelKonum[]) {
+    if (!enYeni.has(k.personel_id)) enYeni.set(k.personel_id, k);
+  }
+  return [...enYeni.values()].sort((a, b) =>
+    (a.personel?.ad_soyad ?? "").localeCompare(b.personel?.ad_soyad ?? "", "tr"),
+  );
 }
