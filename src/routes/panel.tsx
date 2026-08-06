@@ -332,6 +332,7 @@ function PanelSayfasi() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Blok</TableHead>
+                  <TableHead>İş Türü</TableHead>
                   <TableHead>İş Tanımı</TableHead>
                   <TableHead>Personel</TableHead>
                   <TableHead>Aciliyet</TableHead>
