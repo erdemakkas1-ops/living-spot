@@ -122,9 +122,41 @@ function PanelSayfasi() {
       <header className="bg-gradient-navy">
         <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-5">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy-foreground/10 ring-1 ring-navy-foreground/20 sm:h-11 sm:w-11">
-              <Building className="h-5 w-5 text-navy-foreground" />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Menü"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy-foreground/10 ring-1 ring-navy-foreground/20 transition-colors hover:bg-navy-foreground/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-foreground/50 sm:h-11 sm:w-11"
+                >
+                  <Building className="h-5 w-5 text-navy-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel className="truncate">
+                  {kullanici?.ad_soyad ?? "Yönetim"}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate({ to: "/panel" })}>
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Görev Yönetimi
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/saha" })}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Saha Ekranı
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    oturumSil();
+                    navigate({ to: "/" });
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Çıkış Yap
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="min-w-0">
               <h1 className="truncate text-base font-bold text-navy-foreground sm:text-lg">
                 Selimpaşa Emlak Konutları
