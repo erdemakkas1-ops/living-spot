@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import {
   AlertCircle,
   Building,
@@ -59,13 +60,13 @@ export const Route = createFileRoute("/panel")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "İK Yönetim Paneli | Saha İş Takip" },
+      { title: "Yönetim Paneli | Selimpaşa Emlak Konutları" },
       {
         name: "description",
         content:
-          "Görev atama, blok bazlı canlı takip tablosu ve saha fotoğraf onay akışı için site yönetimi paneli.",
+          "Selimpaşa Emlak Konutları görev atama, blok bazlı canlı takip tablosu ve saha fotoğraf onay akışı için yönetim paneli.",
       },
-      { property: "og:title", content: "İK Yönetim Paneli | Saha İş Takip" },
+      { property: "og:title", content: "Yönetim Paneli | Selimpaşa Emlak Konutları" },
       {
         property: "og:description",
         content: "Blok bazlı canlı iş takibi, görev atama ve fotoğraf onay akışı.",
@@ -119,69 +120,74 @@ function PanelSayfasi() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-gradient-navy">
-        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-5 sm:flex sm:flex-wrap sm:justify-between sm:px-6">
+        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-5">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-navy-foreground/10 ring-1 ring-navy-foreground/20">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy-foreground/10 ring-1 ring-navy-foreground/20 sm:h-11 sm:w-11">
               <Building className="h-5 w-5 text-navy-foreground" />
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold text-navy-foreground sm:text-xl">
-                Site Yönetim Paneli
+              <h1 className="truncate text-base font-bold text-navy-foreground sm:text-lg">
+                Selimpaşa Emlak Konutları
               </h1>
               <p className="truncate text-xs text-navy-foreground/70">
-                842 Daire · 55 Blok · {personeller.data?.length ?? 0} Saha Personeli
+                Yönetim Paneli
               </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <BaglantiRozeti className="bg-navy-foreground/10 text-navy-foreground" />
+            <BaglantiRozeti className="hidden bg-navy-foreground/10 text-navy-foreground sm:inline-flex" />
             <span className="hidden text-sm font-medium text-navy-foreground/80 md:inline">
               {kullanici?.ad_soyad}
             </span>
             <Button
               variant="secondary"
               size="sm"
+              className="h-9 w-9 px-0 sm:w-auto sm:px-3"
               onClick={() => {
                 oturumSil();
                 navigate({ to: "/" });
               }}
             >
               <LogOut className="h-4 w-4" />
-              Çıkış
+              <span className="hidden sm:inline">Çıkış</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <OzetKart
-            baslik="Toplam Görev"
+            baslik="Toplam"
+            uzunBaslik="Toplam Görev"
             deger={istatistik.toplam}
             ikon={<ClipboardList className="h-5 w-5" />}
           />
           <OzetKart
-            baslik="Bekleyen İşler"
+            baslik="Bekleyen"
+            uzunBaslik="Bekleyen İşler"
             deger={istatistik.bekleyen}
             ikon={<Clock className="h-5 w-5" />}
             renk="text-status-bekliyor"
           />
           <OzetKart
             baslik="Tamamlanan"
+            uzunBaslik="Tamamlanan"
             deger={istatistik.tamam}
             ikon={<CheckCircle className="h-5 w-5" />}
             renk="text-status-tamam"
           />
           <OzetKart
-            baslik="Sahada Aktif Personel"
+            baslik="Aktif Pers."
+            uzunBaslik="Sahada Aktif Personel"
             deger={istatistik.aktifPersonel}
             ikon={<Users className="h-5 w-5" />}
             renk="text-status-devam"
           />
         </section>
 
-        <section className="mt-6 rounded-2xl bg-card p-4 shadow-card sm:p-5">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+        <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h2 className="truncate text-base font-bold">Canlı İş Takibi</h2>
               <p className="truncate text-xs text-muted-foreground">
@@ -230,7 +236,8 @@ function PanelSayfasi() {
             </Select>
           </div>
 
-          <div className="mt-4 overflow-x-auto">
+          {/* Desktop table */}
+          <div className="mt-4 hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -304,6 +311,63 @@ function PanelSayfasi() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile cards */}
+          <div className="mt-4 grid gap-3 md:hidden">
+            {gorevler.isLoading && (
+              <p className="py-8 text-center text-sm text-muted-foreground">Görevler yükleniyor...</p>
+            )}
+            {!gorevler.isLoading && filtreli.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Bu filtreye uygun görev bulunmuyor.
+              </p>
+            )}
+            {filtreli.map((g) => (
+              <div
+                key={g.id}
+                className="rounded-xl border border-border bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-md bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
+                        {g.bloklar?.blok_adi ?? "—"}
+                      </span>
+                      {g.aciliyet === "acil" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-destructive/12 px-2 py-0.5 text-xs font-bold text-destructive">
+                          <AlertCircle className="h-3 w-3" /> Acil
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 font-semibold leading-snug">{g.is_basligi}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {new Date(g.olusturma_tarihi).toLocaleString("tr-TR")}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${DURUM_SINIF[g.durum]}`}
+                  >
+                    {DURUM_ETIKET[g.durum]}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+                  <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <User className="h-3.5 w-3.5" />
+                    <span className="truncate max-w-[140px]">{g.personel?.ad_soyad ?? "Atanmadı"}</span>
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={g.is_loglari.length === 0}
+                    onClick={() => setDetay(g)}
+                  >
+                    <Camera className="h-4 w-4" />
+                    {g.is_loglari.length > 0 ? "İncele" : "Yok"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
       </main>
 
@@ -338,22 +402,29 @@ function PanelSayfasi() {
 
 function OzetKart({
   baslik,
+  uzunBaslik,
   deger,
   ikon,
   renk = "text-primary",
 }: {
   baslik: string;
+  uzunBaslik: string;
   deger: number;
   ikon: React.ReactNode;
   renk?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-card p-4 shadow-card">
+    <div className="rounded-2xl bg-card p-3 shadow-card sm:p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-xs font-medium text-muted-foreground">{baslik}</p>
+        <p className="min-w-0 truncate text-xs font-medium text-muted-foreground sm:hidden" title={uzunBaslik}>
+          {baslik}
+        </p>
+        <p className="hidden min-w-0 truncate text-xs font-medium text-muted-foreground sm:block">
+          {uzunBaslik}
+        </p>
         <span className={`shrink-0 ${renk}`}>{ikon}</span>
       </div>
-      <p className="mt-2 text-3xl font-bold tracking-tight">{deger}</p>
+      <p className="mt-1 text-2xl font-bold tracking-tight sm:mt-2 sm:text-3xl">{deger}</p>
     </div>
   );
 }
@@ -391,12 +462,12 @@ function GorevAtamaModali({
   return (
     <Dialog open={acik} onOpenChange={setAcik}>
       <DialogTrigger asChild>
-        <Button className="shrink-0">
+        <Button className="w-full shrink-0 sm:w-auto">
           <Plus className="h-4 w-4" />
           Yeni Görev Ata
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Görev Atama</DialogTitle>
           <DialogDescription>
