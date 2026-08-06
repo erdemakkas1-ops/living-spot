@@ -1,5 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Blok, Gorev, Personel, PersonelKonum } from "./saha-types";
+import type {
+  AnlikDurum,
+  Blok,
+  Gorev,
+  MesaiDurumu,
+  Personel,
+  PersonelKonum,
+} from "./saha-types";
 
 const GOREV_SELECT =
   "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, olusturma_tarihi, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
@@ -30,11 +37,62 @@ export async function bloklariGetir(): Promise<Blok[]> {
 export async function personelGetir(): Promise<Personel[]> {
   const { data, error } = await supabase
     .from("personel")
-    .select("id, ad_soyad, rol, telefon, aktif")
+    .select("id, ad_soyad, rol, telefon, aktif, mesai_durumu, durum_guncelleme")
     .eq("rol", "personel")
     .order("ad_soyad");
   if (error) throw error;
   return (data ?? []) as Personel[];
+}
+
+export async function mesaiDurumuGuncelle(personelId: string, durum: MesaiDurumu) {
+  const { error } = await supabase
+    .from("personel")
+    .update({ mesai_durumu: durum, durum_guncelleme: new Date().toISOString() })
+    .eq("id", personelId);
+  if (error) throw error;
+}
+
+export async function mesaiDurumuGetir(personelId: string): Promise<MesaiDurumu> {
+  const { data, error } = await supabase
+    .from("personel")
+    .select("mesai_durumu")
+    .eq("id", personelId)
+    .maybeSingle();
+  if (error) throw error;
+  return ((data as { mesai_durumu?: MesaiDurumu } | null)?.mesai_durumu ??
+    "calisiyor") as MesaiDurumu;
+}
+
+export type PersonelAnlikDurum = {
+  id: string;
+  ad_soyad: string;
+  telefon: string;
+  durum: AnlikDurum;
+  son_gorulme: string | null;
+};
+
+const CANLI_ESIK_MS = 15 * 60 * 1000;
+
+/** Aktif saha personelinin anlık durumunu (çalışıyor / molada / çevrimdışı) döner. */
+export async function personelAnlikDurumlariGetir(): Promise<PersonelAnlikDurum[]> {
+  const [personeller, konumlar] = await Promise.all([personelGetir(), sonKonumlariGetir()]);
+  const sonKonum = new Map(konumlar.map((k) => [k.personel_id, k.kayit_tarihi]));
+
+  return personeller
+    .filter((p) => p.aktif)
+    .map((p) => {
+      const gorulme = sonKonum.get(p.id) ?? null;
+      const canliMi = !!gorulme && Date.now() - new Date(gorulme).getTime() < CANLI_ESIK_MS;
+      const durum: AnlikDurum =
+        p.mesai_durumu === "molada" ? "molada" : canliMi ? "calisiyor" : "cevrimdisi";
+      return {
+        id: p.id,
+        ad_soyad: p.ad_soyad,
+        telefon: p.telefon,
+        durum,
+        son_gorulme: gorulme,
+      };
+    });
 }
 
 export async function tumGorevleriGetir(): Promise<Gorev[]> {
