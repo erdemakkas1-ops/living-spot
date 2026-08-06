@@ -57,6 +57,7 @@ import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { BildirimMenusu } from "@/components/bildirim-menusu";
 import { FotoMenusu } from "@/components/foto-menusu";
 import { KonumTakibi } from "@/components/konum-takibi";
+import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import { RaporIndir } from "@/components/rapor-indir";
 import { FotoGoruntuleyici } from "@/components/foto-goruntuleyici";
 import {
@@ -243,6 +244,7 @@ function PanelSayfasi() {
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h2 className="truncate text-base font-bold">Canlı İş Takibi</h2>
+        <PersonelDurumCubugu />
               <p className="truncate text-xs text-muted-foreground">
                 {filtreli.length} kayıt görüntüleniyor
               </p>
