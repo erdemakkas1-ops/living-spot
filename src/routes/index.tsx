@@ -138,7 +138,7 @@ function GirisSayfasi() {
         <p className="mt-6 text-center text-xs leading-relaxed text-navy-foreground/60">
           Demo giriş — Yönetim: 05233236611 / 1234
           <br />
-          Saha personeli: 05310000001 / 1111
+          Saha personeli: 05445445454 / 1111
         </p>
       </div>
     </main>
