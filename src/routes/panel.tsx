@@ -189,6 +189,7 @@ function PanelSayfasi() {
               {kullanici?.ad_soyad}
             </span>
             <BildirimMenusu gorevler={liste} />
+            <FotoMenusu gorevler={liste} />
             <Button
               variant="secondary"
               size="sm"
