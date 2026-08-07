@@ -13,8 +13,11 @@ import {
   konumGonderSunucu,
   mesaiDurumuGetirSunucu,
   mesaiDurumuGuncelleSunucu,
+  personelAktiflikGuncelleSunucu,
+  personelEkleSunucu,
   personelGetirSunucu,
   personelGorevleriniGetirSunucu,
+  personelSilSunucu,
   sonKonumlariGetirSunucu,
   tumGorevleriGetirSunucu,
 } from "./saha-server.server";
@@ -159,3 +162,33 @@ export const gorevTamamlaFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(({ data }) => gorevTamamlaSunucu(data.token, data));
+export const personelEkleFn = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({
+        token: z.string().min(10),
+        ad_soyad: z.string().min(2).max(120),
+        telefon: z.string().min(10).max(20),
+        pin_kodu: z.string().regex(/^\d{4}$/),
+      })
+      .parse(d),
+  )
+  .handler(({ data }) =>
+    personelEkleSunucu(data.token, {
+      ad_soyad: data.ad_soyad,
+      telefon: data.telefon,
+      pin_kodu: data.pin_kodu,
+    }),
+  );
+
+export const personelAktiflikGuncelleFn = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({ token: z.string().min(10), id: z.string().uuid(), aktif: z.boolean() })
+      .parse(d),
+  )
+  .handler(({ data }) => personelAktiflikGuncelleSunucu(data.token, data.id, data.aktif));
+
+export const personelSilFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10), id: z.string().uuid() }).parse(d))
+  .handler(({ data }) => personelSilSunucu(data.token, data.id));

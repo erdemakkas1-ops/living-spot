@@ -14,9 +14,12 @@ import {
   konumGonderFn,
   mesaiDurumuGetirFn,
   mesaiDurumuGuncelleFn,
+  personelAktiflikGuncelleFn,
   personelDurumlariFn,
+  personelEkleFn,
   personelGetirFn,
   personelGorevleriniGetirFn,
+  personelSilFn,
   sonKonumlariGetirFn,
   tumGorevleriGetirFn,
 } from "./saha-api.functions";
@@ -211,4 +214,20 @@ export async function sonKonumlariGetir(): Promise<PersonelKonum[]> {
   return data
     .slice()
     .sort((a, b) => (a.personel?.ad_soyad ?? "").localeCompare(b.personel?.ad_soyad ?? "", "tr"));
+}
+
+export async function personelEkle(input: {
+  ad_soyad: string;
+  telefon: string;
+  pin_kodu: string;
+}) {
+  await cagir(personelEkleFn({ data: { token: token(), ...input } }));
+}
+
+export async function personelAktiflikGuncelle(id: string, aktif: boolean) {
+  await cagir(personelAktiflikGuncelleFn({ data: { token: token(), id, aktif } }));
+}
+
+export async function personelSil(id: string) {
+  await cagir(personelSilFn({ data: { token: token(), id } }));
 }
