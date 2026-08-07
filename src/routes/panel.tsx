@@ -247,7 +247,7 @@ function PanelSayfasi() {
           <OzetKart
             baslik="Aktif Pers."
             uzunBaslik="Aktif Saha Personeli"
-            deger={aktifPersonelSayisi}
+            deger={aktifSahaPersoneli}
             ikon={<Users className="h-5 w-5" />}
             renk="text-status-devam"
           />
