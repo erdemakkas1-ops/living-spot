@@ -128,10 +128,18 @@ export async function gorevOlustur(input: {
   personel_id: string;
   is_basligi: string;
   aciklama: string;
-  aciliyet: string;
-  is_turu: string;
+  aciliyet: "normal" | "acil";
+  is_turu:
+    | "peyzaj"
+    | "bakim"
+    | "temizlik"
+    | "guvenlik"
+    | "elektrik"
+    | "sihhi_tesisat"
+    | "tadilat"
+    | "genel";
 }) {
-  await cagir(gorevOlusturFn({ data: { token: token(), ...input } as never }));
+  await cagir(gorevOlusturFn({ data: { token: token(), ...input } }));
 }
 
 export async function gorevDurumGuncelle(id: string, durum: string) {

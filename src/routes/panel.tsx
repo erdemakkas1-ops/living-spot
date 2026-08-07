@@ -526,7 +526,7 @@ function GorevAtamaModali({
   const [isTuru, setIsTuru] = useState<IsTuru | "">("");
   const [baslik, setBaslik] = useState("");
   const [aciklama, setAciklama] = useState("");
-  const [aciliyet, setAciliyet] = useState("normal");
+  const [aciliyet, setAciliyet] = useState<"normal" | "acil">("normal");
 
   const mut = useMutation({
     mutationFn: gorevOlustur,
@@ -670,7 +670,10 @@ function GorevAtamaModali({
           </div>
           <div className="space-y-2">
             <Label>Aciliyet</Label>
-            <Select value={aciliyet} onValueChange={setAciliyet}>
+            <Select
+              value={aciliyet}
+              onValueChange={(deger) => setAciliyet(deger === "acil" ? "acil" : "normal")}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

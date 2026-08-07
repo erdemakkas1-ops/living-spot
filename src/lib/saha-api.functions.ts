@@ -106,10 +106,16 @@ export const gorevOlusturFn = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(({ data }) => {
-    const { token, ...gorev } = data;
-    return gorevOlusturSunucu(token, gorev);
-  });
+  .handler(({ data }) =>
+    gorevOlusturSunucu(data.token, {
+      blok_id: data.blok_id,
+      personel_id: data.personel_id,
+      is_basligi: data.is_basligi,
+      aciklama: data.aciklama,
+      aciliyet: data.aciliyet,
+      is_turu: data.is_turu,
+    }),
+  );
 
 export const gorevDurumGuncelleFn = createServerFn({ method: "POST" })
   .inputValidator((d) =>
