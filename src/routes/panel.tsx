@@ -54,6 +54,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
+import { GunlukIlerleme } from "@/components/gunluk-ilerleme";
 import { BildirimMenusu } from "@/components/bildirim-menusu";
 import { FotoMenusu } from "@/components/foto-menusu";
 import { KonumTakibi } from "@/components/konum-takibi";
@@ -246,6 +247,13 @@ function PanelSayfasi() {
             renk="text-status-devam"
           />
         </section>
+
+        <GunlukIlerleme
+          toplam={istatistik.toplam}
+          tamam={istatistik.tamam}
+          devam={istatistik.devam}
+          bekleyen={istatistik.bekleyen}
+        />
 
         <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
