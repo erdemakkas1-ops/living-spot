@@ -670,7 +670,10 @@ function GorevAtamaModali({
           </div>
           <div className="space-y-2">
             <Label>Aciliyet</Label>
-            <Select value={aciliyet} onValueChange={setAciliyet}>
+            <Select
+              value={aciliyet}
+              onValueChange={(deger) => setAciliyet(deger === "acil" ? "acil" : "normal")}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
