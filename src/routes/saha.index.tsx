@@ -10,6 +10,7 @@ import {
   Coffee,
   HardHat,
   LogOut,
+  MapPin,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   personelGorevleriniGetir,
 } from "@/lib/saha-api";
 import { oturumSil, useOturum } from "@/lib/saha-session";
+import { useKonumPaylas } from "@/lib/konum-takip";
 import { DURUM_ETIKET, DURUM_SINIF, type MesaiDurumu } from "@/lib/saha-types";
 
 export const Route = createFileRoute("/saha/")({
@@ -79,6 +81,19 @@ function SahaListesi() {
     void mesaiDurumuGuncelle(kullanici.id, yeni).catch(() => setMesai(mesai));
   };
 
+  // Konum paylaşımı yalnızca mesai sürerken aktiftir.
+  const konumDurum = useKonumPaylas(kullanici?.id, !!kullanici && mesai === "calisiyor");
+  const konumEtiket =
+    konumDurum === "aktif"
+      ? "Konum paylaşımı açık"
+      : konumDurum === "bekleniyor"
+        ? "Konum alınıyor..."
+        : konumDurum === "izin_yok"
+          ? "Konum izni verilmedi"
+          : konumDurum === "hata"
+            ? "Konum alınamadı"
+            : "Konum paylaşımı kapalı";
+
   return (
     <div className="min-h-screen bg-background pb-10">
       <header className="bg-gradient-navy px-4 pt-6 pb-8">
@@ -91,6 +106,12 @@ function SahaListesi() {
             <div className="mt-2">
               <BaglantiRozeti className="bg-navy-foreground/10 text-navy-foreground" />
             </div>
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-navy-foreground/70">
+              <MapPin
+                className={`h-3.5 w-3.5 ${konumDurum === "aktif" ? "text-status-tamam" : ""}`}
+              />
+              {konumEtiket}
+            </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
             <Button
