@@ -111,6 +111,7 @@ function PanelSayfasi() {
   const [durumFiltre, setDurumFiltre] = useState("hepsi");
   const [arama, setArama] = useState("");
   const [detay, setDetay] = useState<Gorev | null>(null);
+  const [personelAcik, setPersonelAcik] = useState(false);
 
   const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
   const aktifPersonelSayisi = (personeller.data ?? []).filter(
@@ -487,6 +488,18 @@ function PanelSayfasi() {
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={personelAcik} onOpenChange={setPersonelAcik}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Personel Listesi</DialogTitle>
+            <DialogDescription>
+              Saha personelini ekleyin, pasife alın veya kadrodan çıkarın.
+            </DialogDescription>
+          </DialogHeader>
+          <PersonelYonetimi etkin={yetkili && personelAcik} sade />
         </DialogContent>
       </Dialog>
     </div>
