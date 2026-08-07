@@ -110,7 +110,7 @@ function PanelSayfasi() {
   const [arama, setArama] = useState("");
   const [detay, setDetay] = useState<Gorev | null>(null);
 
-  const liste = gorevler.data ?? [];
+  const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
   const aktifPersonelSayisi = (personeller.data ?? []).filter(
     (p) => p.aktif && p.rol === "personel",
   ).length;
