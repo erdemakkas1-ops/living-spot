@@ -124,6 +124,19 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Güvenlik ağı: uygulama Supabase Auth kullanmıyor. Cihazda kalmış eski
+  // Supabase oturum anahtarları serverFn çağrılarını "JWT issued at future"
+  // hatasıyla kırabiliyor; bir kez temizliyoruz.
+  useEffect(() => {
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {
+      /* yoksay */
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
