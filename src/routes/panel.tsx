@@ -541,7 +541,8 @@ function GorevAtamaModali({
       setAciklama("");
       setAciliyet("normal");
     },
-    onError: () => toast.error("Görev atanamadı, tekrar deneyin."),
+    onError: (e) =>
+      toast.error(e instanceof Error ? e.message : "Görev atanamadı, tekrar deneyin."),
   });
 
   return (
