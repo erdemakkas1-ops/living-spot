@@ -57,7 +57,6 @@ import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { BildirimMenusu } from "@/components/bildirim-menusu";
 import { FotoMenusu } from "@/components/foto-menusu";
 import { KonumTakibi } from "@/components/konum-takibi";
-import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import { PersonelYonetimi } from "@/components/personel-yonetimi";
 import { RaporIndir } from "@/components/rapor-indir";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
@@ -247,8 +246,6 @@ function PanelSayfasi() {
             renk="text-status-devam"
           />
         </section>
-
-        <PersonelDurumCubugu />
 
         <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
