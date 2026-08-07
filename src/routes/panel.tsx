@@ -114,10 +114,6 @@ function PanelSayfasi() {
   const [personelAcik, setPersonelAcik] = useState(false);
 
   const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
-  const aktifPersonelSayisi = (personeller.data ?? []).filter(
-    (p) => p.aktif && p.rol === "personel",
-  ).length;
-
   const filtreli = useMemo(() => liste.filter((g) => {
     if (blokFiltre !== "hepsi" && g.blok_id !== blokFiltre) return false;
     if (durumFiltre !== "hepsi" && g.durum !== durumFiltre) return false;
