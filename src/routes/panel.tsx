@@ -56,6 +56,7 @@ import {
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { BildirimMenusu } from "@/components/bildirim-menusu";
 import { FotoMenusu } from "@/components/foto-menusu";
+import { KonumTakibi } from "@/components/konum-takibi";
 import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import { PersonelYonetimi } from "@/components/personel-yonetimi";
 import { RaporIndir } from "@/components/rapor-indir";
@@ -190,6 +191,7 @@ function PanelSayfasi() {
             </span>
             <BildirimMenusu gorevler={liste} />
             <FotoMenusu gorevler={liste} />
+            <KonumTakibi />
             <Button
               variant="secondary"
               size="sm"
