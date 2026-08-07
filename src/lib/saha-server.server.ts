@@ -232,3 +232,61 @@ export async function gorevTamamlaSunucu(
   if (hata2) throw hata2;
   return { ok: true };
 }
+/** İK: yeni saha personeli ekler. Telefon numarası sistemde tekil olmalıdır. */
+export async function personelEkleSunucu(
+  token: unknown,
+  input: { ad_soyad: string; telefon: string; pin_kodu: string },
+) {
+  await ikDogrula(token);
+  const telefon = input.telefon.replace(/\D/g, "");
+  if (telefon.length < 10) throw new Error("Geçerli bir telefon numarası girin.");
+  const sb = await db();
+  const { data: mevcut, error: kontrolHatasi } = await sb
+    .from("personel")
+    .select("id")
+    .eq("telefon", telefon)
+    .maybeSingle();
+  if (kontrolHatasi) throw kontrolHatasi;
+  if (mevcut) throw new Error("Bu telefon numarası zaten kayıtlı.");
+  const { error } = await sb.from("personel").insert({
+    ad_soyad: input.ad_soyad.trim(),
+    telefon,
+    pin_kodu: input.pin_kodu.trim(),
+    rol: "personel",
+    aktif: true,
+  });
+  if (error) throw error;
+  return { ok: true };
+}
+
+/** İK: personelin aktiflik durumunu değiştirir (işten çıkarma / geri alma). */
+export async function personelAktiflikGuncelleSunucu(
+  token: unknown,
+  id: string,
+  aktif: boolean,
+) {
+  await ikDogrula(token);
+  const sb = await db();
+  const { error } = await sb
+    .from("personel")
+    .update({ aktif })
+    .eq("id", id)
+    .eq("rol", "personel");
+  if (error) throw error;
+  return { ok: true };
+}
+
+/** İK: personel kaydını tamamen siler; görev kayıtlarındaki atama boşa çıkarılır. */
+export async function personelSilSunucu(token: unknown, id: string) {
+  await ikDogrula(token);
+  const sb = await db();
+  const { error: gorevHatasi } = await sb
+    .from("gorevler")
+    .update({ personel_id: null })
+    .eq("personel_id", id);
+  if (gorevHatasi) throw gorevHatasi;
+  await sb.from("personel_konumlari").delete().eq("personel_id", id);
+  const { error } = await sb.from("personel").delete().eq("id", id).eq("rol", "personel");
+  if (error) throw error;
+  return { ok: true };
+}
