@@ -248,8 +248,14 @@ function PanelSayfasi() {
           />
         </section>
 
+        <GunlukIlerleme
+          toplam={istatistik.toplam}
+          tamam={istatistik.tamam}
+          devam={istatistik.devam}
+          bekleyen={istatistik.bekleyen}
+        />
+
         <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
-          {null}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h2 className="truncate text-base font-bold">Canlı İş Takibi</h2>
