@@ -21,6 +21,7 @@ import {
   mesaiDurumuGetir,
   mesaiDurumuGuncelle,
   personelGorevleriniGetir,
+  tumGorevleriGetir,
 } from "@/lib/saha-api";
 import { oturumSil, useOturum } from "@/lib/saha-session";
 import { useKonumPaylas } from "@/lib/konum-takip";
@@ -54,12 +55,13 @@ function SahaListesi() {
 
   useEffect(() => {
     if (hazir && !kullanici) navigate({ to: "/" });
-    if (hazir && kullanici?.rol === "ik") navigate({ to: "/panel" });
   }, [hazir, kullanici, navigate]);
 
+  const onizleme = kullanici?.rol === "ik";
+
   const gorevler = useQuery({
-    queryKey: ["gorevlerim", kullanici?.id],
-    queryFn: () => personelGorevleriniGetir(kullanici?.id),
+    queryKey: ["gorevlerim", kullanici?.id, onizleme],
+    queryFn: () => (onizleme ? tumGorevleriGetir() : personelGorevleriniGetir(kullanici?.id)),
     enabled: !!kullanici,
   });
 
@@ -69,11 +71,11 @@ function SahaListesi() {
 
   const [mesai, setMesai] = useState<MesaiDurumu>("calisiyor");
   useEffect(() => {
-    if (!kullanici?.id) return;
+    if (!kullanici?.id || onizleme) return;
     void mesaiDurumuGetir(kullanici.id)
       .then(setMesai)
       .catch(() => setMesai("calisiyor"));
-  }, [kullanici?.id]);
+  }, [kullanici?.id, onizleme]);
 
   const molaDegistir = () => {
     if (!kullanici?.id) return;
@@ -83,7 +85,10 @@ function SahaListesi() {
   };
 
   // Konum paylaşımı yalnızca mesai sürerken aktiftir.
-  const konumDurum = useKonumPaylas(kullanici?.id, !!kullanici && mesai === "calisiyor");
+  const konumDurum = useKonumPaylas(
+    kullanici?.id,
+    !!kullanici && !onizleme && mesai === "calisiyor",
+  );
   const konumEtiket =
     konumDurum === "aktif"
       ? "Konum paylaşımı açık"
@@ -100,22 +105,32 @@ function SahaListesi() {
       <header className="bg-gradient-navy px-4 pt-6 pb-8">
         <div className="mx-auto grid max-w-lg grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-navy-foreground/70">Saha Personeli</p>
+            <p className="text-xs font-medium text-navy-foreground/70">
+              {onizleme ? "Saha Ekranı (İK Önizleme)" : "Saha Personeli"}
+            </p>
             <h1 className="truncate text-xl font-bold text-navy-foreground">
               {kullanici?.ad_soyad}
             </h1>
             <div className="mt-2">
               <BaglantiRozeti className="bg-navy-foreground/10 text-navy-foreground" />
             </div>
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-navy-foreground/70">
-              <MapPin
-                className={`h-3.5 w-3.5 ${konumDurum === "aktif" ? "text-status-tamam" : ""}`}
-              />
-              {konumEtiket}
-            </p>
+            {!onizleme && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-navy-foreground/70">
+                <MapPin
+                  className={`h-3.5 w-3.5 ${konumDurum === "aktif" ? "text-status-tamam" : ""}`}
+                />
+                {konumEtiket}
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
-            <Button
+            {onizleme ? (
+              <Button variant="secondary" size="sm" onClick={() => navigate({ to: "/panel" })}>
+                Panele Dön
+              </Button>
+            ) : (
+              <>
+                <Button
               variant="secondary"
               size="sm"
               className="shrink-0"
@@ -127,7 +142,7 @@ function SahaListesi() {
               <LogOut className="h-4 w-4" />
               Çıkış
             </Button>
-            <Button
+                <Button
               size="sm"
               variant={mesai === "molada" ? "default" : "outline"}
               className={
@@ -149,6 +164,8 @@ function SahaListesi() {
                 </>
               )}
             </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
