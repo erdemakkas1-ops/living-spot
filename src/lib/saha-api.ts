@@ -20,7 +20,7 @@ import {
   sonKonumlariGetirFn,
   tumGorevleriGetirFn,
 } from "./saha-api.functions";
-import { tokenOku, tokenYaz } from "./saha-session";
+import { oturumSil, tokenOku, tokenYaz } from "./saha-session";
 import type {
   AnlikDurum,
   Blok,
@@ -29,6 +29,24 @@ import type {
   Personel,
   PersonelKonum,
 } from "./saha-types";
+
+/**
+ * Sunucu tarafındaki oturum hatalarını (süresi dolmuş/geçersiz imzalı token)
+ * yakalar: yerel oturumu temizler ve kullanıcıyı giriş ekranına gönderir.
+ * Böylece beyaz ekran yerine PIN girişi görünür.
+ */
+async function cagir<T>(islem: Promise<T>): Promise<T> {
+  try {
+    return await islem;
+  } catch (hata) {
+    const mesaj = hata instanceof Error ? hata.message : String(hata);
+    if (mesaj.includes("Oturum") && typeof window !== "undefined") {
+      oturumSil();
+      window.location.replace("/");
+    }
+    throw hata;
+  }
+}
 
 function token() {
   const t = tokenOku();
@@ -45,20 +63,20 @@ export async function girisYap(telefon: string, pin: string): Promise<Personel> 
 const dogalSiralama = new Intl.Collator("tr", { numeric: true, sensitivity: "base" });
 
 export async function bloklariGetir(): Promise<Blok[]> {
-  const data = await bloklariGetirFn({ data: { token: token() } });
+  const data = await cagir(bloklariGetirFn({ data: { token: token() } }));
   return (data as Blok[]).slice().sort((a, b) => dogalSiralama.compare(a.blok_adi, b.blok_adi));
 }
 
 export async function personelGetir(): Promise<Personel[]> {
-  return (await personelGetirFn({ data: { token: token() } })) as Personel[];
+  return (await cagir(personelGetirFn({ data: { token: token() } }))) as Personel[];
 }
 
 export async function mesaiDurumuGuncelle(_personelId: string, durum: MesaiDurumu) {
-  await mesaiDurumuGuncelleFn({ data: { token: token(), durum } });
+  await cagir(mesaiDurumuGuncelleFn({ data: { token: token(), durum } }));
 }
 
 export async function mesaiDurumuGetir(_personelId?: string): Promise<MesaiDurumu> {
-  return (await mesaiDurumuGetirFn({ data: { token: token() } })) as MesaiDurumu;
+  return (await cagir(mesaiDurumuGetirFn({ data: { token: token() } }))) as MesaiDurumu;
 }
 
 export type PersonelAnlikDurum = {
@@ -71,7 +89,7 @@ export type PersonelAnlikDurum = {
 
 /** Aktif saha personelinin anlık durumunu (çalışıyor / molada / çevrimdışı) döner. */
 export async function personelAnlikDurumlariGetir(): Promise<PersonelAnlikDurum[]> {
-  const { personeller, konumlar } = await personelDurumlariFn({ data: { token: token() } });
+  const { personeller, konumlar } = await cagir(personelDurumlariFn({ data: { token: token() } }));
   const sonKonum = new Map(
     (konumlar as PersonelKonum[]).map((k) => [k.personel_id, k.kayit_tarihi]),
   );
@@ -94,15 +112,15 @@ export async function personelAnlikDurumlariGetir(): Promise<PersonelAnlikDurum[
 }
 
 export async function tumGorevleriGetir(): Promise<Gorev[]> {
-  return (await tumGorevleriGetirFn({ data: { token: token() } })) as Gorev[];
+  return (await cagir(tumGorevleriGetirFn({ data: { token: token() } }))) as Gorev[];
 }
 
 export async function personelGorevleriniGetir(_personelId?: string): Promise<Gorev[]> {
-  return (await personelGorevleriniGetirFn({ data: { token: token() } })) as Gorev[];
+  return (await cagir(personelGorevleriniGetirFn({ data: { token: token() } }))) as Gorev[];
 }
 
 export async function gorevGetir(id: string): Promise<Gorev | null> {
-  return (await gorevGetirFn({ data: { token: token(), id } })) as Gorev | null;
+  return (await cagir(gorevGetirFn({ data: { token: token(), id } }))) as Gorev | null;
 }
 
 export async function gorevOlustur(input: {
@@ -113,11 +131,11 @@ export async function gorevOlustur(input: {
   aciliyet: string;
   is_turu: string;
 }) {
-  await gorevOlusturFn({ data: { token: token(), ...input } as never });
+  await cagir(gorevOlusturFn({ data: { token: token(), ...input } as never }));
 }
 
 export async function gorevDurumGuncelle(id: string, durum: string) {
-  await gorevDurumGuncelleFn({ data: { token: token(), id, durum } as never });
+  await cagir(gorevDurumGuncelleFn({ data: { token: token(), id, durum } as never }));
 }
 
 function dosyadanBase64(file: File): Promise<string> {
@@ -149,7 +167,7 @@ export async function fotoYukle(gorevId: string, file: File): Promise<string> {
 }
 
 export async function fotoUrlAl(yol: string): Promise<string | null> {
-  const { url } = await fotoUrlAlFn({ data: { token: token(), yol } });
+  const { url } = await cagir(fotoUrlAlFn({ data: { token: token(), yol } }));
   return url;
 }
 
@@ -158,7 +176,7 @@ export async function gorevTamamla(input: {
   fotoYolu: string;
   not: string;
 }) {
-  await gorevTamamlaFn({ data: { token: token(), ...input } });
+  await cagir(gorevTamamlaFn({ data: { token: token(), ...input } }));
 }
 
 export async function konumGonder(input: {
@@ -178,7 +196,7 @@ export async function konumGonder(input: {
 }
 
 export async function sonKonumlariGetir(): Promise<PersonelKonum[]> {
-  const data = (await sonKonumlariGetirFn({ data: { token: token() } })) as PersonelKonum[];
+  const data = (await cagir(sonKonumlariGetirFn({ data: { token: token() } }))) as PersonelKonum[];
   return data
     .slice()
     .sort((a, b) => (a.personel?.ad_soyad ?? "").localeCompare(b.personel?.ad_soyad ?? "", "tr"));
