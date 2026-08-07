@@ -120,6 +120,7 @@ function PanelSayfasi() {
   const [arama, setArama] = useState("");
   const [detay, setDetay] = useState<Gorev | null>(null);
   const [personelAcik, setPersonelAcik] = useState(false);
+  const [takvimAcik, setTakvimAcik] = useState(true);
 
   const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
   const filtreli = useMemo(() => liste.filter((g) => {
