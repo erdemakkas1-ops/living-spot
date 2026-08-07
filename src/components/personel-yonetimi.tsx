@@ -34,7 +34,13 @@ import {
 } from "@/lib/saha-api";
 
 /** İK panelinde saha personelini manuel ekleme / çıkarma modülü. */
-export function PersonelYonetimi({ etkin = true }: { etkin?: boolean }) {
+export function PersonelYonetimi({
+  etkin = true,
+  sade = false,
+}: {
+  etkin?: boolean;
+  sade?: boolean;
+}) {
   const qc = useQueryClient();
   const personeller = useQuery({
     queryKey: ["personel"],
@@ -91,7 +97,11 @@ export function PersonelYonetimi({ etkin = true }: { etkin?: boolean }) {
   const liste = personeller.data ?? [];
 
   return (
-    <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
+    <section
+      className={
+        sade ? "" : "mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5"
+      }
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-base font-bold">
@@ -166,7 +176,9 @@ export function PersonelYonetimi({ etkin = true }: { etkin?: boolean }) {
         </Dialog>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        className={`mt-4 grid gap-2 ${sade ? "" : "sm:grid-cols-2 lg:grid-cols-3"}`}
+      >
         {personeller.isLoading && (
           <p className="py-6 text-sm text-muted-foreground">Personel yükleniyor...</p>
         )}
