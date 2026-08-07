@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
+import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import {
   mesaiDurumuGetir,
   mesaiDurumuGuncelle,
@@ -167,6 +168,8 @@ function SahaListesi() {
             <p className="mt-1 text-3xl font-bold">{bitenIsler.length}</p>
           </div>
         </div>
+
+        <PersonelDurumCubugu />
 
         <h2 className="mt-7 mb-3 flex items-center gap-2 text-base font-bold">
           <HardHat className="h-4 w-4 text-primary" />

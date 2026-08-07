@@ -248,8 +248,6 @@ function PanelSayfasi() {
           />
         </section>
 
-        <PersonelDurumCubugu />
-
         <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="min-w-0">
