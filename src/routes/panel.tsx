@@ -57,7 +57,6 @@ import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { BildirimMenusu } from "@/components/bildirim-menusu";
 import { FotoMenusu } from "@/components/foto-menusu";
 import { KonumTakibi } from "@/components/konum-takibi";
-import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import { PersonelYonetimi } from "@/components/personel-yonetimi";
 import { RaporIndir } from "@/components/rapor-indir";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
