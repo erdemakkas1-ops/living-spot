@@ -160,13 +160,17 @@ function PanelSayfasi() {
                   <ClipboardList className="mr-2 h-4 w-4" />
                   Görev Yönetimi
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/saha" })}>
-                  <Users className="mr-2 h-4 w-4" />
-                  Saha Ekranı
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setPersonelAcik(true)}>
                   <Users className="mr-2 h-4 w-4" />
                   Personel Listesi
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Saha
+                </DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate({ to: "/saha" })}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Saha Ekranı
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
