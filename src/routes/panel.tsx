@@ -163,6 +163,10 @@ function PanelSayfasi() {
                   <Users className="mr-2 h-4 w-4" />
                   Saha Ekranı
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPersonelAcik(true)}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Personel Listesi
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => {
@@ -240,8 +244,6 @@ function PanelSayfasi() {
         </section>
 
         <PersonelDurumCubugu />
-
-        <PersonelYonetimi etkin={yetkili} />
 
         <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
