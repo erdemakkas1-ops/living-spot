@@ -123,7 +123,7 @@ export const gorevDurumGuncelleFn = createServerFn({ method: "POST" })
       .object({
         token: z.string().min(10),
         id: z.string().uuid(),
-        durum: z.enum(["bekliyor", "devam_ediyor", "tamamlandi"]),
+        durum: z.enum(["bekliyor", "devam_ediyor"]),
       })
       .parse(d),
   )

@@ -144,7 +144,7 @@ export async function gorevOlustur(input: {
 
 export async function gorevDurumGuncelle(
   id: string,
-  durum: "bekliyor" | "devam_ediyor" | "tamamlandi",
+  durum: "bekliyor" | "devam_ediyor",
 ) {
   await cagir(gorevDurumGuncelleFn({ data: { token: token(), id, durum } }));
 }
