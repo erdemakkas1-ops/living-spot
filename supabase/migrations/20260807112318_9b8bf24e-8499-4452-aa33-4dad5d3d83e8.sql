@@ -1,0 +1,1 @@
+DELETE FROM public.gorevler WHERE id = 'db580a2d-b12b-4620-84a2-cafd1f066ae3';
