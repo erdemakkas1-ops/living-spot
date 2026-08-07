@@ -560,7 +560,7 @@ function GorevAtamaModali({
           Yeni Görev Ata
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Görev Atama</DialogTitle>
           <DialogDescription>
