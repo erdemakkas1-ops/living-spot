@@ -114,18 +114,7 @@ function PanelSayfasi() {
   const [personelAcik, setPersonelAcik] = useState(false);
 
   const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
-  const aktifPersonelSayisi = (personeller.data ?? []).filter(
-    (p) => p.aktif && p.rol === "personel",
-  ).length;
-
-  const istatistik = useMemo(() => {
-    const bekleyen = 10;
-    const devam = liste.filter((g) => g.durum === "devam_ediyor").length;
-    const tamam = 6;
-    return { toplam: 16, bekleyen, devam, tamam };
-  }, [liste]);
-
-  const filtreli = liste.filter((g) => {
+  const filtreli = useMemo(() => liste.filter((g) => {
     if (blokFiltre !== "hepsi" && g.blok_id !== blokFiltre) return false;
     if (durumFiltre !== "hepsi" && g.durum !== durumFiltre) return false;
     if (arama.trim()) {
@@ -134,7 +123,19 @@ function PanelSayfasi() {
       if (!alan.toLowerCase().includes(q)) return false;
     }
     return true;
-  });
+  }), [liste, blokFiltre, durumFiltre, arama]);
+
+  const istatistik = useMemo(() => {
+    const bekleyen = filtreli.filter((g) => g.durum === "bekliyor").length;
+    const devam = filtreli.filter((g) => g.durum === "devam_ediyor").length;
+    const tamam = filtreli.filter((g) => g.durum === "tamamlandi").length;
+    return { toplam: filtreli.length, bekleyen, devam, tamam };
+  }, [filtreli]);
+
+  const aktifSahaPersoneli = useMemo(() => {
+    const acikIsler = filtreli.filter((g) => g.durum !== "tamamlandi" && g.personel_id);
+    return new Set(acikIsler.map((g) => g.personel_id)).size;
+  }, [filtreli]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -242,7 +243,7 @@ function PanelSayfasi() {
           <OzetKart
             baslik="Aktif Pers."
             uzunBaslik="Aktif Saha Personeli"
-            deger={aktifPersonelSayisi}
+            deger={aktifSahaPersoneli}
             ikon={<Users className="h-5 w-5" />}
             renk="text-status-devam"
           />
