@@ -111,6 +111,7 @@ function PanelSayfasi() {
   const [durumFiltre, setDurumFiltre] = useState("hepsi");
   const [arama, setArama] = useState("");
   const [detay, setDetay] = useState<Gorev | null>(null);
+  const [personelAcik, setPersonelAcik] = useState(false);
 
   const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
   const aktifPersonelSayisi = (personeller.data ?? []).filter(
@@ -162,6 +163,10 @@ function PanelSayfasi() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/saha" })}>
                   <Users className="mr-2 h-4 w-4" />
                   Saha Ekranı
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPersonelAcik(true)}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Personel Listesi
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -240,8 +245,6 @@ function PanelSayfasi() {
         </section>
 
         <PersonelDurumCubugu />
-
-        <PersonelYonetimi etkin={yetkili} />
 
         <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -485,6 +488,18 @@ function PanelSayfasi() {
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={personelAcik} onOpenChange={setPersonelAcik}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Personel Listesi</DialogTitle>
+            <DialogDescription>
+              Saha personelini ekleyin, pasife alın veya kadrodan çıkarın.
+            </DialogDescription>
+          </DialogHeader>
+          <PersonelYonetimi etkin={yetkili && personelAcik} sade />
         </DialogContent>
       </Dialog>
     </div>
