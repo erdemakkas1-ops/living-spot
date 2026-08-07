@@ -55,7 +55,7 @@ function token() {
 }
 
 export async function girisYap(telefon: string, pin: string): Promise<Personel> {
-  const sonuc = await girisYapFn({ data: { telefon, pin } });
+  const sonuc = await girisYapFn({ data: { telefon: telefon.replace(/\D/g, ""), pin: pin.trim() } });
   tokenYaz(sonuc.token);
   return sonuc.personel as Personel;
 }
@@ -142,8 +142,11 @@ export async function gorevOlustur(input: {
   await cagir(gorevOlusturFn({ data: { token: token(), ...input } }));
 }
 
-export async function gorevDurumGuncelle(id: string, durum: string) {
-  await cagir(gorevDurumGuncelleFn({ data: { token: token(), id, durum } as never }));
+export async function gorevDurumGuncelle(
+  id: string,
+  durum: "bekliyor" | "devam_ediyor",
+) {
+  await cagir(gorevDurumGuncelleFn({ data: { token: token(), id, durum } }));
 }
 
 function dosyadanBase64(file: File): Promise<string> {

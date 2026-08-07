@@ -156,12 +156,24 @@ export async function gorevOlusturSunucu(
 ) {
   await ikDogrula(token);
   const sb = await db();
+  const { data: hedef, error: hedefHatasi } = await sb
+    .from("personel")
+    .select("id")
+    .eq("id", input.personel_id)
+    .eq("rol", "personel")
+    .eq("aktif", true)
+    .maybeSingle();
+  if (hedefHatasi) throw hedefHatasi;
+  if (!hedef) throw new Error("Seçilen personel aktif değil veya görev almaya yetkili değil.");
   const { error } = await sb.from("gorevler").insert(input);
   if (error) throw error;
   return { ok: true };
 }
 
 export async function gorevDurumGuncelleSunucu(token: unknown, id: string, durum: string) {
+  if (durum !== "bekliyor" && durum !== "devam_ediyor") {
+    throw new Error("Görev yalnızca fotoğraflı tamamlama akışıyla kapatılabilir.");
+  }
   await gorevErisimiDogrula(token, id);
   const sb = await db();
   const { error } = await sb.from("gorevler").update({ durum }).eq("id", id);

@@ -1,7 +1,5 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
-import { renderErrorPage } from "./lib/error-page";
-
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
     return await next();
@@ -10,10 +8,10 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
       throw error;
     }
     console.error(error);
-    return new Response(renderErrorPage(), {
-      status: 500,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
+    // Server function errors must cross the RPC boundary as errors. Returning
+    // an HTML Response here breaks TanStack serialization and hides the real
+    // message behind a generic full-page failure on some devices.
+    throw error;
   }
 });
 

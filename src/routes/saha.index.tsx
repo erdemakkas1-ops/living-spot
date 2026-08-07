@@ -38,6 +38,8 @@ export const Route = createFileRoute("/saha/")({
         property: "og:description",
         content: "Günlük saha görevlerini görüntüle, fotoğraf yükle ve işi kapat.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SahaListesi,
@@ -54,7 +56,7 @@ function SahaListesi() {
 
   const gorevler = useQuery({
     queryKey: ["gorevlerim", kullanici?.id],
-    queryFn: () => personelGorevleriniGetir(kullanici!.id),
+    queryFn: () => personelGorevleriniGetir(kullanici?.id),
     enabled: !!kullanici,
   });
 
