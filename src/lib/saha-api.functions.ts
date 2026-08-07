@@ -106,7 +106,10 @@ export const gorevOlusturFn = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(({ data }) => gorevOlusturSunucu(data.token, data));
+  .handler(({ data }) => {
+    const { token, ...gorev } = data;
+    return gorevOlusturSunucu(token, gorev);
+  });
 
 export const gorevDurumGuncelleFn = createServerFn({ method: "POST" })
   .inputValidator((d) =>
