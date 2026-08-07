@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,12 +45,8 @@ export function IsTakvimi({ gorevler }: { gorevler: Gorev[] }) {
   const bugunKey = anahtar(bugun);
 
   return (
-    <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:p-5">
+    <section className="mt-2 rounded-2xl bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-base font-bold">
-          <CalendarDays className="h-4 w-4 text-primary" />
-          İş Takvimi
-        </h2>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"

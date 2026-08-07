@@ -5,8 +5,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Building,
+  CalendarDays,
   Camera,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   Clock,
   ClipboardList,
   LogOut,
@@ -38,6 +41,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -113,6 +121,7 @@ function PanelSayfasi() {
   const [arama, setArama] = useState("");
   const [detay, setDetay] = useState<Gorev | null>(null);
   const [personelAcik, setPersonelAcik] = useState(false);
+  const [takvimAcik, setTakvimAcik] = useState(true);
 
   const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
   const filtreli = useMemo(() => liste.filter((g) => {
@@ -257,7 +266,27 @@ function PanelSayfasi() {
           bekleyen={istatistik.bekleyen}
         />
 
-        <IsTakvimi gorevler={filtreli} />
+        <Collapsible open={takvimAcik} onOpenChange={setTakvimAcik}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="group flex w-full items-center justify-between rounded-2xl bg-card p-4 text-left shadow-card outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:p-5"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                İş Takvimi
+              </span>
+              {takvimAcik ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground transition-transform group-hover:text-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-hover:text-foreground" />
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <IsTakvimi gorevler={filtreli} />
+          </CollapsibleContent>
+        </Collapsible>
 
         <section className="mt-4 rounded-2xl bg-card p-4 shadow-card sm:mt-6 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
