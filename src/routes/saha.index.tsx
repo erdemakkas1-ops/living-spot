@@ -114,12 +114,14 @@ function SahaListesi() {
             <div className="mt-2">
               <BaglantiRozeti className="bg-navy-foreground/10 text-navy-foreground" />
             </div>
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-navy-foreground/70">
-              <MapPin
-                className={`h-3.5 w-3.5 ${konumDurum === "aktif" ? "text-status-tamam" : ""}`}
-              />
-              {konumEtiket}
-            </p>
+            {!onizleme && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-navy-foreground/70">
+                <MapPin
+                  className={`h-3.5 w-3.5 ${konumDurum === "aktif" ? "text-status-tamam" : ""}`}
+                />
+                {konumEtiket}
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
             {onizleme ? (
