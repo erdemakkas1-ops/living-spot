@@ -1,8 +1,5 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
-import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
-
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
     return await next();
@@ -26,7 +23,6 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
   // Bu uygulama Supabase Auth kullanmıyor; oturumlar PIN + imzalı HMAC token ile
   // yürütülüyor. attachSupabaseAuth kaldırıldı: tarayıcıdaki eski/saat kaymalı
   // Supabase oturumu "JWT issued at future" hatasıyla tüm serverFn çağrılarını
