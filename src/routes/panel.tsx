@@ -84,6 +84,8 @@ export const Route = createFileRoute("/panel")({
         property: "og:description",
         content: "Blok bazlı canlı iş takibi, görev atama ve fotoğraf onay akışı.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: PanelSayfasi,
@@ -98,9 +100,10 @@ function PanelSayfasi() {
     if (hazir && kullanici && kullanici.rol !== "ik") navigate({ to: "/saha" });
   }, [hazir, kullanici, navigate]);
 
-  const gorevler = useQuery({ queryKey: ["gorevler"], queryFn: tumGorevleriGetir });
-  const bloklar = useQuery({ queryKey: ["bloklar"], queryFn: bloklariGetir });
-  const personeller = useQuery({ queryKey: ["personel"], queryFn: personelGetir });
+  const yetkili = hazir && kullanici?.rol === "ik";
+  const gorevler = useQuery({ queryKey: ["gorevler"], queryFn: tumGorevleriGetir, enabled: yetkili });
+  const bloklar = useQuery({ queryKey: ["bloklar"], queryFn: bloklariGetir, enabled: yetkili });
+  const personeller = useQuery({ queryKey: ["personel"], queryFn: personelGetir, enabled: yetkili });
 
   const [blokFiltre, setBlokFiltre] = useState("hepsi");
   const [durumFiltre, setDurumFiltre] = useState("hepsi");

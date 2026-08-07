@@ -36,6 +36,8 @@ export const Route = createFileRoute("/saha/$gorevId")({
         property: "og:description",
         content: "İşe başla, fotoğraf ve not ekle, görevi tamamla.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: GorevDetay,
