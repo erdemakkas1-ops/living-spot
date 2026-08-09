@@ -26,7 +26,7 @@ export function YardimButonu() {
           <Button
             asChild
             size="icon"
-            className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-card sm:bottom-6 sm:right-6 sm:h-14 sm:w-14"
+            className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full shadow-card sm:bottom-6 sm:right-6 sm:h-14 sm:w-14"
             aria-label="WhatsApp Destek Hattı"
           >
             <a
