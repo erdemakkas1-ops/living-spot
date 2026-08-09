@@ -10,7 +10,7 @@ import {
 
 // TODO: Site yönetiminin gerçek WhatsApp destek numarasını buraya yazın.
 // Ülke kodu olmadan numara girilmeyecek (örnek: 905331234567).
-const WHATSAPP_DESTEK_NUMARASI = "905332222222";
+const WHATSAPP_DESTEK_NUMARASI = "905526623710";
 const WHATSAPP_MESAJ =
   "Merhaba, Selimpaşa Emlak Konutları Saha Takip sistemi hakkında destek almak istiyorum.";
 
