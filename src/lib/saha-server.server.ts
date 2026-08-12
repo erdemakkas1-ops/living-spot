@@ -11,17 +11,41 @@ async function db() {
   return supabaseAdmin;
 }
 
+const MAKS_DENEME = 5;
+const PENCERE_MS = 15 * 60 * 1000;
+const KILIT_MESAJI =
+  "Çok fazla başarısız deneme yapıldı. Lütfen 15 dakika sonra tekrar deneyin.";
+const HATA_MESAJI = "Telefon veya PIN kodu hatalı.";
+
 export async function girisYapSunucu(telefon: string, pin: string) {
   const sb = await db();
+  const tel = telefon.trim();
+  const pencereBasi = new Date(Date.now() - PENCERE_MS).toISOString();
+
+  // Sunucu tarafı hız sınırı: aynı telefon için 15 dk içinde 5 başarısız deneme.
+  const { count } = await sb
+    .from("giris_denemeleri")
+    .select("id", { count: "exact", head: true })
+    .eq("telefon", tel)
+    .gte("deneme_tarihi", pencereBasi);
+  if ((count ?? 0) >= MAKS_DENEME) throw new Error(KILIT_MESAJI);
+
   const { data, error } = await sb
     .from("personel")
     .select(PERSONEL_SELECT)
-    .eq("telefon", telefon.trim())
+    .eq("telefon", tel)
     .eq("pin_kodu", pin.trim())
     .eq("aktif", true)
     .maybeSingle();
   if (error) throw new Error("Giriş sırasında bir hata oluştu.");
-  if (!data) throw new Error("Telefon veya PIN kodu hatalı.");
+  if (!data) {
+    await sb.from("giris_denemeleri").insert({ telefon: tel });
+    // Bu denemeyle sınır dolduysa kilit mesajını ver.
+    if ((count ?? 0) + 1 >= MAKS_DENEME) throw new Error(KILIT_MESAJI);
+    throw new Error(HATA_MESAJI);
+  }
+  // Başarılı girişte o telefona ait deneme kayıtları temizlenir.
+  await sb.from("giris_denemeleri").delete().eq("telefon", tel);
   const personel = data as unknown as Personel;
   return { personel, token: await tokenUret(personel.id, personel.rol) };
 }
