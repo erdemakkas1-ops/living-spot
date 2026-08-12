@@ -270,7 +270,7 @@ export async function personelAktiflikGuncelleSunucu(token: unknown, id: string,
 /** İK: personel veya yönetici kaydının iletişim ve giriş bilgilerini günceller. */
 export async function personelDuzenleSunucu(
   token: unknown,
-  input: { id: string; ad_soyad: string; telefon: string; pin_kodu?: string; aktif: boolean },
+  input: { id: string; ad_soyad: string; telefon: string; pin_kodu?: string | undefined; aktif: boolean },
 ) {
   await ikDogrula(token);
   const telefon = input.telefon.replace(/\D/g, "");
