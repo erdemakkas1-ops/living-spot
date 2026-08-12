@@ -24,7 +24,7 @@ import {
   sonKonumlariGetirFn,
   tumGorevleriGetirFn,
 } from "./saha-api.functions";
-import { oturumSil, tokenOku, tokenYaz } from "./saha-session";
+import { OTURUM_SURESI_DOLDU, oturumSonlandir, tokenOku, tokenYaz } from "./saha-session";
 import type { AnlikDurum, Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
 /**
@@ -37,9 +37,10 @@ async function cagir<T>(islem: Promise<T>): Promise<T> {
     return await islem;
   } catch (hata) {
     const mesaj = hata instanceof Error ? hata.message : String(hata);
-    if (mesaj.includes("Oturum") && typeof window !== "undefined") {
-      oturumSil();
-      window.location.replace("/");
+    const oturumHatasi =
+      mesaj.includes("Oturum") || mesaj.includes("yetki") || mesaj.includes("Unauthorized");
+    if (oturumHatasi && typeof window !== "undefined") {
+      oturumSonlandir(OTURUM_SURESI_DOLDU);
       // Hata yeniden atılırsa React error boundary beyaz ekran gösteriyor;
       // yönlendirme tamamlanana kadar bekleyen bir promise döndürüyoruz.
       return await new Promise<T>(() => {});
@@ -62,9 +63,8 @@ function token() {
     // Çözümlenemeyen token'ı sunucu doğrulaması elemeye devam eder.
   }
   if (suresiDoldu) {
-    oturumSil();
-    if (typeof window !== "undefined") window.location.replace("/");
-    throw new Error("Oturum süresi doldu. Lütfen tekrar giriş yapın.");
+    oturumSonlandir(OTURUM_SURESI_DOLDU);
+    throw new Error(OTURUM_SURESI_DOLDU);
   }
   return t;
 }
