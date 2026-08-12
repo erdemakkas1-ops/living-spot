@@ -17,6 +17,7 @@ import {
   personelDuzenleSunucu,
   personelEkleSunucu,
   personelGetirSunucu,
+  personelDurumlariSunucu,
   personelGorevleriniGetirSunucu,
   personelSilSunucu,
   sonKonumlariGetirSunucu,
@@ -49,10 +50,7 @@ export const mesaiDurumuGetirFn = createServerFn({ method: "POST" })
 
 export const personelDurumlariFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(async ({ data }) => ({
-    personeller: await personelGetirSunucu(data.token),
-    konumlar: await sonKonumlariGetirSunucu(data.token),
-  }));
+  .handler(({ data }) => personelDurumlariSunucu(data.token));
 
 export const sonKonumlariGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
