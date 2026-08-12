@@ -178,3 +178,8 @@
 @utility shadow-card {
   box-shadow: var(--shadow-card);
 }
+
+/* Lovable'ın yayın ortamında eklediği düzenleyici rozeti son kullanıcı arayüzünde görünmez. */
+a[href*="lovable.dev/projects"][href*="utm_source=lovable-badge"] {
+  display: none !important;
+}
