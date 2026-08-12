@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import {
+  auditLoglariGetirSunucu,
   bloklariGetirSunucu,
   fotoUrlAlSunucu,
   fotoYukleSunucu,
@@ -204,3 +205,7 @@ export const personelDuzenleFn = createServerFn({ method: "POST" })
 export const personelSilFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10), id: z.string().uuid() }).parse(d))
   .handler(({ data }) => personelSilSunucu(data.token, data.id));
+
+export const auditLoglariGetirFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
+  .handler(({ data }) => auditLoglariGetirSunucu(data.token));

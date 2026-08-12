@@ -435,3 +435,44 @@ export async function personelSilSunucu(token: unknown, id: string) {
   });
   return { ok: true };
 }
+
+/** İK: yönetim işlemlerinin denetim kayıtlarını en yeniden eskiye listeler. */
+export async function auditLoglariGetirSunucu(token: unknown, limit = 200) {
+  await ikDogrula(token);
+  const sb = await db();
+  const { data, error } = await sb
+    .from("audit_loglari")
+    .select("id, islem_turu, aciklama, created_at, yonetici_id, hedef_personel_id")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  const kayitlar = (data ?? []) as {
+    id: string;
+    islem_turu: string;
+    aciklama: string;
+    created_at: string;
+    yonetici_id: string | null;
+    hedef_personel_id: string | null;
+  }[];
+  const idler = [
+    ...new Set(
+      kayitlar.flatMap((k) => [k.yonetici_id, k.hedef_personel_id].filter(Boolean) as string[]),
+    ),
+  ];
+  const adlar = new Map<string, string>();
+  if (idler.length) {
+    const { data: kisiler } = await sb.from("personel").select("id, ad_soyad").in("id", idler);
+    for (const k of (kisiler ?? []) as { id: string; ad_soyad: string }[]) {
+      adlar.set(k.id, k.ad_soyad);
+    }
+  }
+  // Yanıt yalnızca gösterime uygun alanları içerir; PIN/hash/token asla dönmez.
+  return kayitlar.map((k) => ({
+    id: k.id,
+    islem_turu: k.islem_turu,
+    aciklama: k.aciklama,
+    created_at: k.created_at,
+    yonetici_adi: k.yonetici_id ? (adlar.get(k.yonetici_id) ?? "Bilinmiyor") : "Bilinmiyor",
+    hedef_adi: k.hedef_personel_id ? (adlar.get(k.hedef_personel_id) ?? "Silinmiş kayıt") : "-",
+  }));
+}

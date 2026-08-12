@@ -3,6 +3,7 @@
  * tüm sorgular yetki kontrolü yapan sunucu fonksiyonları üzerinden geçer.
  */
 import {
+  auditLoglariGetirFn,
   bloklariGetirFn,
   fotoUrlAlFn,
   fotoYukleFn,
@@ -248,4 +249,18 @@ export async function personelDuzenle(input: {
 
 export async function personelSil(id: string) {
   await cagir(personelSilFn({ data: { token: token(), id } }));
+}
+
+export type AuditKaydi = {
+  id: string;
+  islem_turu: string;
+  aciklama: string;
+  created_at: string;
+  yonetici_adi: string;
+  hedef_adi: string;
+};
+
+/** İK: yönetim işlemleri denetim kayıtları (en yeniden eskiye). */
+export async function auditLoglariGetir(): Promise<AuditKaydi[]> {
+  return (await cagir(auditLoglariGetirFn({ data: { token: token() } }))) as AuditKaydi[];
 }
