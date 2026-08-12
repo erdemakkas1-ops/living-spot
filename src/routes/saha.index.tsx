@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Building,
@@ -52,6 +52,13 @@ export const Route = createFileRoute("/saha/")({
 function SahaListesi() {
   const navigate = useNavigate();
   const { kullanici, hazir } = useOturum();
+  const qc = useQueryClient();
+
+  const cikisYap = () => {
+    oturumSil();
+    qc.clear();
+    navigate({ to: "/" });
+  };
 
   useEffect(() => {
     if (hazir && !kullanici) navigate({ to: "/" });
@@ -134,10 +141,7 @@ function SahaListesi() {
               variant="secondary"
               size="sm"
               className="shrink-0"
-              onClick={() => {
-                oturumSil();
-                navigate({ to: "/" });
-              }}
+              onClick={cikisYap}
             >
               <LogOut className="h-4 w-4" />
               Çıkış
