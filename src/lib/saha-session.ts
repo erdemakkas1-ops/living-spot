@@ -7,6 +7,50 @@ const SEBEP_KEY = "saha-oturum-sebep";
 
 export const OTURUM_SURESI_DOLDU = "Oturum süreniz doldu. Lütfen tekrar giriş yapın.";
 
+/**
+ * Aynı origin (aynı alan adı) sekmeleri arasında oturum değişikliklerini
+ * anında duyurur. BroadcastChannel origin ile sınırlıdır; Lovable Preview ile
+ * canlı alan adı farklı origin olduğu için oturumlar birbirine karışmaz.
+ * Kanaldan yalnızca "değişti" sinyali geçer; token/PIN gibi gizli veri geçmez.
+ */
+const KANAL_ADI = "saha-oturum";
+let kanal: BroadcastChannel | null = null;
+function kanalAl(): BroadcastChannel | null {
+  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null;
+  if (!kanal) kanal = new BroadcastChannel(KANAL_ADI);
+  return kanal;
+}
+
+function degisikligiDuyur() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event("saha-oturum-degisti"));
+  try {
+    kanalAl()?.postMessage("degisti");
+  } catch {
+    /* yoksay */
+  }
+}
+
+/** Token içindeki (gizli olmayan) claim'leri okur; imza doğrulaması sunucuda yapılır. */
+function tokenClaims(token: string): { id?: string; rol?: string; exp?: number } | null {
+  try {
+    const govde = token.split(".")[0] ?? "";
+    const json = atob(govde.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(json) as { id?: string; rol?: string; exp?: number };
+  } catch {
+    return null;
+  }
+}
+
+/** Token'ın 12 saatlik geçerlilik süresi dolmuş mu? (exp milisaniye) */
+export function tokenSuresiDoldu(token: string): boolean {
+  const exp = tokenClaims(token)?.exp ?? 0;
+  if (!exp) return false;
+  // Sunucu exp'i milisaniye üretir; saniye biçimli eski token'lar da desteklenir.
+  const ms = exp < 1e12 ? exp * 1000 : exp;
+  return ms < Date.now();
+}
+
 export function tokenOku(): string {
   if (typeof window === "undefined") return "";
   return window.localStorage.getItem(TOKEN_KEY) ?? "";
@@ -23,11 +67,17 @@ export function oturumOku(): Personel | null {
     if (!raw) return null;
     // Oturum kaydı olsa da imzalı token yoksa (eski sürümden kalan kayıt)
     // oturum geçersizdir; yeniden PIN girişi gerekir.
-    if (!window.localStorage.getItem(TOKEN_KEY)) {
+    const token = window.localStorage.getItem(TOKEN_KEY);
+    if (!token) {
       window.localStorage.removeItem(KEY);
       return null;
     }
-    return JSON.parse(raw) as Personel;
+    if (tokenSuresiDoldu(token)) return null;
+    const personel = JSON.parse(raw) as Personel;
+    // Yönetici ve personel oturumları karışmasın: kayıtlı rol token ile eşleşmeli.
+    const claims = tokenClaims(token);
+    if (claims && (claims.id !== personel.id || claims.rol !== personel.rol)) return null;
+    return personel;
   } catch {
     return null;
   }
@@ -35,7 +85,7 @@ export function oturumOku(): Personel | null {
 
 export function oturumYaz(p: Personel) {
   window.localStorage.setItem(KEY, JSON.stringify(p));
-  window.dispatchEvent(new Event("saha-oturum-degisti"));
+  degisikligiDuyur();
 }
 
 export function oturumSil() {
@@ -49,7 +99,7 @@ export function oturumSil() {
   } catch {
     /* yoksay */
   }
-  window.dispatchEvent(new Event("saha-oturum-degisti"));
+  degisikligiDuyur();
 }
 
 /**
@@ -89,9 +139,17 @@ export function useOturum() {
     setHazir(true);
     window.addEventListener("saha-oturum-degisti", oku);
     window.addEventListener("storage", oku);
+    // Sekme yeniden öne geldiğinde oturum durumu tazelenir.
+    window.addEventListener("focus", oku);
+    document.addEventListener("visibilitychange", oku);
+    const bc = kanalAl();
+    if (bc) bc.addEventListener("message", oku);
     return () => {
       window.removeEventListener("saha-oturum-degisti", oku);
       window.removeEventListener("storage", oku);
+      window.removeEventListener("focus", oku);
+      document.removeEventListener("visibilitychange", oku);
+      if (bc) bc.removeEventListener("message", oku);
     };
   }, []);
 
