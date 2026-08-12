@@ -12,6 +12,7 @@ import {
   ChevronUp,
   Clock,
   ClipboardList,
+  History,
   LogOut,
   Plus,
   Search,
@@ -63,6 +64,7 @@ import { IsTakvimi } from "@/components/is-takvimi";
 import { BildirimMenusu } from "@/components/bildirim-menusu";
 import { FotoMenusu } from "@/components/foto-menusu";
 import { KonumTakibi } from "@/components/konum-takibi";
+import { IslemGecmisi } from "@/components/islem-gecmisi";
 import { PersonelYonetimi } from "@/components/personel-yonetimi";
 import { RaporIndir } from "@/components/rapor-indir";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
@@ -135,6 +137,7 @@ function PanelSayfasi() {
   const [arama, setArama] = useState("");
   const [detay, setDetay] = useState<Gorev | null>(null);
   const [personelAcik, setPersonelAcik] = useState(false);
+  const [gecmisAcik, setGecmisAcik] = useState(false);
   const [takvimAcik, setTakvimAcik] = useState(true);
 
   const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
@@ -192,6 +195,10 @@ function PanelSayfasi() {
                   <Users className="mr-2 h-4 w-4" />
                   Personel Listesi
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setGecmisAcik(true)}>
+                  <History className="mr-2 h-4 w-4" />
+                  İşlem Geçmişi
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground">
                   Saha
@@ -221,6 +228,16 @@ function PanelSayfasi() {
             <span className="hidden text-sm font-medium text-navy-foreground/80 md:inline">
               {kullanici?.ad_soyad}
             </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              aria-label="İşlem Geçmişi"
+              title="İşlem Geçmişi"
+              className="h-9 w-9 px-0"
+              onClick={() => setGecmisAcik(true)}
+            >
+              <History className="h-4 w-4" />
+            </Button>
             <BildirimMenusu gorevler={liste} />
             <FotoMenusu gorevler={liste} />
             <KonumTakibi />
@@ -552,6 +569,17 @@ function PanelSayfasi() {
             </DialogDescription>
           </DialogHeader>
           <PersonelYonetimi etkin={yetkili && personelAcik} sade />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={gecmisAcik} onOpenChange={setGecmisAcik}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>İşlem Geçmişi</DialogTitle>
+            <DialogDescription>
+              Personel yönetimi işlemlerinin denetim kaydı (en yeniden eskiye).
+            </DialogDescription>
+          </DialogHeader>
+          <IslemGecmisi etkin={yetkili && gecmisAcik} />
         </DialogContent>
       </Dialog>
       <YardimButonu />
