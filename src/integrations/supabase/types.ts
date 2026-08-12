@@ -32,6 +32,24 @@ export type Database = {
         }
         Relationships: []
       }
+      giris_denemeleri: {
+        Row: {
+          deneme_tarihi: string
+          id: string
+          telefon: string
+        }
+        Insert: {
+          deneme_tarihi?: string
+          id?: string
+          telefon: string
+        }
+        Update: {
+          deneme_tarihi?: string
+          id?: string
+          telefon?: string
+        }
+        Relationships: []
+      }
       gorevler: {
         Row: {
           aciklama: string | null
