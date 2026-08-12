@@ -1,5 +1,5 @@
 /** Sunucu tarafı saha veri erişimi. Tüm tablo erişimi burada, yetki kontrolü ile yapılır. */
-import { ikDogrula, tokenDogrula, tokenUret } from "./saha-token.server";
+import { tokenDogrula, tokenUret, type SahaClaims } from "./saha-token.server";
 import { pinDogrula, pinHashle } from "./saha-pin.server";
 import { auditYaz, telefonMaskele } from "./saha-audit.server";
 import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
@@ -11,6 +11,71 @@ const PERSONEL_SELECT = "id, ad_soyad, rol, telefon, aktif, mesai_durumu, durum_
 async function db() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
+}
+
+export const OTURUM_GECERSIZ = "Oturum geçersiz. Lütfen tekrar giriş yapın.";
+export const HESAP_PASIF = "Hesabınız pasif durumda. Yönetimle iletişime geçin.";
+
+type Sb = Awaited<ReturnType<typeof db>>;
+
+/** Pasife alma nedeniyle kapatılan oturumu denetim kaydına yazar (10 dk'da bir). */
+async function oturumIptalLogla(sb: Sb, personelId: string) {
+  const esik = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { count } = await sb
+    .from("audit_loglari")
+    .select("id", { count: "exact", head: true })
+    .eq("islem_turu", "oturum_iptal")
+    .eq("hedef_personel_id", personelId)
+    .gte("created_at", esik);
+  if ((count ?? 0) > 0) return;
+  await auditYaz(sb, {
+    yonetici_id: null,
+    islem_turu: "oturum_iptal",
+    hedef_personel_id: personelId,
+    aciklama: "Hesap pasif olduğu için açık oturum geçersiz kılındı.",
+  });
+}
+
+/**
+ * İmzalı token'ı doğrular ve ardından kullanıcı kaydını veritabanından kontrol eder:
+ * kayıt silinmişse, pasife alınmışsa veya güncel rolü token'daki rolle uyuşmuyorsa
+ * oturum geçersizdir. Böylece açık sekmeler anında devre dışı kalır.
+ */
+async function oturumDogrula(token: unknown): Promise<SahaClaims> {
+  const claims = await tokenDogrula(token);
+  const sb = await db();
+  const { data, error } = await sb
+    .from("personel")
+    .select("id, rol, aktif")
+    .eq("id", claims.id)
+    .maybeSingle();
+  if (error) throw new Error(OTURUM_GECERSIZ);
+  const kayit = data as { id: string; rol: string; aktif: boolean } | null;
+  // Silinen kullanıcı veya rolü değişmiş oturum: genel geçersizlik mesajı.
+  if (!kayit || kayit.rol !== claims.rol) throw new Error(OTURUM_GECERSIZ);
+  if (!kayit.aktif) {
+    await oturumIptalLogla(sb, claims.id);
+    throw new Error(HESAP_PASIF);
+  }
+  return claims;
+}
+
+/** Yalnızca aktif İK / yönetim hesabına izin verir. */
+async function ikOturumDogrula(token: unknown): Promise<SahaClaims> {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "ik") throw new Error("Bu işlem için yönetim yetkisi gerekiyor.");
+  return claims;
+}
+
+/** Personel yönetimi işlemleri yalnızca saha personeli kayıtlarını hedefleyebilir. */
+async function hedefPersonelDogrula(sb: Sb, id: string) {
+  const { data } = await sb.from("personel").select("id, rol").eq("id", id).maybeSingle();
+  const kayit = data as { id: string; rol: string } | null;
+  if (!kayit) throw new Error("Personel kaydı bulunamadı.");
+  if (kayit.rol !== "personel") {
+    throw new Error("Yönetici hesapları personel işlemleriyle değiştirilemez.");
+  }
+  return kayit;
 }
 
 const MAKS_DENEME = 5;
