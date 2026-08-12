@@ -144,7 +144,8 @@ export type Database = {
           durum_guncelleme: string
           id: string
           mesai_durumu: string
-          pin_kodu: string
+          pin_hash: string | null
+          pin_kodu: string | null
           rol: string
           telefon: string
         }
@@ -155,7 +156,8 @@ export type Database = {
           durum_guncelleme?: string
           id?: string
           mesai_durumu?: string
-          pin_kodu: string
+          pin_hash?: string | null
+          pin_kodu?: string | null
           rol?: string
           telefon: string
         }
@@ -166,7 +168,8 @@ export type Database = {
           durum_guncelleme?: string
           id?: string
           mesai_durumu?: string
-          pin_kodu?: string
+          pin_hash?: string | null
+          pin_kodu?: string | null
           rol?: string
           telefon?: string
         }
