@@ -18,7 +18,10 @@ export function telefonMaskele(telefon: string | null | undefined): string {
   return `${t.slice(0, 4)}***${t.slice(-2)}`;
 }
 
-type Sb = { from: (t: string) => { insert: (v: unknown) => Promise<{ error: unknown }> } };
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+type Sb = SupabaseClient<Database>;
 
 /** Denetim kaydını yazar; log hatası ana işlemi bozmaz. */
 export async function auditYaz(
