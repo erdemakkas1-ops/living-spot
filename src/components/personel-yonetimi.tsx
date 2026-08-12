@@ -107,7 +107,7 @@ export function PersonelYonetimi({
         id: duzenlenen!.id,
         ad_soyad: duzenlemeAd,
         telefon: duzenlemeTelefon,
-        pin_kodu: duzenlemePin,
+        ...(duzenlemePin ? { pin_kodu: duzenlemePin } : {}),
         aktif: duzenlenen!.aktif,
       }),
     onSuccess: () => {
@@ -291,9 +291,9 @@ export function PersonelYonetimi({
           <div className="grid gap-3">
             <div className="grid gap-1.5"><Label htmlFor="duzenle-ad">Ad Soyad</Label><Input id="duzenle-ad" value={duzenlemeAd} onChange={(e) => setDuzenlemeAd(e.target.value)} /></div>
             <div className="grid gap-1.5"><Label htmlFor="duzenle-tel">Telefon</Label><Input id="duzenle-tel" inputMode="numeric" value={duzenlemeTelefon} onChange={(e) => setDuzenlemeTelefon(e.target.value)} /></div>
-            <div className="grid gap-1.5"><Label htmlFor="duzenle-pin">Yeni PIN (4 hane)</Label><Input id="duzenle-pin" inputMode="numeric" maxLength={4} value={duzenlemePin} onChange={(e) => setDuzenlemePin(e.target.value.replace(/\D/g, ""))} placeholder="Değiştirmek için girin" /></div>
+            <div className="grid gap-1.5"><Label htmlFor="duzenle-pin">Yeni PIN (4 hane)</Label><Input id="duzenle-pin" inputMode="numeric" maxLength={4} value={duzenlemePin} onChange={(e) => setDuzenlemePin(e.target.value.replace(/\D/g, ""))} placeholder="Boş bırakırsanız mevcut PIN korunur" /><p className="text-xs text-muted-foreground">Boş bırakılırsa personelin mevcut PIN kodu değişmez.</p></div>
           </div>
-          <DialogFooter><Button onClick={() => duzenle.mutate()} disabled={duzenle.isPending || duzenlemeAd.trim().length < 2 || duzenlemeTelefon.replace(/\D/g, "").length < 10 || duzenlemePin.length !== 4}>{duzenle.isPending ? "Kaydediliyor..." : "Kaydet"}</Button></DialogFooter>
+          <DialogFooter><Button onClick={() => duzenle.mutate()} disabled={duzenle.isPending || duzenlemeAd.trim().length < 2 || duzenlemeTelefon.replace(/\D/g, "").length < 10 || (duzenlemePin.length > 0 && duzenlemePin.length !== 4)}>{duzenle.isPending ? "Kaydediliyor..." : "Kaydet"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </section>
