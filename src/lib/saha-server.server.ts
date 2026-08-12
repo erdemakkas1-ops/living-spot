@@ -73,7 +73,7 @@ export async function girisYapSunucu(telefon: string, pin: string) {
 }
 
 export async function bloklariGetirSunucu(token: unknown): Promise<Blok[]> {
-  await tokenDogrula(token);
+  await oturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb.from("bloklar").select("id, blok_adi").order("blok_adi");
   if (error) throw error;
@@ -81,7 +81,7 @@ export async function bloklariGetirSunucu(token: unknown): Promise<Blok[]> {
 }
 
 export async function personelGetirSunucu(token: unknown): Promise<Personel[]> {
-  await ikDogrula(token);
+  await ikOturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb
     .from("personel")
@@ -92,7 +92,7 @@ export async function personelGetirSunucu(token: unknown): Promise<Personel[]> {
 }
 
 export async function mesaiDurumuGuncelleSunucu(token: unknown, durum: MesaiDurumu) {
-  const claims = await tokenDogrula(token);
+  const claims = await oturumDogrula(token);
   const sb = await db();
   const { error } = await sb
     .from("personel")
@@ -103,7 +103,7 @@ export async function mesaiDurumuGuncelleSunucu(token: unknown, durum: MesaiDuru
 }
 
 export async function mesaiDurumuGetirSunucu(token: unknown): Promise<MesaiDurumu> {
-  const claims = await tokenDogrula(token);
+  const claims = await oturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb
     .from("personel")
@@ -116,7 +116,7 @@ export async function mesaiDurumuGetirSunucu(token: unknown): Promise<MesaiDurum
 }
 
 export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelKonum[]> {
-  await ikDogrula(token);
+  await ikOturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb
     .from("personel_konumlari")
@@ -135,7 +135,7 @@ export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelK
 export async function personelDurumlariSunucu(
   token: unknown,
 ): Promise<{ personeller: Personel[]; konumlar: PersonelKonum[] }> {
-  const claims = await tokenDogrula(token);
+  const claims = await oturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb
     .from("personel")
@@ -155,7 +155,7 @@ export async function konumGonderSunucu(
   token: unknown,
   input: { enlem: number; boylam: number; dogruluk?: number | null | undefined },
 ) {
-  const claims = await tokenDogrula(token);
+  const claims = await oturumDogrula(token);
   const sb = await db();
   const { error } = await sb.from("personel_konumlari").insert({
     personel_id: claims.id,
@@ -168,7 +168,7 @@ export async function konumGonderSunucu(
 }
 
 export async function tumGorevleriGetirSunucu(token: unknown): Promise<Gorev[]> {
-  await ikDogrula(token);
+  await ikOturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb
     .from("gorevler")
@@ -179,7 +179,7 @@ export async function tumGorevleriGetirSunucu(token: unknown): Promise<Gorev[]> 
 }
 
 export async function personelGorevleriniGetirSunucu(token: unknown): Promise<Gorev[]> {
-  const claims = await tokenDogrula(token);
+  const claims = await oturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb
     .from("gorevler")
@@ -192,7 +192,7 @@ export async function personelGorevleriniGetirSunucu(token: unknown): Promise<Go
 
 /** Görevi getirir; personel yalnızca kendisine atanan görevi görebilir. */
 export async function gorevGetirSunucu(token: unknown, id: string): Promise<Gorev | null> {
-  const claims = await tokenDogrula(token);
+  const claims = await oturumDogrula(token);
   const sb = await db();
   let sorgu = sb.from("gorevler").select(GOREV_SELECT).eq("id", id);
   if (claims.rol !== "ik") sorgu = sorgu.eq("personel_id", claims.id);
@@ -219,7 +219,7 @@ export async function gorevOlusturSunucu(
     planlanan_tarih: string;
   },
 ) {
-  await ikDogrula(token);
+  await ikOturumDogrula(token);
   const sb = await db();
   const { data: hedef, error: hedefHatasi } = await sb
     .from("personel")
@@ -302,7 +302,7 @@ export async function personelEkleSunucu(
   token: unknown,
   input: { ad_soyad: string; telefon: string; pin_kodu: string },
 ) {
-  const yonetici = await ikDogrula(token);
+  const yonetici = await ikOturumDogrula(token);
   const telefon = input.telefon.replace(/\D/g, "");
   if (telefon.length < 10) throw new Error("Geçerli bir telefon numarası girin.");
   const sb = await db();
@@ -337,7 +337,7 @@ export async function personelEkleSunucu(
 
 /** İK: personelin aktiflik durumunu değiştirir (işten çıkarma / geri alma). */
 export async function personelAktiflikGuncelleSunucu(token: unknown, id: string, aktif: boolean) {
-  const yonetici = await ikDogrula(token);
+  const yonetici = await ikOturumDogrula(token);
   const sb = await db();
   const { error } = await sb.from("personel").update({ aktif }).eq("id", id).eq("rol", "personel");
   if (error) throw error;
@@ -355,7 +355,7 @@ export async function personelDuzenleSunucu(
   token: unknown,
   input: { id: string; ad_soyad: string; telefon: string; pin_kodu?: string | undefined; aktif: boolean },
 ) {
-  const yonetici = await ikDogrula(token);
+  const yonetici = await ikOturumDogrula(token);
   const telefon = input.telefon.replace(/\D/g, "");
   if (telefon.length < 10) throw new Error("Geçerli bir telefon numarası girin.");
   const sb = await db();
@@ -412,7 +412,7 @@ export async function personelDuzenleSunucu(
 
 /** İK: personel kaydını tamamen siler; görev kayıtlarındaki atama boşa çıkarılır. */
 export async function personelSilSunucu(token: unknown, id: string) {
-  const yonetici = await ikDogrula(token);
+  const yonetici = await ikOturumDogrula(token);
   const sb = await db();
   const { data: silinen } = await sb
     .from("personel")
@@ -438,7 +438,7 @@ export async function personelSilSunucu(token: unknown, id: string) {
 
 /** İK: yönetim işlemlerinin denetim kayıtlarını en yeniden eskiye listeler. */
 export async function auditLoglariGetirSunucu(token: unknown, limit = 200) {
-  await ikDogrula(token);
+  await ikOturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb
     .from("audit_loglari")
