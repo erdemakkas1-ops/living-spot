@@ -186,7 +186,7 @@ function SahaListesi() {
           </div>
         </div>
 
-        <PersonelDurumCubugu />
+        {onizleme && <PersonelDurumCubugu />}
 
         <h2 className="mt-7 mb-3 flex items-center gap-2 text-base font-bold">
           <HardHat className="h-4 w-4 text-primary" />
