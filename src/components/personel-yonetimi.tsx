@@ -184,7 +184,7 @@ export function PersonelYonetimi({
                   maxLength={4}
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                  placeholder="1111"
+                  placeholder="••••"
                 />
               </div>
             </div>
