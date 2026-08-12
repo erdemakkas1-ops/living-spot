@@ -103,6 +103,14 @@ export const Route = createFileRoute("/panel")({
 function PanelSayfasi() {
   const navigate = useNavigate();
   const { kullanici, hazir } = useOturum();
+  const panelQc = useQueryClient();
+
+  // Çıkışta önbellekteki tüm sorgu verileri de temizlenir.
+  const cikisYap = () => {
+    oturumSil();
+    panelQc.clear();
+    navigate({ to: "/" });
+  };
 
   useEffect(() => {
     if (hazir && !kullanici) navigate({ to: "/" });
@@ -194,10 +202,7 @@ function PanelSayfasi() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => {
-                    oturumSil();
-                    navigate({ to: "/" });
-                  }}
+                  onClick={cikisYap}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Çıkış Yap
@@ -223,10 +228,7 @@ function PanelSayfasi() {
               variant="secondary"
               size="sm"
               className="h-9 w-9 px-0 sm:w-auto sm:px-3"
-              onClick={() => {
-                oturumSil();
-                navigate({ to: "/" });
-              }}
+              onClick={cikisYap}
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Çıkış</span>
