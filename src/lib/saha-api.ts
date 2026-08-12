@@ -46,6 +46,9 @@ async function cagir<T>(islem: Promise<T>): Promise<T> {
     if (mesaj.includes("Oturum") && typeof window !== "undefined") {
       oturumSil();
       window.location.replace("/");
+      // Hata yeniden atılırsa React error boundary beyaz ekran gösteriyor;
+      // yönlendirme tamamlanana kadar bekleyen bir promise döndürüyoruz.
+      return await new Promise<T>(() => {});
     }
     throw hata;
   }
@@ -54,6 +57,19 @@ async function cagir<T>(islem: Promise<T>): Promise<T> {
 function token() {
   const t = tokenOku();
   if (!t) throw new Error("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
+  // Token'ın süresi dolmuşsa sunucuya gitmeden oturumu kapat.
+  try {
+    const govde = t.split(".")[0] ?? "";
+    const json = atob(govde.replace(/-/g, "+").replace(/_/g, "/"));
+    const exp = (JSON.parse(json) as { exp?: number }).exp ?? 0;
+    if (exp && exp < Date.now()) {
+      oturumSil();
+      if (typeof window !== "undefined") window.location.replace("/");
+      throw new Error("Oturum süresi doldu. Lütfen tekrar giriş yapın.");
+    }
+  } catch {
+    // Çözümlenemeyen token'ı sunucu doğrulaması elemeye devam eder.
+  }
   return t;
 }
 
