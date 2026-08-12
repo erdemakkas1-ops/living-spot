@@ -1,5 +1,6 @@
 /** Sunucu tarafı saha veri erişimi. Tüm tablo erişimi burada, yetki kontrolü ile yapılır. */
 import { ikDogrula, tokenDogrula, tokenUret } from "./saha-token.server";
+import { pinDogrula, pinHashle } from "./saha-pin.server";
 import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
 const GOREV_SELECT =
@@ -33,13 +34,30 @@ export async function girisYapSunucu(telefon: string, pin: string) {
 
   const { data, error } = await sb
     .from("personel")
-    .select(PERSONEL_SELECT)
+    .select(`${PERSONEL_SELECT}, pin_kodu, pin_hash`)
     .eq("telefon", tel)
-    .eq("pin_kodu", pin.trim())
     .eq("aktif", true)
     .maybeSingle();
   if (error) throw new Error("Giriş sırasında bir hata oluştu.");
-  if (!data) {
+  const kayit = data as unknown as
+    | (Personel & { pin_kodu: string | null; pin_hash: string | null })
+    | null;
+  const girilen = pin.trim();
+  // Hash varsa onunla doğrula; yoksa eski düz metin PIN ile doğrulayıp
+  // aşamalı geçiş kapsamında hemen hash'e dönüştür.
+  let gecerli = false;
+  if (kayit?.pin_hash) {
+    gecerli = pinDogrula(girilen, kayit.pin_hash);
+  } else if (kayit?.pin_kodu) {
+    gecerli = kayit.pin_kodu === girilen;
+    if (gecerli) {
+      await sb
+        .from("personel")
+        .update({ pin_hash: pinHashle(girilen), pin_kodu: null })
+        .eq("id", kayit.id);
+    }
+  }
+  if (!kayit || !gecerli) {
     await sb.from("giris_denemeleri").insert({ telefon: tel });
     // Bu denemeyle sınır dolduysa kilit mesajını ver.
     if ((count ?? 0) + 1 >= MAKS_DENEME) throw new Error(KILIT_MESAJI);
@@ -47,7 +65,9 @@ export async function girisYapSunucu(telefon: string, pin: string) {
   }
   // Başarılı girişte o telefona ait deneme kayıtları temizlenir.
   await sb.from("giris_denemeleri").delete().eq("telefon", tel);
-  const personel = data as unknown as Personel;
+  // PIN/hash alanları asla yanıt gövdesine konmaz.
+  const { pin_kodu: _pk, pin_hash: _ph, ...temiz } = kayit;
+  const personel = temiz as Personel;
   return { personel, token: await tokenUret(personel.id, personel.rol) };
 }
 
@@ -295,7 +315,8 @@ export async function personelEkleSunucu(
   const { error } = await sb.from("personel").insert({
     ad_soyad: input.ad_soyad.trim(),
     telefon,
-    pin_kodu: input.pin_kodu.trim(),
+    pin_kodu: null,
+    pin_hash: pinHashle(input.pin_kodu),
     rol: "personel",
     aktif: true,
   });
@@ -336,7 +357,7 @@ export async function personelDuzenleSunucu(
       telefon,
       aktif: input.aktif,
       // PIN alanı boş bırakıldıysa mevcut PIN korunur.
-      ...(input.pin_kodu ? { pin_kodu: input.pin_kodu } : {}),
+      ...(input.pin_kodu ? { pin_kodu: null, pin_hash: pinHashle(input.pin_kodu) } : {}),
     })
     .eq("id", input.id);
   if (error) throw error;
