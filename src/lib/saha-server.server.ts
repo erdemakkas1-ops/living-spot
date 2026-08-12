@@ -19,7 +19,8 @@ const HATA_MESAJI = "Telefon veya PIN kodu hatalı.";
 
 export async function girisYapSunucu(telefon: string, pin: string) {
   const sb = await db();
-  const tel = telefon.trim();
+  // Telefonlar veritabanında sadece rakam olarak tutulur ("0533 533 53 53" -> "05335335353").
+  const tel = telefon.replace(/\D/g, "");
   const pencereBasi = new Date(Date.now() - PENCERE_MS).toISOString();
 
   // Sunucu tarafı hız sınırı: aynı telefon için 15 dk içinde 5 başarısız deneme.
