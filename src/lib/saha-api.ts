@@ -187,7 +187,11 @@ function dosyadanBase64(file: File): Promise<string> {
 }
 
 export async function fotoYukle(gorevId: string, file: File): Promise<string> {
-  if (file.size > 10 * 1024 * 1024) throw new Error("Fotoğraf 10MB'dan büyük olamaz.");
+  const izinliTurler = ["image/jpeg", "image/png", "image/webp"];
+  if (!izinliTurler.includes(file.type)) {
+    throw new Error("Yalnızca JPEG, PNG veya WebP fotoğrafı seçebilirsiniz.");
+  }
+  if (file.size > 8 * 1024 * 1024) throw new Error("Fotoğraf 8MB'dan büyük olamaz.");
   const uzanti =
     (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").slice(0, 5) || "jpg";
   const base64 = await dosyadanBase64(file);

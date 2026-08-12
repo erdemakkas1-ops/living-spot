@@ -187,7 +187,7 @@ function GorevDetay() {
                 <input
                   ref={dosyaRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   capture="environment"
                   className="hidden"
                   onChange={(e) => setFoto(e.target.files?.[0] ?? null)}

@@ -272,6 +272,24 @@ async function gorevErisimiDogrula(token: unknown, gorevId: string) {
   return gorev;
 }
 
+/** Görevi değiştiren saha işlemleri yalnızca görevin atandığı personel tarafından yapılabilir. */
+async function gorevYazmaErisimiDogrula(token: unknown, gorevId: string) {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") {
+    throw new Error("Bu işlem yalnızca görevin atandığı saha personeli tarafından yapılabilir.");
+  }
+  const sb = await db();
+  const { data, error } = await sb
+    .from("gorevler")
+    .select("id, personel_id, durum")
+    .eq("id", gorevId)
+    .eq("personel_id", claims.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Bu görev için yetkiniz yok.");
+  return data as { id: string; personel_id: string; durum: string };
+}
+
 export async function gorevOlusturSunucu(
   token: unknown,
   input: {
@@ -304,7 +322,7 @@ export async function gorevDurumGuncelleSunucu(token: unknown, id: string, durum
   if (durum !== "bekliyor" && durum !== "devam_ediyor") {
     throw new Error("Görev yalnızca fotoğraflı tamamlama akışıyla kapatılabilir.");
   }
-  await gorevErisimiDogrula(token, id);
+  await gorevYazmaErisimiDogrula(token, id);
   const sb = await db();
   const { error } = await sb.from("gorevler").update({ durum }).eq("id", id);
   if (error) throw error;
@@ -318,18 +336,58 @@ function base64ToBytes(base64: string) {
   return out;
 }
 
+const FOTO_TURLERI = {
+  jpeg: { mime: "image/jpeg", uzanti: "jpg" },
+  png: { mime: "image/png", uzanti: "png" },
+  webp: { mime: "image/webp", uzanti: "webp" },
+} as const;
+
+function fotoTurunuAlgila(bytes: Uint8Array) {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return FOTO_TURLERI.jpeg;
+  }
+  if (
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a
+  ) {
+    return FOTO_TURLERI.png;
+  }
+  if (
+    bytes.length >= 12 &&
+    String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" &&
+    String.fromCharCode(...bytes.slice(8, 12)) === "WEBP"
+  ) {
+    return FOTO_TURLERI.webp;
+  }
+  throw new Error("Yalnızca geçerli JPEG, PNG veya WebP fotoğrafları yüklenebilir.");
+}
+
 export async function fotoYukleSunucu(
   token: unknown,
   input: { gorevId: string; base64: string; contentType: string; uzanti: string },
 ) {
-  await gorevErisimiDogrula(token, input.gorevId);
-  const bytes = base64ToBytes(input.base64);
-  if (bytes.byteLength > 10 * 1024 * 1024) throw new Error("Fotoğraf 10MB'dan büyük olamaz.");
-  const yol = `${input.gorevId}/${Date.now()}.${input.uzanti}`;
+  const gorev = await gorevYazmaErisimiDogrula(token, input.gorevId);
+  if (gorev.durum === "tamamlandi") throw new Error("Tamamlanmış göreve fotoğraf yüklenemez.");
+  let bytes: Uint8Array;
+  try {
+    bytes = base64ToBytes(input.base64);
+  } catch {
+    throw new Error("Fotoğraf verisi geçersiz.");
+  }
+  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Fotoğraf 8MB'dan büyük olamaz.");
+  const tur = fotoTurunuAlgila(bytes);
+  const yol = `${input.gorevId}/${crypto.randomUUID()}.${tur.uzanti}`;
   const sb = await db();
   const { error } = await sb.storage
     .from("is-fotolari")
-    .upload(yol, bytes, { contentType: input.contentType });
+    .upload(yol, bytes, { contentType: tur.mime, upsert: false });
   if (error) throw error;
   return { yol };
 }
@@ -347,8 +405,16 @@ export async function gorevTamamlaSunucu(
   token: unknown,
   input: { gorevId: string; fotoYolu: string; not: string },
 ) {
-  await gorevErisimiDogrula(token, input.gorevId);
+  const gorev = await gorevYazmaErisimiDogrula(token, input.gorevId);
+  if (gorev.durum === "tamamlandi") throw new Error("Görev zaten tamamlanmış.");
+  if (!input.fotoYolu.startsWith(`${input.gorevId}/`)) {
+    throw new Error("Fotoğraf bu göreve ait değil.");
+  }
   const sb = await db();
+  const { data: foto, error: fotoHatasi } = await sb.storage
+    .from("is-fotolari")
+    .download(input.fotoYolu);
+  if (fotoHatasi || !foto) throw new Error("Göreve ait fotoğraf bulunamadı.");
   const { error } = await sb.from("is_loglari").insert({
     gorev_id: input.gorevId,
     foto_url: input.fotoYolu,
