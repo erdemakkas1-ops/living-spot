@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { girisYap } from "@/lib/saha-api";
-import { oturumYaz, useOturum } from "@/lib/saha-session";
+import { oturumSebebiAl, oturumYaz, useOturum } from "@/lib/saha-session";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -44,6 +44,12 @@ function GirisSayfasi() {
       navigate({ to: kullanici.rol === "ik" ? "/panel" : "/saha" });
     }
   }, [kullanici, navigate]);
+
+  // Oturum süresi dolduğu için yönlendirildiyse kullanıcıya bildirim gösterilir.
+  useEffect(() => {
+    const sebep = oturumSebebiAl();
+    if (sebep) toast.error(sebep);
+  }, []);
 
   const gonder = async (e: React.FormEvent) => {
     e.preventDefault();

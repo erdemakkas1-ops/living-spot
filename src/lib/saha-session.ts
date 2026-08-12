@@ -3,6 +3,9 @@ import type { Personel } from "./saha-types";
 
 const KEY = "saha-oturum";
 const TOKEN_KEY = "saha-token";
+const SEBEP_KEY = "saha-oturum-sebep";
+
+export const OTURUM_SURESI_DOLDU = "Oturum süreniz doldu. Lütfen tekrar giriş yapın.";
 
 export function tokenOku(): string {
   if (typeof window === "undefined") return "";
@@ -36,9 +39,44 @@ export function oturumYaz(p: Personel) {
 }
 
 export function oturumSil() {
-  window.localStorage.removeItem(KEY);
-  window.localStorage.removeItem(TOKEN_KEY);
+  if (typeof window === "undefined") return;
+  try {
+    // Uygulamaya ait tüm yerel oturum verileri temizlenir.
+    Object.keys(window.localStorage)
+      .filter((k) => k.startsWith("saha-"))
+      .forEach((k) => window.localStorage.removeItem(k));
+    window.sessionStorage.removeItem(SEBEP_KEY);
+  } catch {
+    /* yoksay */
+  }
   window.dispatchEvent(new Event("saha-oturum-degisti"));
+}
+
+/**
+ * Yetkisiz / süresi dolmuş sunucu yanıtında çağrılır: yerel oturumu temizler,
+ * giriş ekranında gösterilecek bildirimi bırakır ve kullanıcıyı yönlendirir.
+ */
+export function oturumSonlandir(mesaj = OTURUM_SURESI_DOLDU) {
+  if (typeof window === "undefined") return;
+  oturumSil();
+  try {
+    window.sessionStorage.setItem(SEBEP_KEY, mesaj);
+  } catch {
+    /* yoksay */
+  }
+  if (window.location.pathname !== "/") window.location.replace("/");
+}
+
+/** Giriş ekranı için bekleyen oturum bildirimini okur ve tüketir. */
+export function oturumSebebiAl(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const mesaj = window.sessionStorage.getItem(SEBEP_KEY);
+    if (mesaj) window.sessionStorage.removeItem(SEBEP_KEY);
+    return mesaj;
+  } catch {
+    return null;
+  }
 }
 
 export function useOturum() {
