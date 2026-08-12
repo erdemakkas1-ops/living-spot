@@ -58,17 +58,19 @@ function token() {
   const t = tokenOku();
   if (!t) throw new Error("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
   // Token'ın süresi dolmuşsa sunucuya gitmeden oturumu kapat.
+  let suresiDoldu = false;
   try {
     const govde = t.split(".")[0] ?? "";
     const json = atob(govde.replace(/-/g, "+").replace(/_/g, "/"));
     const exp = (JSON.parse(json) as { exp?: number }).exp ?? 0;
-    if (exp && exp < Date.now()) {
-      oturumSil();
-      if (typeof window !== "undefined") window.location.replace("/");
-      throw new Error("Oturum süresi doldu. Lütfen tekrar giriş yapın.");
-    }
+    suresiDoldu = exp > 0 && exp < Date.now();
   } catch {
     // Çözümlenemeyen token'ı sunucu doğrulaması elemeye devam eder.
+  }
+  if (suresiDoldu) {
+    oturumSil();
+    if (typeof window !== "undefined") window.location.replace("/");
+    throw new Error("Oturum süresi doldu. Lütfen tekrar giriş yapın.");
   }
   return t;
 }
