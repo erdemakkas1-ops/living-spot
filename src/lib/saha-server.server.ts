@@ -404,6 +404,8 @@ export async function personelEkleSunucu(
 export async function personelAktiflikGuncelleSunucu(token: unknown, id: string, aktif: boolean) {
   const yonetici = await ikOturumDogrula(token);
   const sb = await db();
+  // Yönetici hesabı bu işlemle pasife alınamaz.
+  await hedefPersonelDogrula(sb, id);
   const { error } = await sb.from("personel").update({ aktif }).eq("id", id).eq("rol", "personel");
   if (error) throw error;
   await auditYaz(sb, {
@@ -426,9 +428,13 @@ export async function personelDuzenleSunucu(
   const sb = await db();
   const { data: onceki } = await sb
     .from("personel")
-    .select("ad_soyad, telefon, aktif")
+    .select("ad_soyad, telefon, aktif, rol")
     .eq("id", input.id)
     .maybeSingle();
+  // Yönetici kaydı düzenlenebilir ama yanlışlıkla pasife alınamaz.
+  if (onceki && (onceki as { rol?: string }).rol === "ik" && !input.aktif) {
+    throw new Error("Yönetici hesabı pasife alınamaz.");
+  }
   const { data: mevcut, error: kontrolHatasi } = await sb
     .from("personel")
     .select("id")
@@ -479,6 +485,7 @@ export async function personelDuzenleSunucu(
 export async function personelSilSunucu(token: unknown, id: string) {
   const yonetici = await ikOturumDogrula(token);
   const sb = await db();
+  await hedefPersonelDogrula(sb, id);
   const { data: silinen } = await sb
     .from("personel")
     .select("ad_soyad, telefon")
