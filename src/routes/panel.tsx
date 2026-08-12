@@ -307,7 +307,7 @@ function PanelSayfasi() {
               <RaporIndir gorevler={filtreli} />
               <GorevAtamaModali
                 bloklar={bloklar.data ?? []}
-                personeller={(personeller.data ?? []).filter((p) => p.aktif)}
+                personeller={(personeller.data ?? []).filter((p) => p.aktif && p.rol === "personel")}
               />
             </div>
           </div>

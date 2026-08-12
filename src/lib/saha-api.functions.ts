@@ -14,6 +14,7 @@ import {
   mesaiDurumuGetirSunucu,
   mesaiDurumuGuncelleSunucu,
   personelAktiflikGuncelleSunucu,
+  personelDuzenleSunucu,
   personelEkleSunucu,
   personelGetirSunucu,
   personelGorevleriniGetirSunucu,
@@ -186,6 +187,21 @@ export const personelAktiflikGuncelleFn = createServerFn({ method: "POST" })
     z.object({ token: z.string().min(10), id: z.string().uuid(), aktif: z.boolean() }).parse(d),
   )
   .handler(({ data }) => personelAktiflikGuncelleSunucu(data.token, data.id, data.aktif));
+
+export const personelDuzenleFn = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({
+        token: z.string().min(10),
+        id: z.string().uuid(),
+        ad_soyad: z.string().min(2).max(120),
+        telefon: z.string().min(10).max(20),
+        pin_kodu: z.string().regex(/^\d{4}$/),
+        aktif: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(({ data }) => personelDuzenleSunucu(data.token, data));
 
 export const personelSilFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10), id: z.string().uuid() }).parse(d))

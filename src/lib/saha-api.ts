@@ -17,6 +17,7 @@ import {
   personelAktiflikGuncelleFn,
   personelDurumlariFn,
   personelEkleFn,
+  personelDuzenleFn,
   personelGetirFn,
   personelGorevleriniGetirFn,
   personelSilFn,
@@ -230,6 +231,16 @@ export async function personelEkle(input: { ad_soyad: string; telefon: string; p
 
 export async function personelAktiflikGuncelle(id: string, aktif: boolean) {
   await cagir(personelAktiflikGuncelleFn({ data: { token: token(), id, aktif } }));
+}
+
+export async function personelDuzenle(input: {
+  id: string;
+  ad_soyad: string;
+  telefon: string;
+  pin_kodu: string;
+  aktif: boolean;
+}) {
+  await cagir(personelDuzenleFn({ data: { token: token(), ...input } }));
 }
 
 export async function personelSil(id: string) {

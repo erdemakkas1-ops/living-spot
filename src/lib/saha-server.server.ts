@@ -40,7 +40,6 @@ export async function personelGetirSunucu(token: unknown): Promise<Personel[]> {
   const { data, error } = await sb
     .from("personel")
     .select(PERSONEL_SELECT)
-    .eq("rol", "personel")
     .order("ad_soyad");
   if (error) throw error;
   return (data ?? []) as unknown as Personel[];
@@ -264,6 +263,31 @@ export async function personelAktiflikGuncelleSunucu(token: unknown, id: string,
   await ikDogrula(token);
   const sb = await db();
   const { error } = await sb.from("personel").update({ aktif }).eq("id", id).eq("rol", "personel");
+  if (error) throw error;
+  return { ok: true };
+}
+
+/** İK: personel veya yönetici kaydının iletişim ve giriş bilgilerini günceller. */
+export async function personelDuzenleSunucu(
+  token: unknown,
+  input: { id: string; ad_soyad: string; telefon: string; pin_kodu: string; aktif: boolean },
+) {
+  await ikDogrula(token);
+  const telefon = input.telefon.replace(/\D/g, "");
+  if (telefon.length < 10) throw new Error("Geçerli bir telefon numarası girin.");
+  const sb = await db();
+  const { data: mevcut, error: kontrolHatasi } = await sb
+    .from("personel")
+    .select("id")
+    .eq("telefon", telefon)
+    .neq("id", input.id)
+    .maybeSingle();
+  if (kontrolHatasi) throw kontrolHatasi;
+  if (mevcut) throw new Error("Bu telefon numarası başka bir kayıtta kullanılıyor.");
+  const { error } = await sb
+    .from("personel")
+    .update({ ad_soyad: input.ad_soyad.trim(), telefon, pin_kodu: input.pin_kodu, aktif: input.aktif })
+    .eq("id", input.id);
   if (error) throw error;
   return { ok: true };
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Phone, Trash2, UserPlus, Users } from "lucide-react";
+import { Pencil, Phone, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,11 @@ import {
 import {
   personelAktiflikGuncelle,
   personelEkle,
+  personelDuzenle,
   personelGetir,
   personelSil,
 } from "@/lib/saha-api";
+import type { Personel } from "@/lib/saha-types";
 
 /** İK panelinde saha personelini manuel ekleme / çıkarma modülü. */
 export function PersonelYonetimi({
@@ -52,6 +54,10 @@ export function PersonelYonetimi({
   const [adSoyad, setAdSoyad] = useState("");
   const [telefon, setTelefon] = useState("");
   const [pin, setPin] = useState("");
+  const [duzenlenen, setDuzenlenen] = useState<Personel | null>(null);
+  const [duzenlemeAd, setDuzenlemeAd] = useState("");
+  const [duzenlemeTelefon, setDuzenlemeTelefon] = useState("");
+  const [duzenlemePin, setDuzenlemePin] = useState("");
 
   const yenile = () => {
     void qc.invalidateQueries({ queryKey: ["personel"] });
@@ -95,6 +101,29 @@ export function PersonelYonetimi({
   });
 
   const liste = personeller.data ?? [];
+  const duzenle = useMutation({
+    mutationFn: () =>
+      personelDuzenle({
+        id: duzenlenen!.id,
+        ad_soyad: duzenlemeAd,
+        telefon: duzenlemeTelefon,
+        pin_kodu: duzenlemePin,
+        aktif: duzenlenen!.aktif,
+      }),
+    onSuccess: () => {
+      toast.success("Personel bilgileri güncellendi.");
+      setDuzenlenen(null);
+      yenile();
+    },
+    onError: (h: unknown) => toast.error(h instanceof Error ? h.message : "Kayıt güncellenemedi."),
+  });
+
+  const duzenlemeyiAc = (p: Personel) => {
+    setDuzenlenen(p);
+    setDuzenlemeAd(p.ad_soyad);
+    setDuzenlemeTelefon(p.telefon);
+    setDuzenlemePin("");
+  };
 
   return (
     <section
@@ -194,6 +223,7 @@ export function PersonelYonetimi({
           >
             <div className="min-w-0">
               <p className="truncate font-semibold">{p.ad_soyad}</p>
+              <p className="text-xs text-muted-foreground">{p.rol === "ik" ? "Yönetici / İK" : "Saha personeli"}</p>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
                 <Phone className="h-3 w-3" />
                 {p.telefon}
@@ -209,15 +239,19 @@ export function PersonelYonetimi({
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              <Button variant="outline" size="sm" onClick={() => duzenlemeyiAc(p)}>
+                <Pencil className="h-4 w-4" />
+                Düzenle
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
-                disabled={aktiflik.isPending}
+                disabled={aktiflik.isPending || p.rol === "ik"}
                 onClick={() => aktiflik.mutate({ id: p.id, aktif: !p.aktif })}
               >
                 {p.aktif ? "Pasife Al" : "Aktif Et"}
               </Button>
-              <AlertDialog>
+              {p.rol === "personel" && <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="ghost"
@@ -243,11 +277,25 @@ export function PersonelYonetimi({
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
-              </AlertDialog>
+              </AlertDialog>}
             </div>
           </div>
         ))}
       </div>
+      <Dialog open={!!duzenlenen} onOpenChange={(acildi) => !acildi && setDuzenlenen(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Personel Bilgilerini Düzenle</DialogTitle>
+            <DialogDescription>{duzenlenen?.rol === "ik" ? "Yönetici / İK hesabı" : "Saha personeli"}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1.5"><Label htmlFor="duzenle-ad">Ad Soyad</Label><Input id="duzenle-ad" value={duzenlemeAd} onChange={(e) => setDuzenlemeAd(e.target.value)} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="duzenle-tel">Telefon</Label><Input id="duzenle-tel" inputMode="numeric" value={duzenlemeTelefon} onChange={(e) => setDuzenlemeTelefon(e.target.value)} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="duzenle-pin">Yeni PIN (4 hane)</Label><Input id="duzenle-pin" inputMode="numeric" maxLength={4} value={duzenlemePin} onChange={(e) => setDuzenlemePin(e.target.value.replace(/\D/g, ""))} placeholder="Değiştirmek için girin" /></div>
+          </div>
+          <DialogFooter><Button onClick={() => duzenle.mutate()} disabled={duzenle.isPending || duzenlemeAd.trim().length < 2 || duzenlemeTelefon.replace(/\D/g, "").length < 10 || duzenlemePin.length !== 4}>{duzenle.isPending ? "Kaydediliyor..." : "Kaydet"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
