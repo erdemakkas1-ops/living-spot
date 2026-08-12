@@ -43,6 +43,7 @@ export type Database = {
           is_turu: string
           olusturma_tarihi: string
           personel_id: string | null
+          planlanan_tarih: string
         }
         Insert: {
           aciklama?: string | null
@@ -54,6 +55,7 @@ export type Database = {
           is_turu?: string
           olusturma_tarihi?: string
           personel_id?: string | null
+          planlanan_tarih?: string
         }
         Update: {
           aciklama?: string | null
@@ -65,6 +67,7 @@ export type Database = {
           is_turu?: string
           olusturma_tarihi?: string
           personel_id?: string | null
+          planlanan_tarih?: string
         }
         Relationships: [
           {
