@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_loglari: {
+        Row: {
+          aciklama: string
+          created_at: string
+          hedef_personel_id: string | null
+          id: string
+          islem_turu: string
+          yonetici_id: string | null
+        }
+        Insert: {
+          aciklama?: string
+          created_at?: string
+          hedef_personel_id?: string | null
+          id?: string
+          islem_turu: string
+          yonetici_id?: string | null
+        }
+        Update: {
+          aciklama?: string
+          created_at?: string
+          hedef_personel_id?: string | null
+          id?: string
+          islem_turu?: string
+          yonetici_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_loglari_yonetici_id_fkey"
+            columns: ["yonetici_id"]
+            isOneToOne: false
+            referencedRelation: "personel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bloklar: {
         Row: {
           blok_adi: string
