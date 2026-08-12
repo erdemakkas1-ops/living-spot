@@ -183,3 +183,7 @@
 a[href*="lovable.dev/projects"][href*="utm_source=lovable-badge"] {
   display: none !important;
 }
+
+#lovable-badge {
+  display: none !important;
+}
