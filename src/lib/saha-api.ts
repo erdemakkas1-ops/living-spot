@@ -237,7 +237,7 @@ export async function personelDuzenle(input: {
   id: string;
   ad_soyad: string;
   telefon: string;
-  pin_kodu: string;
+  pin_kodu?: string;
   aktif: boolean;
 }) {
   await cagir(personelDuzenleFn({ data: { token: token(), ...input } }));
