@@ -22,7 +22,9 @@ function b64urlDecode(input: string) {
 
 async function anahtar() {
   const secret =
-    process.env["SAHA_SESSION_SECRET"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    process.env["SAHA_SESSION_SECRET"] ??
+    process.env["SUPABASE_SECRET_KEY"] ??
+    process.env["SUPABASE_SERVICE_ROLE_KEY"];
   if (!secret) throw new Error("Oturum anahtarı yapılandırılmamış.");
   return crypto.subtle.importKey(
     "raw",
