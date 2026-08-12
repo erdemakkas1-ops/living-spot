@@ -24,7 +24,13 @@ import {
   sonKonumlariGetirFn,
   tumGorevleriGetirFn,
 } from "./saha-api.functions";
-import { OTURUM_SURESI_DOLDU, oturumSonlandir, tokenOku, tokenYaz } from "./saha-session";
+import {
+  OTURUM_SURESI_DOLDU,
+  oturumSonlandir,
+  tokenOku,
+  tokenSuresiDoldu,
+  tokenYaz,
+} from "./saha-session";
 import type { AnlikDurum, Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
 /**
@@ -37,8 +43,14 @@ async function cagir<T>(islem: Promise<T>): Promise<T> {
     return await islem;
   } catch (hata) {
     const mesaj = hata instanceof Error ? hata.message : String(hata);
+    // Yalnızca gerçek oturum hataları oturumu kapatır. "yetki" içeren yetkilendirme
+    // hataları (ör. İK'ya özel işlem) oturumu düşürmemeli.
     const oturumHatasi =
-      mesaj.includes("Oturum") || mesaj.includes("yetki") || mesaj.includes("Unauthorized");
+      mesaj.includes("Oturum geçersiz") ||
+      mesaj.includes("Oturum bulunamadı") ||
+      mesaj.includes("süresi dolmuş") ||
+      mesaj.includes(OTURUM_SURESI_DOLDU) ||
+      mesaj.includes("Unauthorized");
     if (oturumHatasi && typeof window !== "undefined") {
       oturumSonlandir(OTURUM_SURESI_DOLDU);
       // Hata yeniden atılırsa React error boundary beyaz ekran gösteriyor;
@@ -53,16 +65,7 @@ function token() {
   const t = tokenOku();
   if (!t) throw new Error("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
   // Token'ın süresi dolmuşsa sunucuya gitmeden oturumu kapat.
-  let suresiDoldu = false;
-  try {
-    const govde = t.split(".")[0] ?? "";
-    const json = atob(govde.replace(/-/g, "+").replace(/_/g, "/"));
-    const exp = (JSON.parse(json) as { exp?: number }).exp ?? 0;
-    suresiDoldu = exp > 0 && exp < Date.now();
-  } catch {
-    // Çözümlenemeyen token'ı sunucu doğrulaması elemeye devam eder.
-  }
-  if (suresiDoldu) {
+  if (tokenSuresiDoldu(t)) {
     oturumSonlandir(OTURUM_SURESI_DOLDU);
     throw new Error(OTURUM_SURESI_DOLDU);
   }
