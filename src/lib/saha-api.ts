@@ -24,14 +24,7 @@ import {
   tumGorevleriGetirFn,
 } from "./saha-api.functions";
 import { oturumSil, tokenOku, tokenYaz } from "./saha-session";
-import type {
-  AnlikDurum,
-  Blok,
-  Gorev,
-  MesaiDurumu,
-  Personel,
-  PersonelKonum,
-} from "./saha-types";
+import type { AnlikDurum, Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
 /**
  * Sunucu tarafındaki oturum hatalarını (süresi dolmuş/geçersiz imzalı token)
@@ -76,7 +69,9 @@ function token() {
 }
 
 export async function girisYap(telefon: string, pin: string): Promise<Personel> {
-  const sonuc = await girisYapFn({ data: { telefon: telefon.replace(/\D/g, ""), pin: pin.trim() } });
+  const sonuc = await girisYapFn({
+    data: { telefon: telefon.replace(/\D/g, ""), pin: pin.trim() },
+  });
   tokenYaz(sonuc.token);
   return sonuc.personel as Personel;
 }
@@ -150,6 +145,7 @@ export async function gorevOlustur(input: {
   is_basligi: string;
   aciklama: string;
   aciliyet: "normal" | "acil";
+  planlanan_tarih: string;
   is_turu:
     | "peyzaj"
     | "bakim"
@@ -163,10 +159,7 @@ export async function gorevOlustur(input: {
   await cagir(gorevOlusturFn({ data: { token: token(), ...input } }));
 }
 
-export async function gorevDurumGuncelle(
-  id: string,
-  durum: "bekliyor" | "devam_ediyor",
-) {
+export async function gorevDurumGuncelle(id: string, durum: "bekliyor" | "devam_ediyor") {
   await cagir(gorevDurumGuncelleFn({ data: { token: token(), id, durum } }));
 }
 
@@ -184,7 +177,8 @@ function dosyadanBase64(file: File): Promise<string> {
 
 export async function fotoYukle(gorevId: string, file: File): Promise<string> {
   if (file.size > 10 * 1024 * 1024) throw new Error("Fotoğraf 10MB'dan büyük olamaz.");
-  const uzanti = (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").slice(0, 5) || "jpg";
+  const uzanti =
+    (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").slice(0, 5) || "jpg";
   const base64 = await dosyadanBase64(file);
   const { yol } = await fotoYukleFn({
     data: {
@@ -203,11 +197,7 @@ export async function fotoUrlAl(yol: string): Promise<string | null> {
   return url;
 }
 
-export async function gorevTamamla(input: {
-  gorevId: string;
-  fotoYolu: string;
-  not: string;
-}) {
+export async function gorevTamamla(input: { gorevId: string; fotoYolu: string; not: string }) {
   await cagir(gorevTamamlaFn({ data: { token: token(), ...input } }));
 }
 
@@ -234,11 +224,7 @@ export async function sonKonumlariGetir(): Promise<PersonelKonum[]> {
     .sort((a, b) => (a.personel?.ad_soyad ?? "").localeCompare(b.personel?.ad_soyad ?? "", "tr"));
 }
 
-export async function personelEkle(input: {
-  ad_soyad: string;
-  telefon: string;
-  pin_kodu: string;
-}) {
+export async function personelEkle(input: { ad_soyad: string; telefon: string; pin_kodu: string }) {
   await cagir(personelEkleFn({ data: { token: token(), ...input } }));
 }
 

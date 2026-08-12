@@ -95,7 +95,7 @@ export function RaporIndir({ gorevler }: { gorevler: Gorev[] }) {
       <h1>Selimpaşa Emlak Konutları — Saha İş Raporu</h1>
       <p class="alt">Oluşturma: ${tarih} · Toplam ${gorevler.length} kayıt</p>
       <table><thead><tr>${BASLIKLAR.map((b) => `<th>${b}</th>`).join("")}</tr></thead><tbody>${govde}</tbody></table>
-      <script>window.onload=function(){window.print()}<\/script>
+      <script>window.onload=function(){window.print()}</script>
     </body></html>`;
     const pencere = window.open("", "_blank");
     if (!pencere) {

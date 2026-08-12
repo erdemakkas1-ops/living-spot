@@ -4,14 +4,7 @@ export type AnlikDurum = "calisiyor" | "molada" | "cevrimdisi";
 export type Durum = "bekliyor" | "devam_ediyor" | "tamamlandi";
 export type Aciliyet = "normal" | "acil";
 export type IsTuru =
-  | "peyzaj"
-  | "bakim"
-  | "temizlik"
-  | "guvenlik"
-  | "elektrik"
-  | "sihhi_tesisat"
-  | "tadilat"
-  | "genel";
+  "peyzaj" | "bakim" | "temizlik" | "guvenlik" | "elektrik" | "sihhi_tesisat" | "tadilat" | "genel";
 
 export type Blok = { id: string; blok_adi: string };
 
@@ -43,6 +36,7 @@ export type Gorev = {
   aciliyet: Aciliyet;
   is_turu: IsTuru;
   olusturma_tarihi: string;
+  planlanan_tarih: string;
   bloklar: { blok_adi: string } | null;
   personel: { ad_soyad: string } | null;
   is_loglari: IsLog[];
@@ -83,14 +77,70 @@ export const IS_TURU_SINIF: Record<IsTuru, string> = {
 };
 
 export const IS_BASLIKLARI: Record<IsTuru, string[]> = {
-  peyzaj: ["Bahçe bakımı", "Çim biçme", "Ağaç/çalı budama", "Çiçeklendirme", "Sulama sistemi kontrolü", "Peyzaj temizliği"],
-  bakim: ["Asansör bakımı", "Isıtma sistemi kontrolü", "Havalandırma kontrolü", "Yangın sistemi kontrolü", "Jeneratör kontrolü", "Kapı/pencere bakımı"],
-  temizlik: ["Genel temizlik", "Merdiven temizliği", "Otopark temizliği", "Sıva temizliği", "Cam temizliği", "Çöp toplama"],
-  guvenlik: ["Güvenlik devriyesi", "Kamera sistemi kontrolü", "Gece kontrolü", "Yangın tatbikatı", "Misafir yönlendirme", "Kapı giriş kontrolü"],
-  elektrik: ["Elektrik arızası", "Aydınlatma kontrolü", "Pano kontrolü", "Elektrik tesisatı bakımı", "Yıldırım sistem kontrolü", "Güç kaynağı kontrolü"],
-  sihhi_tesisat: ["Su kaçağı", "Tıkanıklık açma", "Sıhhi tesisat kontrolü", "Pis su arıtma kontrolü", "Hidrofor kontrolü", "Musluk/batarya kontrolü"],
-  tadilat: ["Boya-badana", "Seramik tamiratı", "Sıva tamiratı", "Kapı kilidi tamiri", "Mermer parlatma", "Tavan tamiratı"],
-  genel: ["Genel kontrol", "Anahtar teslim kontrolü", "Depo sayımı", "Araç kontrolü", "Yönetim talimatı", "Dış mekan kontrolü"],
+  peyzaj: [
+    "Bahçe bakımı",
+    "Çim biçme",
+    "Ağaç/çalı budama",
+    "Çiçeklendirme",
+    "Sulama sistemi kontrolü",
+    "Peyzaj temizliği",
+  ],
+  bakim: [
+    "Asansör bakımı",
+    "Isıtma sistemi kontrolü",
+    "Havalandırma kontrolü",
+    "Yangın sistemi kontrolü",
+    "Jeneratör kontrolü",
+    "Kapı/pencere bakımı",
+  ],
+  temizlik: [
+    "Genel temizlik",
+    "Merdiven temizliği",
+    "Otopark temizliği",
+    "Sıva temizliği",
+    "Cam temizliği",
+    "Çöp toplama",
+  ],
+  guvenlik: [
+    "Güvenlik devriyesi",
+    "Kamera sistemi kontrolü",
+    "Gece kontrolü",
+    "Yangın tatbikatı",
+    "Misafir yönlendirme",
+    "Kapı giriş kontrolü",
+  ],
+  elektrik: [
+    "Elektrik arızası",
+    "Aydınlatma kontrolü",
+    "Pano kontrolü",
+    "Elektrik tesisatı bakımı",
+    "Yıldırım sistem kontrolü",
+    "Güç kaynağı kontrolü",
+  ],
+  sihhi_tesisat: [
+    "Su kaçağı",
+    "Tıkanıklık açma",
+    "Sıhhi tesisat kontrolü",
+    "Pis su arıtma kontrolü",
+    "Hidrofor kontrolü",
+    "Musluk/batarya kontrolü",
+  ],
+  tadilat: [
+    "Boya-badana",
+    "Seramik tamiratı",
+    "Sıva tamiratı",
+    "Kapı kilidi tamiri",
+    "Mermer parlatma",
+    "Tavan tamiratı",
+  ],
+  genel: [
+    "Genel kontrol",
+    "Anahtar teslim kontrolü",
+    "Depo sayımı",
+    "Araç kontrolü",
+    "Yönetim talimatı",
+    "Dış mekan kontrolü",
+  ],
 };
 
 export type PersonelKonum = {

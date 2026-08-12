@@ -3,9 +3,8 @@ import { ikDogrula, tokenDogrula, tokenUret } from "./saha-token.server";
 import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
 const GOREV_SELECT =
-  "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, is_turu, olusturma_tarihi, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
-const PERSONEL_SELECT =
-  "id, ad_soyad, rol, telefon, aktif, mesai_durumu, durum_guncelleme";
+  "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, is_turu, olusturma_tarihi, planlanan_tarih, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
+const PERSONEL_SELECT = "id, ad_soyad, rol, telefon, aktif, mesai_durumu, durum_guncelleme";
 
 async function db() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -152,6 +151,7 @@ export async function gorevOlusturSunucu(
     aciklama: string;
     aciliyet: string;
     is_turu: string;
+    planlanan_tarih: string;
   },
 ) {
   await ikDogrula(token);
@@ -260,18 +260,10 @@ export async function personelEkleSunucu(
 }
 
 /** İK: personelin aktiflik durumunu değiştirir (işten çıkarma / geri alma). */
-export async function personelAktiflikGuncelleSunucu(
-  token: unknown,
-  id: string,
-  aktif: boolean,
-) {
+export async function personelAktiflikGuncelleSunucu(token: unknown, id: string, aktif: boolean) {
   await ikDogrula(token);
   const sb = await db();
-  const { error } = await sb
-    .from("personel")
-    .update({ aktif })
-    .eq("id", id)
-    .eq("rol", "personel");
+  const { error } = await sb.from("personel").update({ aktif }).eq("id", id).eq("rol", "personel");
   if (error) throw error;
   return { ok: true };
 }

@@ -21,7 +21,7 @@ export function IsTakvimi({ gorevler }: { gorevler: Gorev[] }) {
   const gunBazli = useMemo(() => {
     const harita = new Map<string, Gorev[]>();
     for (const g of gorevler) {
-      const k = anahtar(new Date(g.olusturma_tarihi));
+      const k = g.planlanan_tarih || anahtar(new Date(g.olusturma_tarihi));
       const mevcut = harita.get(k);
       if (mevcut) mevcut.push(g);
       else harita.set(k, [g]);
@@ -137,7 +137,9 @@ export function IsTakvimi({ gorevler }: { gorevler: Gorev[] }) {
           — {seciliGorevler.length} iş
         </p>
         {seciliGorevler.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">Bu güne ait planlanmış iş bulunmuyor.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Bu güne ait planlanmış iş bulunmuyor.
+          </p>
         ) : (
           <ul className="mt-2 space-y-2">
             {seciliGorevler.map((g) => (

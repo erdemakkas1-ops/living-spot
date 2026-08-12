@@ -41,11 +41,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -71,14 +67,16 @@ import { PersonelYonetimi } from "@/components/personel-yonetimi";
 import { RaporIndir } from "@/components/rapor-indir";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import { FotoGoruntuleyici } from "@/components/foto-goruntuleyici";
-import {
-  bloklariGetir,
-  gorevOlustur,
-  personelGetir,
-  tumGorevleriGetir,
-} from "@/lib/saha-api";
+import { YardimButonu } from "@/components/yardim-butonu";
+import { bloklariGetir, gorevOlustur, personelGetir, tumGorevleriGetir } from "@/lib/saha-api";
 import { oturumSil, useOturum } from "@/lib/saha-session";
-import { DURUM_ETIKET, DURUM_SINIF, IS_BASLIKLARI, type Gorev, type IsTuru } from "@/lib/saha-types";
+import {
+  DURUM_ETIKET,
+  DURUM_SINIF,
+  IS_BASLIKLARI,
+  type Gorev,
+  type IsTuru,
+} from "@/lib/saha-types";
 
 export const Route = createFileRoute("/panel")({
   ssr: false,
@@ -112,9 +110,17 @@ function PanelSayfasi() {
   }, [hazir, kullanici, navigate]);
 
   const yetkili = hazir && kullanici?.rol === "ik";
-  const gorevler = useQuery({ queryKey: ["gorevler"], queryFn: tumGorevleriGetir, enabled: yetkili });
+  const gorevler = useQuery({
+    queryKey: ["gorevler"],
+    queryFn: tumGorevleriGetir,
+    enabled: yetkili,
+  });
   const bloklar = useQuery({ queryKey: ["bloklar"], queryFn: bloklariGetir, enabled: yetkili });
-  const personeller = useQuery({ queryKey: ["personel"], queryFn: personelGetir, enabled: yetkili });
+  const personeller = useQuery({
+    queryKey: ["personel"],
+    queryFn: personelGetir,
+    enabled: yetkili,
+  });
 
   const [blokFiltre, setBlokFiltre] = useState("hepsi");
   const [durumFiltre, setDurumFiltre] = useState("hepsi");
@@ -124,28 +130,31 @@ function PanelSayfasi() {
   const [takvimAcik, setTakvimAcik] = useState(true);
 
   const liste = useMemo(() => gorevler.data ?? [], [gorevler.data]);
-  const filtreli = useMemo(() => liste.filter((g) => {
-    if (blokFiltre !== "hepsi" && g.blok_id !== blokFiltre) return false;
-    if (durumFiltre !== "hepsi" && g.durum !== durumFiltre) return false;
-    if (arama.trim()) {
-      const q = arama.toLowerCase();
-      const alan = `${g.is_basligi} ${g.personel?.ad_soyad ?? ""} ${g.bloklar?.blok_adi ?? ""}`;
-      if (!alan.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  }), [liste, blokFiltre, durumFiltre, arama]);
+  const filtreli = useMemo(
+    () =>
+      liste.filter((g) => {
+        if (blokFiltre !== "hepsi" && g.blok_id !== blokFiltre) return false;
+        if (durumFiltre !== "hepsi" && g.durum !== durumFiltre) return false;
+        if (arama.trim()) {
+          const q = arama.toLowerCase();
+          const alan = `${g.is_basligi} ${g.personel?.ad_soyad ?? ""} ${g.bloklar?.blok_adi ?? ""}`;
+          if (!alan.toLowerCase().includes(q)) return false;
+        }
+        return true;
+      }),
+    [liste, blokFiltre, durumFiltre, arama],
+  );
 
-  const istatistik = useMemo(() => {
-    const bekleyen = filtreli.filter((g) => g.durum === "bekliyor").length;
-    const devam = filtreli.filter((g) => g.durum === "devam_ediyor").length;
-    const tamam = filtreli.filter((g) => g.durum === "tamamlandi").length;
-    return { toplam: filtreli.length, bekleyen, devam, tamam };
-  }, [filtreli]);
+  const istatistik = useMemo(() => durumOzeti(liste), [liste]);
+  const gunlukIstatistik = useMemo(() => {
+    const bugun = new Date().toLocaleDateString("en-CA");
+    return durumOzeti(liste.filter((g) => g.planlanan_tarih === bugun));
+  }, [liste]);
 
   const aktifSahaPersoneli = useMemo(() => {
-    const acikIsler = filtreli.filter((g) => g.durum !== "tamamlandi" && g.personel_id);
+    const acikIsler = liste.filter((g) => g.durum !== "tamamlandi" && g.personel_id);
     return new Set(acikIsler.map((g) => g.personel_id)).size;
-  }, [filtreli]);
+  }, [liste]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -199,9 +208,7 @@ function PanelSayfasi() {
               <h1 className="truncate text-base font-bold text-navy-foreground sm:text-lg">
                 Selimpaşa Emlak Konutları
               </h1>
-              <p className="truncate text-xs text-navy-foreground/70">
-                Yönetim Paneli
-              </p>
+              <p className="truncate text-xs text-navy-foreground/70">Yönetim Paneli</p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -260,10 +267,10 @@ function PanelSayfasi() {
         </section>
 
         <GunlukIlerleme
-          toplam={istatistik.toplam}
-          tamam={istatistik.tamam}
-          devam={istatistik.devam}
-          bekleyen={istatistik.bekleyen}
+          toplam={gunlukIstatistik.toplam}
+          tamam={gunlukIstatistik.tamam}
+          devam={gunlukIstatistik.devam}
+          bekleyen={gunlukIstatistik.bekleyen}
         />
 
         <Collapsible open={takvimAcik} onOpenChange={setTakvimAcik}>
@@ -284,7 +291,7 @@ function PanelSayfasi() {
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <IsTakvimi gorevler={filtreli} />
+            <IsTakvimi gorevler={liste} />
           </CollapsibleContent>
         </Collapsible>
 
@@ -437,7 +444,9 @@ function PanelSayfasi() {
           {/* Mobile cards */}
           <div className="mt-4 grid gap-3 md:hidden">
             {gorevler.isLoading && (
-              <p className="py-8 text-center text-sm text-muted-foreground">Görevler yükleniyor...</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Görevler yükleniyor...
+              </p>
             )}
             {!gorevler.isLoading && filtreli.length === 0 && (
               <p className="py-8 text-center text-sm text-muted-foreground">
@@ -445,10 +454,7 @@ function PanelSayfasi() {
               </p>
             )}
             {filtreli.map((g) => (
-              <div
-                key={g.id}
-                className="rounded-xl border border-border bg-card p-4 shadow-sm"
-              >
+              <div key={g.id} className="rounded-xl border border-border bg-card p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -489,7 +495,9 @@ function PanelSayfasi() {
                 <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
                   <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                     <User className="h-3.5 w-3.5" />
-                    <span className="truncate max-w-[140px]">{g.personel?.ad_soyad ?? "Atanmadı"}</span>
+                    <span className="truncate max-w-[140px]">
+                      {g.personel?.ad_soyad ?? "Atanmadı"}
+                    </span>
                   </span>
                   <Button
                     variant="outline"
@@ -544,8 +552,16 @@ function PanelSayfasi() {
           <PersonelYonetimi etkin={yetkili && personelAcik} sade />
         </DialogContent>
       </Dialog>
+      <YardimButonu />
     </div>
   );
+}
+
+function durumOzeti(gorevler: Gorev[]) {
+  const bekleyen = gorevler.filter((g) => g.durum === "bekliyor").length;
+  const devam = gorevler.filter((g) => g.durum === "devam_ediyor").length;
+  const tamam = gorevler.filter((g) => g.durum === "tamamlandi").length;
+  return { toplam: gorevler.length, bekleyen, devam, tamam };
 }
 
 function OzetKart({
@@ -564,7 +580,10 @@ function OzetKart({
   return (
     <div className="rounded-2xl bg-card p-3 shadow-card sm:p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-xs font-medium text-muted-foreground sm:hidden" title={uzunBaslik}>
+        <p
+          className="min-w-0 truncate text-xs font-medium text-muted-foreground sm:hidden"
+          title={uzunBaslik}
+        >
           {baslik}
         </p>
         <p className="hidden min-w-0 truncate text-xs font-medium text-muted-foreground sm:block">
@@ -592,6 +611,9 @@ function GorevAtamaModali({
   const [baslik, setBaslik] = useState("");
   const [aciklama, setAciklama] = useState("");
   const [aciliyet, setAciliyet] = useState<"normal" | "acil">("normal");
+  const [planlananTarih, setPlanlananTarih] = useState(() =>
+    new Date().toLocaleDateString("en-CA"),
+  );
 
   const mut = useMutation({
     mutationFn: gorevOlustur,
@@ -605,13 +627,19 @@ function GorevAtamaModali({
       setBaslik("");
       setAciklama("");
       setAciliyet("normal");
+      setPlanlananTarih(new Date().toLocaleDateString("en-CA"));
     },
-    onError: (e: unknown) =>
-      toast.error(
-        e instanceof Error && e.message
-          ? `Görev atanamadı: ${e.message}`
-          : "Görev atanamadı, tekrar deneyin.",
-      ),
+    onError: (e: unknown) => {
+      // Server function errors cross the RPC boundary as plain objects, so they
+      // are not always `instanceof Error` in the browser.
+      const mesaj =
+        e instanceof Error
+          ? e.message
+          : typeof e === "object" && e !== null && "message" in e && typeof e.message === "string"
+            ? e.message
+            : "Görev atanamadı, tekrar deneyin.";
+      toast.error(`Görev atanamadı: ${mesaj}`);
+    },
   });
 
   return (
@@ -625,15 +653,13 @@ function GorevAtamaModali({
       <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Görev Atama</DialogTitle>
-          <DialogDescription>
-            Blok ve personel seçerek saha görevini oluşturun.
-          </DialogDescription>
+          <DialogDescription>Blok ve personel seçerek saha görevini oluşturun.</DialogDescription>
         </DialogHeader>
         <form
           id="gorev-atama"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!blokId || !personelId || !isTuru || !baslik) {
+            if (!blokId || !personelId || !isTuru || !baslik || !planlananTarih) {
               toast.error("Blok, personel, iş türü ve iş başlığı seçimi zorunludur.");
               return;
             }
@@ -644,6 +670,7 @@ function GorevAtamaModali({
               aciklama: aciklama.trim().slice(0, 1000),
               aciliyet,
               is_turu: isTuru,
+              planlanan_tarih: planlananTarih,
             });
           }}
           className="space-y-4"
@@ -708,9 +735,7 @@ function GorevAtamaModali({
             <Label htmlFor="baslik">İş Başlığı</Label>
             <Select value={baslik} onValueChange={setBaslik} disabled={!isTuru}>
               <SelectTrigger id="baslik">
-                <SelectValue
-                  placeholder={isTuru ? "İş başlığı seçin" : "Önce iş türü seçin"}
-                />
+                <SelectValue placeholder={isTuru ? "İş başlığı seçin" : "Önce iş türü seçin"} />
               </SelectTrigger>
               <SelectContent>
                 {isTuru &&
@@ -721,6 +746,16 @@ function GorevAtamaModali({
                   ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="planlanan-tarih">Planlanan Tarih</Label>
+            <Input
+              id="planlanan-tarih"
+              type="date"
+              value={planlananTarih}
+              onChange={(e) => setPlanlananTarih(e.target.value)}
+              required
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="aciklama">Açıklama</Label>

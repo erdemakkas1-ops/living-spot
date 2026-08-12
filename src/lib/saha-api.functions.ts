@@ -24,9 +24,7 @@ import {
 
 export const girisYapFn = createServerFn({ method: "POST" })
   .validator((d) =>
-    z
-      .object({ telefon: z.string().min(3).max(30), pin: z.string().min(3).max(12) })
-      .parse(d),
+    z.object({ telefon: z.string().min(3).max(30), pin: z.string().min(3).max(12) }).parse(d),
   )
   .handler(({ data }) => girisYapSunucu(data.telefon, data.pin));
 
@@ -40,9 +38,7 @@ export const personelGetirFn = createServerFn({ method: "POST" })
 
 export const mesaiDurumuGuncelleFn = createServerFn({ method: "POST" })
   .validator((d) =>
-    z
-      .object({ token: z.string().min(10), durum: z.enum(["calisiyor", "molada"]) })
-      .parse(d),
+    z.object({ token: z.string().min(10), durum: z.enum(["calisiyor", "molada"]) }).parse(d),
   )
   .handler(({ data }) => mesaiDurumuGuncelleSunucu(data.token, data.durum));
 
@@ -96,6 +92,7 @@ export const gorevOlusturFn = createServerFn({ method: "POST" })
         is_basligi: z.string().min(1).max(200),
         aciklama: z.string().max(2000),
         aciliyet: z.enum(["normal", "acil"]),
+        planlanan_tarih: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         is_turu: z.enum([
           "peyzaj",
           "bakim",
@@ -117,6 +114,7 @@ export const gorevOlusturFn = createServerFn({ method: "POST" })
       aciklama: data.aciklama,
       aciliyet: data.aciliyet,
       is_turu: data.is_turu,
+      planlanan_tarih: data.planlanan_tarih,
     }),
   );
 
@@ -147,7 +145,9 @@ export const fotoYukleFn = createServerFn({ method: "POST" })
   .handler(({ data }) => fotoYukleSunucu(data.token, data));
 
 export const fotoUrlAlFn = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ token: z.string().min(10), yol: z.string().min(3).max(300) }).parse(d))
+  .validator((d) =>
+    z.object({ token: z.string().min(10), yol: z.string().min(3).max(300) }).parse(d),
+  )
   .handler(({ data }) => fotoUrlAlSunucu(data.token, data.yol));
 
 export const gorevTamamlaFn = createServerFn({ method: "POST" })
@@ -183,9 +183,7 @@ export const personelEkleFn = createServerFn({ method: "POST" })
 
 export const personelAktiflikGuncelleFn = createServerFn({ method: "POST" })
   .validator((d) =>
-    z
-      .object({ token: z.string().min(10), id: z.string().uuid(), aktif: z.boolean() })
-      .parse(d),
+    z.object({ token: z.string().min(10), id: z.string().uuid(), aktif: z.boolean() }).parse(d),
   )
   .handler(({ data }) => personelAktiflikGuncelleSunucu(data.token, data.id, data.aktif));
 
