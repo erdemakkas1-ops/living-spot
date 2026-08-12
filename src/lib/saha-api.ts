@@ -26,6 +26,7 @@ import {
   tumGorevleriGetirFn,
 } from "./saha-api.functions";
 import {
+  HESAP_PASIF,
   OTURUM_SURESI_DOLDU,
   oturumSonlandir,
   tokenOku,
@@ -44,6 +45,11 @@ async function cagir<T>(islem: Promise<T>): Promise<T> {
     return await islem;
   } catch (hata) {
     const mesaj = hata instanceof Error ? hata.message : String(hata);
+    // Hesap pasife alındıysa yerel oturum temizlenir ve uyarı mesajı gösterilir.
+    if (mesaj.includes("Hesabınız pasif durumda") && typeof window !== "undefined") {
+      oturumSonlandir(HESAP_PASIF);
+      return await new Promise<T>(() => {});
+    }
     // Yalnızca gerçek oturum hataları oturumu kapatır. "yetki" içeren yetkilendirme
     // hataları (ör. İK'ya özel işlem) oturumu düşürmemeli.
     const oturumHatasi =
