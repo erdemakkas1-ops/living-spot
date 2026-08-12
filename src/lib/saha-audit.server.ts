@@ -8,7 +8,8 @@ export type AuditIslem =
   | "personel_duzenle"
   | "personel_pin_degistir"
   | "personel_aktiflik"
-  | "personel_sil";
+  | "personel_sil"
+  | "oturum_iptal";
 
 /** "05335335353" -> "0533***53" biçiminde maskeler. */
 export function telefonMaskele(telefon: string | null | undefined): string {
@@ -27,7 +28,7 @@ type Sb = SupabaseClient<Database>;
 export async function auditYaz(
   sb: Sb,
   kayit: {
-    yonetici_id: string;
+    yonetici_id: string | null;
     islem_turu: AuditIslem;
     hedef_personel_id?: string | null;
     aciklama?: string;
@@ -35,7 +36,7 @@ export async function auditYaz(
 ) {
   try {
     await sb.from("audit_loglari").insert({
-      yonetici_id: kayit.yonetici_id,
+      yonetici_id: kayit.yonetici_id ?? null,
       islem_turu: kayit.islem_turu,
       hedef_personel_id: kayit.hedef_personel_id ?? null,
       aciklama: (kayit.aciklama ?? "").slice(0, 500),
