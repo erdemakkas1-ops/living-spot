@@ -196,7 +196,7 @@ export const personelDuzenleFn = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         ad_soyad: z.string().min(2).max(120),
         telefon: z.string().min(10).max(20),
-        pin_kodu: z.string().regex(/^\d{4}$/),
+        pin_kodu: z.string().regex(/^\d{4}$/).optional(),
         aktif: z.boolean(),
       })
       .parse(d),

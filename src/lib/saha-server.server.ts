@@ -270,7 +270,7 @@ export async function personelAktiflikGuncelleSunucu(token: unknown, id: string,
 /** İK: personel veya yönetici kaydının iletişim ve giriş bilgilerini günceller. */
 export async function personelDuzenleSunucu(
   token: unknown,
-  input: { id: string; ad_soyad: string; telefon: string; pin_kodu: string; aktif: boolean },
+  input: { id: string; ad_soyad: string; telefon: string; pin_kodu?: string; aktif: boolean },
 ) {
   await ikDogrula(token);
   const telefon = input.telefon.replace(/\D/g, "");
@@ -286,7 +286,13 @@ export async function personelDuzenleSunucu(
   if (mevcut) throw new Error("Bu telefon numarası başka bir kayıtta kullanılıyor.");
   const { error } = await sb
     .from("personel")
-    .update({ ad_soyad: input.ad_soyad.trim(), telefon, pin_kodu: input.pin_kodu, aktif: input.aktif })
+    .update({
+      ad_soyad: input.ad_soyad.trim(),
+      telefon,
+      aktif: input.aktif,
+      // PIN alanı boş bırakıldıysa mevcut PIN korunur.
+      ...(input.pin_kodu ? { pin_kodu: input.pin_kodu } : {}),
+    })
     .eq("id", input.id);
   if (error) throw error;
   return { ok: true };
