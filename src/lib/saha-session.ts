@@ -6,6 +6,8 @@ const TOKEN_KEY = "saha-token";
 const SEBEP_KEY = "saha-oturum-sebep";
 
 export const OTURUM_SURESI_DOLDU = "Oturum süreniz doldu. Lütfen tekrar giriş yapın.";
+export const HESAP_PASIF = "Hesabınız pasif durumda. Yönetimle iletişime geçin.";
+export const OTURUM_GECERSIZ = "Oturum geçersiz. Lütfen tekrar giriş yapın.";
 
 /**
  * Aynı origin (aynı alan adı) sekmeleri arasında oturum değişikliklerini
