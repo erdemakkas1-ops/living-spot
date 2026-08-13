@@ -108,15 +108,23 @@ export function oturumSil() {
  * Yetkisiz / süresi dolmuş sunucu yanıtında çağrılır: yerel oturumu temizler,
  * giriş ekranında gösterilecek bildirimi bırakır ve kullanıcıyı yönlendirir.
  */
+let yonlendiriliyor = false;
+
 export function oturumSonlandir(mesaj = OTURUM_SURESI_DOLDU) {
   if (typeof window === "undefined") return;
+  // Aynı sayfa yaşam döngüsünde tek yönlendirme yapılır (yenileme döngüsü olmasın).
+  if (yonlendiriliyor) return;
+  yonlendiriliyor = true;
   oturumSil();
   try {
     window.sessionStorage.setItem(SEBEP_KEY, mesaj);
   } catch {
     /* yoksay */
   }
+  // Giriş ekranına tam sayfa yönlendirme: askıda kalan istekler ve boş render
+  // ağacı temizlenir, böylece beyaz ekran yerine PIN formu görünür.
   if (window.location.pathname !== "/") window.location.replace("/");
+  else window.location.reload();
 }
 
 /** Giriş ekranı için bekleyen oturum bildirimini okur ve tüketir. */
