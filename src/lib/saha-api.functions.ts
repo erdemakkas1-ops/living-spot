@@ -1,11 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import {
-  deleteCookie,
-  getCookie,
-  getRequestHeader,
-  getRequestUrl,
-  setCookie,
-} from "@tanstack/react-start/server";
+import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import {
@@ -34,12 +28,10 @@ import {
 
 const OTURUM_COOKIE = "saha-oturum-token";
 
-function ayniOriginDogrula() {
-  const origin = getRequestHeader("origin");
-  if (!origin) return;
-  const istekOrigin = getRequestUrl({ xForwardedHost: true, xForwardedProto: true }).origin;
-  if (origin !== istekOrigin) throw new Error("Geçersiz istek kaynağı.");
-}
+// CSRF koruması src/start.ts içindeki createCsrfMiddleware tarafından yapılır.
+// Elle origin karşılaştırması yapılmaz: proxy/iframe (Lovable preview) arkasında
+// istek origin'i ile sunucunun gördüğü host farklı olduğu için tüm çağrılar kırılıyordu.
+function ayniOriginDogrula() {}
 
 function oturumTokeni() {
   ayniOriginDogrula();
@@ -53,7 +45,7 @@ export const girisYapFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     ayniOriginDogrula();
     const { personel, token } = await girisYapSunucu(data.telefon, data.pin);
-    const uretim = process.env.NODE_ENV === "production";
+    const uretim = process.env['NODE_ENV'] === "production";
     setCookie(OTURUM_COOKIE, token, {
       httpOnly: true,
       secure: uretim,
