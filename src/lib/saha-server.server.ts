@@ -547,25 +547,15 @@ export async function personelEkleSunucu(
     .maybeSingle();
   if (kontrolHatasi) throw kontrolHatasi;
   if (mevcut) throw new Error("Bu telefon numarası zaten kayıtlı.");
-  const { data: yeni, error } = await sb
-    .from("personel")
-    .insert({
-    ad_soyad: input.ad_soyad.trim(),
-    telefon,
-    pin_kodu: null,
-    pin_hash: pinHashle(input.pin_kodu),
-    rol: "personel",
-    aktif: true,
-    })
-    .select("id")
-    .maybeSingle();
-  if (error) throw error;
-  await auditYaz(sb, {
-    yonetici_id: yonetici.id,
-    islem_turu: "personel_ekle",
-    hedef_personel_id: yeni?.id ?? null,
-    aciklama: `Personel eklendi: ${input.ad_soyad.trim()} (${telefonMaskele(telefon)})`,
+  const { error } = await sb.rpc("personel_yonet_atomik", {
+    p_islem: "ekle",
+    p_yonetici_id: yonetici.id,
+    p_hedef_id: null,
+    p_veri: { ad_soyad: input.ad_soyad.trim(), telefon, pin_hash: pinHashle(input.pin_kodu) },
+    p_audit_aciklama: `Personel eklendi: ${input.ad_soyad.trim()} (${telefonMaskele(telefon)})`,
+    p_pin_degisti: false,
   });
+  if (error) throw error;
   return { ok: true };
 }
 
@@ -575,14 +565,15 @@ export async function personelAktiflikGuncelleSunucu(token: unknown, id: string,
   const sb = await db();
   // Yönetici hesabı bu işlemle pasife alınamaz.
   await hedefPersonelDogrula(sb, id);
-  const { error } = await sb.from("personel").update({ aktif }).eq("id", id).eq("rol", "personel");
-  if (error) throw error;
-  await auditYaz(sb, {
-    yonetici_id: yonetici.id,
-    islem_turu: "personel_aktiflik",
-    hedef_personel_id: id,
-    aciklama: aktif ? "Personel aktif yapıldı." : "Personel pasif yapıldı.",
+  const { error } = await sb.rpc("personel_yonet_atomik", {
+    p_islem: "aktiflik",
+    p_yonetici_id: yonetici.id,
+    p_hedef_id: id,
+    p_veri: { aktif },
+    p_audit_aciklama: aktif ? "Personel aktif yapıldı." : "Personel pasif yapıldı.",
+    p_pin_degisti: false,
   });
+  if (error) throw error;
   return { ok: true };
 }
 
@@ -625,23 +616,6 @@ export async function personelDuzenleSunucu(
     .maybeSingle();
   if (kontrolHatasi) throw kontrolHatasi;
   if (mevcut) throw new Error("Bu telefon numarası başka bir kayıtta kullanılıyor.");
-  const { error } = await sb
-    .from("personel")
-    .update({
-      ad_soyad: input.ad_soyad.trim(),
-      telefon,
-      aktif: input.aktif,
-      // PIN alanı boş bırakıldıysa mevcut PIN korunur.
-      ...(input.pin_kodu
-        ? {
-            pin_kodu: null,
-            pin_hash: pinHashle(input.pin_kodu),
-            oturum_surumu: ((onceki as { oturum_surumu?: number } | null)?.oturum_surumu ?? 1) + 1,
-          }
-        : {}),
-    })
-    .eq("id", input.id);
-  if (error) throw error;
   const degisiklikler: string[] = [];
   if (onceki && onceki.ad_soyad !== input.ad_soyad.trim())
     degisiklikler.push(`ad: ${onceki.ad_soyad} -> ${input.ad_soyad.trim()}`);
@@ -649,23 +623,22 @@ export async function personelDuzenleSunucu(
     degisiklikler.push(`telefon: ${telefonMaskele(onceki.telefon)} -> ${telefonMaskele(telefon)}`);
   if (onceki && onceki.aktif !== input.aktif)
     degisiklikler.push(`durum: ${onceki.aktif ? "aktif" : "pasif"} -> ${input.aktif ? "aktif" : "pasif"}`);
-  await auditYaz(sb, {
-    yonetici_id: yonetici.id,
-    islem_turu: "personel_duzenle",
-    hedef_personel_id: input.id,
-    aciklama: degisiklikler.length
+  const { error } = await sb.rpc("personel_yonet_atomik", {
+    p_islem: "duzenle",
+    p_yonetici_id: yonetici.id,
+    p_hedef_id: input.id,
+    p_veri: {
+      ad_soyad: input.ad_soyad.trim(),
+      telefon,
+      aktif: input.aktif,
+      ...(input.pin_kodu ? { pin_hash: pinHashle(input.pin_kodu) } : {}),
+    },
+    p_audit_aciklama: degisiklikler.length
       ? `Personel güncellendi (${degisiklikler.join(", ")})`
       : "Personel güncellendi (değişiklik yok).",
+    p_pin_degisti: Boolean(input.pin_kodu),
   });
-  if (input.pin_kodu) {
-    // Yalnızca PIN'in değiştirildiği bilgisi tutulur; PIN veya hash'i asla kaydedilmez.
-    await auditYaz(sb, {
-      yonetici_id: yonetici.id,
-      islem_turu: "personel_pin_degistir",
-      hedef_personel_id: input.id,
-      aciklama: "Personel PIN kodu yönetici tarafından yenilendi.",
-    });
-  }
+  if (error) throw error;
   return { ok: true };
 }
 
@@ -679,20 +652,15 @@ export async function personelSilSunucu(token: unknown, id: string) {
     .select("ad_soyad, telefon")
     .eq("id", id)
     .maybeSingle();
-  const { error: gorevHatasi } = await sb
-    .from("gorevler")
-    .update({ personel_id: null })
-    .eq("personel_id", id);
-  if (gorevHatasi) throw gorevHatasi;
-  await sb.from("personel_konumlari").delete().eq("personel_id", id);
-  const { error } = await sb.from("personel").delete().eq("id", id).eq("rol", "personel");
-  if (error) throw error;
-  await auditYaz(sb, {
-    yonetici_id: yonetici.id,
-    islem_turu: "personel_sil",
-    hedef_personel_id: id,
-    aciklama: `Personel silindi: ${silinen?.ad_soyad ?? "bilinmiyor"} (${telefonMaskele(silinen?.telefon)})`,
+  const { error } = await sb.rpc("personel_yonet_atomik", {
+    p_islem: "sil",
+    p_yonetici_id: yonetici.id,
+    p_hedef_id: id,
+    p_veri: {},
+    p_audit_aciklama: `Personel silindi: ${silinen?.ad_soyad ?? "bilinmiyor"} (${telefonMaskele(silinen?.telefon)})`,
+    p_pin_degisti: false,
   });
+  if (error) throw error;
   return { ok: true };
 }
 
