@@ -59,7 +59,10 @@ async function cagir<T>(islem: Promise<T>): Promise<T> {
       mesaj.includes(OTURUM_SURESI_DOLDU) ||
       mesaj.includes("Unauthorized");
     if (oturumHatasi && typeof window !== "undefined") {
-      oturumSonlandir(OTURUM_SURESI_DOLDU);
+      // PIN yenilendiği için düşen oturumda sunucunun açıklayıcı mesajı gösterilir.
+      oturumSonlandir(
+        mesaj.includes("giriş bilgileriniz güncellendi") ? mesaj : OTURUM_SURESI_DOLDU,
+      );
       // Hata yeniden atılırsa React error boundary beyaz ekran gösteriyor;
       // yönlendirme tamamlanana kadar bekleyen bir promise döndürüyoruz.
       return await new Promise<T>(() => {});
