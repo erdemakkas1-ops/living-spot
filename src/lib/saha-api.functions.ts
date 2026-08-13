@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { deleteCookie, getCookie, getRequestIP, setCookie } from "@tanstack/react-start/server";
+import { deleteCookie, getCookie, getRequest, getRequestIP, setCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import {
@@ -31,7 +31,27 @@ const OTURUM_COOKIE = "saha-oturum-token";
 const MFA_ADAY_COOKIE = "saha-mfa-aday";
 
 function guvenliCookie(maxAge: number) {
-  return { httpOnly: true, secure: true, sameSite: "none" as const, path: "/", maxAge };
+  const request = getRequest();
+  let hostname = "";
+  try {
+    hostname = request ? new URL(request.url).hostname.toLowerCase() : "";
+  } catch {
+    // Tanınmayan proxy URL'sinde güvenli varsayılan kullanılır.
+  }
+  // Lovable editör ön izlemesi üçüncü taraf iframe içinde çalıştığı için burada None
+  // zorunludur. Canlı uygulama ve yerel geliştirmede siteler arası istekleri azaltmak
+  // amacıyla oturum çerezi Lax olarak sınırlandırılır.
+  const canliVeyaYerel =
+    hostname === "living-spot.lovable.app" ||
+    hostname === "localhost" ||
+    hostname === "127.0.0.1";
+  return {
+    httpOnly: true,
+    secure: true,
+    sameSite: canliVeyaYerel ? ("lax" as const) : ("none" as const),
+    path: "/",
+    maxAge,
+  };
 }
 
 // CSRF koruması src/start.ts içindeki createCsrfMiddleware tarafından yapılır.
