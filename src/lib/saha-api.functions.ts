@@ -30,7 +30,7 @@ import {
 const OTURUM_COOKIE = "saha-oturum-token";
 const MFA_ADAY_COOKIE = "saha-mfa-aday";
 
-function guvenliCookie(maxAge: number) {
+function guvenliCookie(maxAge: number, mfaAday = false) {
   const request = getRequest();
   let hostname = "";
   try {
@@ -48,7 +48,10 @@ function guvenliCookie(maxAge: number) {
   return {
     httpOnly: true,
     secure: true,
-    sameSite: canliVeyaYerel ? ("lax" as const) : ("none" as const),
+    // MFA aday çerezi yalnız 5 dakika geçerli, HttpOnly ve CSRF korumalıdır. Lovable
+    // ön izlemesinin canlı alan adını iframe içinde göstermesi nedeniyle bu çerezin
+    // alan adına bakılmaksızın SameSite=None olması gerekir.
+    sameSite: mfaAday ? ("none" as const) : canliVeyaYerel ? ("lax" as const) : ("none" as const),
     path: "/",
     maxAge,
   };
@@ -77,7 +80,7 @@ export const girisYapFn = createServerFn({ method: "POST" })
       .slice(0, 32);
     const sonuc = await girisYapSunucu(data.telefon, data.pin, kaynakOzeti);
     if (sonuc.mfaGerekli) {
-      setCookie(MFA_ADAY_COOKIE, sonuc.mfaAdayToken, guvenliCookie(5 * 60));
+      setCookie(MFA_ADAY_COOKIE, sonuc.mfaAdayToken, guvenliCookie(5 * 60, true));
       return { mfaGerekli: true as const, kurulum: sonuc.kurulum };
     }
     setCookie(OTURUM_COOKIE, sonuc.token, guvenliCookie(12 * 60 * 60));
