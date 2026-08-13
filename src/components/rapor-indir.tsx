@@ -49,18 +49,28 @@ function dosyaAdi(uzanti: string) {
 export function RaporIndir({ gorevler }: { gorevler: Gorev[] }) {
   const bosMu = gorevler.length === 0;
 
-  async function excelIndir() {
+  function excelIndir() {
     if (bosMu) {
       toast.error("Raporlanacak kayıt yok.");
       return;
     }
-    const XLSX = await import("xlsx");
-    const ws = XLSX.utils.aoa_to_sheet([BASLIKLAR, ...satirlar(gorevler)]);
-    ws["!cols"] = [14, 28, 34, 20, 10, 14, 20, 20, 10].map((w) => ({ wch: w }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "İş Raporu");
-    XLSX.writeFile(wb, dosyaAdi("xlsx"));
-    toast.success("Excel raporu indirildi.");
+    const hucre = (deger: unknown) => {
+      let metin = String(deger ?? "").replace(/\r?\n/g, " ");
+      // Excel formül enjeksiyonu: kullanıcı metni formül olarak çalıştırılmasın.
+      if (/^[=+\-@]/.test(metin)) metin = `'${metin}`;
+      return `"${metin.replace(/"/g, '""')}"`;
+    };
+    const csv = [BASLIKLAR, ...satirlar(gorevler)]
+      .map((satir) => satir.map(hucre).join(";"))
+      .join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const baglanti = document.createElement("a");
+    baglanti.href = url;
+    baglanti.download = dosyaAdi("csv");
+    baglanti.click();
+    URL.revokeObjectURL(url);
+    toast.success("Excel uyumlu CSV raporu indirildi.");
   }
 
   function pdfIndir() {
@@ -123,7 +133,7 @@ export function RaporIndir({ gorevler }: { gorevler: Gorev[] }) {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={excelIndir}>
           <FileSpreadsheet className="mr-2 h-4 w-4 text-status-tamam" />
-          Excel (.xlsx) indir
+          Excel uyumlu CSV indir
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
