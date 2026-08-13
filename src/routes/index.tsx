@@ -38,7 +38,7 @@ function GirisSayfasi() {
   const [telefon, setTelefon] = useState("");
   const [pin, setPin] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
-  const [mfa, setMfa] = useState<{ kurulum?: { anahtar: string; uri: string } } | null>(null);
+  const [mfa, setMfa] = useState<{ kurulum?: { anahtar: string; uri: string } | undefined } | null>(null);
   const [mfaKodu, setMfaKodu] = useState("");
 
   useEffect(() => {

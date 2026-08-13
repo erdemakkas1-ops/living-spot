@@ -76,7 +76,7 @@ export const girisYapFn = createServerFn({ method: "POST" })
       .join("")
       .slice(0, 32);
     const sonuc = await girisYapSunucu(data.telefon, data.pin, kaynakOzeti);
-    if ("mfaGerekli" in sonuc) {
+    if (sonuc.mfaGerekli) {
       setCookie(MFA_ADAY_COOKIE, sonuc.mfaAdayToken, guvenliCookie(5 * 60));
       return { mfaGerekli: true as const, kurulum: sonuc.kurulum };
     }

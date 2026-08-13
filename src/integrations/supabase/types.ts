@@ -182,6 +182,8 @@ export type Database = {
           durum_guncelleme: string
           id: string
           mesai_durumu: string
+          mfa_aktif: boolean
+          mfa_secret_enc: string | null
           oturum_surumu: number
           pin_hash: string | null
           pin_kodu: string | null
@@ -195,6 +197,8 @@ export type Database = {
           durum_guncelleme?: string
           id?: string
           mesai_durumu?: string
+          mfa_aktif?: boolean
+          mfa_secret_enc?: string | null
           oturum_surumu?: number
           pin_hash?: string | null
           pin_kodu?: string | null
@@ -208,6 +212,8 @@ export type Database = {
           durum_guncelleme?: string
           id?: string
           mesai_durumu?: string
+          mfa_aktif?: boolean
+          mfa_secret_enc?: string | null
           oturum_surumu?: number
           pin_hash?: string | null
           pin_kodu?: string | null

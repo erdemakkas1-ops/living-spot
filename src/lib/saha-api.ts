@@ -78,7 +78,7 @@ function token() {
 
 export type GirisSonucu =
   | { mfaGerekli: false; personel: Personel }
-  | { mfaGerekli: true; kurulum?: { anahtar: string; uri: string } };
+  | { mfaGerekli: true; kurulum: { anahtar: string; uri: string } | undefined };
 
 export async function girisYap(telefon: string, pin: string): Promise<GirisSonucu> {
   const sonuc = await girisYapFn({
