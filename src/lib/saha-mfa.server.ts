@@ -94,10 +94,10 @@ async function totp(secret: string, counter: number) {
   if (hash.length < 20) throw new Error("TOTP hash hesaplanamadı.");
   const offset = hash[hash.length - 1] & 15;
   const binary =
-    (((hash[offset] ?? 0) & 127) << 24) |
-    ((hash[offset + 1] ?? 0) << 16) |
-    ((hash[offset + 2] ?? 0) << 8) |
-    (hash[offset + 3] ?? 0);
+    (((Number(hash[offset]) || 0) & 127) << 24) |
+    ((Number(hash[offset + 1]) || 0) << 16) |
+    ((Number(hash[offset + 2]) || 0) << 8) |
+    (Number(hash[offset + 3]) || 0);
   return String(binary % 1_000_000).padStart(6, "0");
 }
 

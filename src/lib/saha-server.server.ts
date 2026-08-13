@@ -95,7 +95,7 @@ export async function girisYapSunucu(
   pin: string,
   kaynakOzeti: string,
 ): Promise<
-  | { mfaGerekli: true; mfaAdayToken: string; kurulum?: { anahtar: string; uri: string } }
+  | { mfaGerekli: true; mfaAdayToken: string; kurulum: { anahtar: string; uri: string } | undefined }
   | { mfaGerekli: false; personel: Personel; token: string }
 > {
   const sb = await db();
