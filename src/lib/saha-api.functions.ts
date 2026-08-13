@@ -100,9 +100,9 @@ export const konumGonderFn = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().min(10),
-        enlem: z.number(),
-        boylam: z.number(),
-        dogruluk: z.number().nullable().optional(),
+        enlem: z.number().finite().min(-90).max(90),
+        boylam: z.number().finite().min(-180).max(180),
+        dogruluk: z.number().finite().min(0).max(100_000).nullable().optional(),
       })
       .parse(d),
   )

@@ -241,6 +241,18 @@ export async function konumGonderSunucu(
   input: { enlem: number; boylam: number; dogruluk?: number | null | undefined },
 ) {
   const claims = await oturumDogrula(token);
+  if (!Number.isFinite(input.enlem) || input.enlem < -90 || input.enlem > 90) {
+    throw new Error("Geçersiz enlem bilgisi.");
+  }
+  if (!Number.isFinite(input.boylam) || input.boylam < -180 || input.boylam > 180) {
+    throw new Error("Geçersiz boylam bilgisi.");
+  }
+  if (
+    input.dogruluk != null &&
+    (!Number.isFinite(input.dogruluk) || input.dogruluk < 0 || input.dogruluk > 100_000)
+  ) {
+    throw new Error("Geçersiz konum doğruluk bilgisi.");
+  }
   const sb = await db();
   const { error } = await sb.from("personel_konumlari").insert({
     personel_id: claims.id,

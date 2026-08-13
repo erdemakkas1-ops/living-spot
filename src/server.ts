@@ -7,6 +7,19 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
+function guvenlikBasliklari(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Permissions-Policy", "camera=(self), geolocation=(self), microphone=()");
+  headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  headers.set("X-Permitted-Cross-Domain-Policies", "none");
+  if (!headers.has("Cache-Control") && headers.get("content-type")?.includes("text/html")) {
+    headers.set("Cache-Control", "no-store");
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -49,13 +62,13 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return guvenlikBasliklari(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
+      return guvenlikBasliklari(new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
-      });
+      }));
     }
   },
 };
