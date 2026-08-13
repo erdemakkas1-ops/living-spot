@@ -64,37 +64,5 @@ CROSS JOIN generate_series(1,10) AS n(sayi);
 INSERT INTO public.bloklar (blok_adi) VALUES
   ('Sosyal Tesis'),('Kapalı Havuz'),('Otopark Blok'),('Güvenlik Kulesi'),('Peyzaj Alanı');
 
-INSERT INTO public.personel (ad_soyad, rol, telefon, pin_kodu) VALUES
-  ('Selin Yıldırım', 'ik', '05001112233', '1234'),
-  ('Ahmet Kara', 'personel', '05310000001', '1111'),
-  ('Mehmet Demir', 'personel', '05310000002', '1112'),
-  ('Hasan Çelik', 'personel', '05310000003', '1113'),
-  ('Mustafa Şahin', 'personel', '05310000004', '1114'),
-  ('İbrahim Yılmaz', 'personel', '05310000005', '1115'),
-  ('Ali Koç', 'personel', '05310000006', '1116'),
-  ('Osman Arslan', 'personel', '05310000007', '1117'),
-  ('Emre Doğan', 'personel', '05310000008', '1118'),
-  ('Kemal Aydın', 'personel', '05310000009', '1119'),
-  ('Serkan Öztürk', 'personel', '05310000010', '1120'),
-  ('Murat Kaya', 'personel', '05310000011', '1121'),
-  ('Fatih Aksoy', 'personel', '05310000012', '1122'),
-  ('Recep Bulut', 'personel', '05310000013', '1123'),
-  ('Yusuf Erdem', 'personel', '05310000014', '1124'),
-  ('Halil Turan', 'personel', '05310000015', '1125'),
-  ('Ramazan Polat', 'personel', '05310000016', '1126'),
-  ('Bilal Güneş', 'personel', '05310000017', '1127'),
-  ('Cengiz Ateş', 'personel', '05310000018', '1128'),
-  ('Tolga Kurt', 'personel', '05310000019', '1129'),
-  ('Metin Sarı', 'personel', '05310000020', '1130');
-
-INSERT INTO public.gorevler (blok_id, personel_id, is_basligi, aciklama, durum, aciliyet)
-VALUES
-  ((SELECT id FROM public.bloklar WHERE blok_adi='A1'), (SELECT id FROM public.personel WHERE telefon='05310000001'), 'Asansör arıza kontrolü', 'A1 blok 2. asansör kat sensörü hatalı, kontrol edilecek.', 'bekliyor', 'acil'),
-  ((SELECT id FROM public.bloklar WHERE blok_adi='B5'), (SELECT id FROM public.personel WHERE telefon='05310000001'), 'Merdiven boşluğu ampul değişimi', '3. ve 5. kat aydınlatmaları yanmıyor.', 'devam_ediyor', 'normal'),
-  ((SELECT id FROM public.bloklar WHERE blok_adi='B5'), (SELECT id FROM public.personel WHERE telefon='05310000002'), 'Su sızıntısı onarımı', 'Bodrum kat kolon hattında sızıntı var.', 'bekliyor', 'acil'),
-  ((SELECT id FROM public.bloklar WHERE blok_adi='C3'), (SELECT id FROM public.personel WHERE telefon='05310000003'), 'Kapı otomatiği ayarı', 'Ana giriş kapısı yavaş kapanıyor.', 'tamamlandi', 'normal'),
-  ((SELECT id FROM public.bloklar WHERE blok_adi='Sosyal Tesis'), (SELECT id FROM public.personel WHERE telefon='05310000004'), 'Havuz filtre temizliği', 'Haftalık rutin filtre bakımı.', 'bekliyor', 'normal'),
-  ((SELECT id FROM public.bloklar WHERE blok_adi='Peyzaj Alanı'), (SELECT id FROM public.personel WHERE telefon='05310000005'), 'Çim biçme ve sulama kontrolü', 'Doğu bahçe hattı damlama sistemi kontrolü.', 'devam_ediyor', 'normal');
-
-INSERT INTO public.is_loglari (gorev_id, personel_notu, foto_url)
-VALUES ((SELECT id FROM public.gorevler WHERE is_basligi='Kapı otomatiği ayarı'), 'Hidrolik ayarı yapıldı, kapı normal hızda kapanıyor.', NULL);
+-- Üretim migration'ları demo kullanıcı, telefon, PIN veya örnek görev oluşturmaz.
+-- İlk yönetici hesabı güvenli kurulum akışıyla ayrıca oluşturulmalıdır.

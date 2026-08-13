@@ -1,1 +1,1 @@
-UPDATE public.personel SET telefon = '05233236611' WHERE id = '025677e8-106c-4aca-a95d-54060d0a3e01';
+-- Eski sabit telefon güncellemesi güvenlik nedeniyle kaldırıldı.
