@@ -45,13 +45,13 @@ export const girisYapFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     ayniOriginDogrula();
     const { personel, token } = await girisYapSunucu(data.telefon, data.pin);
-    const uretim = process.env['NODE_ENV'] === "production";
     setCookie(OTURUM_COOKIE, token, {
       httpOnly: true,
-      secure: uretim,
-      // Lovable Preview uygulamayı bir iframe içinde çalıştırır. Üretimde None,
-      // yerel HTTP geliştirmede Lax kullanılır; Origin kontrolü CSRF'i engeller.
-      sameSite: uretim ? "none" : "lax",
+      secure: true,
+      // Uygulama Lovable önizlemesinde iframe (cross-site) içinde çalışır; Lax
+      // olduğunda çerez isteklere hiç eklenmediği için oturum hemen düşüyordu.
+      // SameSite=None + Secure her ortamda kullanılır (localhost güvenli sayılır).
+      sameSite: "none",
       path: "/",
       maxAge: 12 * 60 * 60,
     });
