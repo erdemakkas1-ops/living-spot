@@ -90,7 +90,14 @@ const KILIT_MESAJI =
   "Çok fazla başarısız deneme yapıldı. Lütfen 15 dakika sonra tekrar deneyin.";
 const HATA_MESAJI = "Telefon veya PIN kodu hatalı.";
 
-export async function girisYapSunucu(telefon: string, pin: string, kaynakOzeti: string) {
+export async function girisYapSunucu(
+  telefon: string,
+  pin: string,
+  kaynakOzeti: string,
+): Promise<
+  | { mfaGerekli: true; mfaAdayToken: string; kurulum?: { anahtar: string; uri: string } }
+  | { mfaGerekli: false; personel: Personel; token: string }
+> {
   const sb = await db();
   // Telefonlar veritabanında sadece rakam olarak tutulur ("0533 533 53 53" -> "05335335353").
   const tel = telefon.replace(/\D/g, "");
