@@ -89,17 +89,19 @@ const KILIT_MESAJI =
   "Çok fazla başarısız deneme yapıldı. Lütfen 15 dakika sonra tekrar deneyin.";
 const HATA_MESAJI = "Telefon veya PIN kodu hatalı.";
 
-export async function girisYapSunucu(telefon: string, pin: string) {
+export async function girisYapSunucu(telefon: string, pin: string, kaynakOzeti: string) {
   const sb = await db();
   // Telefonlar veritabanında sadece rakam olarak tutulur ("0533 533 53 53" -> "05335335353").
   const tel = telefon.replace(/\D/g, "");
   const pencereBasi = new Date(Date.now() - PENCERE_MS).toISOString();
 
-  // Sunucu tarafı hız sınırı: aynı telefon için 15 dk içinde 5 başarısız deneme.
+  // Sunucu tarafı hız sınırı: aynı ağ/cihaz kaynağı + telefon için 15 dk içinde 5 deneme.
+  // Böylece başka biri yalnız telefon numarasını bilerek hesabı herkese kilitleyemez.
   const { count } = await sb
     .from("giris_denemeleri")
     .select("id", { count: "exact", head: true })
     .eq("telefon", tel)
+    .eq("kaynak_ozeti", kaynakOzeti)
     .gte("deneme_tarihi", pencereBasi);
   if ((count ?? 0) >= MAKS_DENEME) throw new Error(KILIT_MESAJI);
 
@@ -129,13 +131,25 @@ export async function girisYapSunucu(telefon: string, pin: string) {
     }
   }
   if (!kayit || !gecerli) {
-    await sb.from("giris_denemeleri").insert({ telefon: tel });
+    await sb.from("giris_denemeleri").insert({ telefon: tel, kaynak_ozeti: kaynakOzeti });
+    if ((count ?? 0) + 1 >= 3) {
+      await auditYaz(sb, {
+        yonetici_id: null,
+        islem_turu: "basarisiz_giris",
+        hedef_personel_id: kayit?.id ?? null,
+        aciklama: `Başarısız giriş denemesi: ${telefonMaskele(tel)} (son 15 dk: ${(count ?? 0) + 1})`,
+      });
+    }
     // Bu denemeyle sınır dolduysa kilit mesajını ver.
     if ((count ?? 0) + 1 >= MAKS_DENEME) throw new Error(KILIT_MESAJI);
     throw new Error(HATA_MESAJI);
   }
   // Başarılı girişte o telefona ait deneme kayıtları temizlenir.
-  await sb.from("giris_denemeleri").delete().eq("telefon", tel);
+  await sb
+    .from("giris_denemeleri")
+    .delete()
+    .eq("telefon", tel)
+    .eq("kaynak_ozeti", kaynakOzeti);
   // PIN/hash alanları asla yanıt gövdesine konmaz.
   const { pin_kodu: _pk, pin_hash: _ph, oturum_surumu: _os, ...temiz } = kayit;
   const personel = temiz as Personel;

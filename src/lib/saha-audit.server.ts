@@ -9,7 +9,8 @@ export type AuditIslem =
   | "personel_pin_degistir"
   | "personel_aktiflik"
   | "personel_sil"
-  | "oturum_iptal";
+  | "oturum_iptal"
+  | "basarisiz_giris";
 
 /** "05335335353" -> "0533***53" biçiminde maskeler. */
 export function telefonMaskele(telefon: string | null | undefined): string {

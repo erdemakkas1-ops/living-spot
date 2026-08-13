@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
+import { deleteCookie, getCookie, getRequestIP, setCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import {
@@ -44,7 +44,12 @@ export const girisYapFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     ayniOriginDogrula();
-    const { personel, token } = await girisYapSunucu(data.telefon, data.pin);
+    const kaynak = getRequestIP({ xForwardedFor: true }) ?? "bilinmeyen";
+    const ozetBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(kaynak));
+    const kaynakOzeti = Array.from(new Uint8Array(ozetBytes), (b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, 32);
+    const { personel, token } = await girisYapSunucu(data.telefon, data.pin, kaynakOzeti);
     setCookie(OTURUM_COOKIE, token, {
       httpOnly: true,
       secure: true,

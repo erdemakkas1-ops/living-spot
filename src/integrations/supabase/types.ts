@@ -71,16 +71,19 @@ export type Database = {
         Row: {
           deneme_tarihi: string
           id: string
+          kaynak_ozeti: string
           telefon: string
         }
         Insert: {
           deneme_tarihi?: string
           id?: string
+          kaynak_ozeti: string
           telefon: string
         }
         Update: {
           deneme_tarihi?: string
           id?: string
+          kaynak_ozeti?: string
           telefon?: string
         }
         Relationships: []
