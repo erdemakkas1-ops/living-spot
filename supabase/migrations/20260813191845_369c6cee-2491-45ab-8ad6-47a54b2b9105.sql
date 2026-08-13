@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.gorev_tamamla_atomik(uuid, text, text) FROM anon, authenticated;
