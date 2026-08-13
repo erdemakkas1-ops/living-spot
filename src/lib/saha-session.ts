@@ -110,6 +110,9 @@ export function oturumSil() {
  */
 export function oturumSonlandir(mesaj = OTURUM_SURESI_DOLDU) {
   if (typeof window === "undefined") return;
+  // Aynı sayfa yaşam döngüsünde tek yönlendirme yapılır (yenileme döngüsü olmasın).
+  if (yonlendiriliyor) return;
+  yonlendiriliyor = true;
   oturumSil();
   try {
     window.sessionStorage.setItem(SEBEP_KEY, mesaj);
