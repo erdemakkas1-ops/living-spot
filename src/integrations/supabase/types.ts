@@ -179,11 +179,11 @@ export type Database = {
           durum_guncelleme: string
           id: string
           mesai_durumu: string
+          oturum_surumu: number
           pin_hash: string | null
           pin_kodu: string | null
           rol: string
           telefon: string
-          oturum_surumu: number
         }
         Insert: {
           ad_soyad: string
@@ -192,11 +192,11 @@ export type Database = {
           durum_guncelleme?: string
           id?: string
           mesai_durumu?: string
+          oturum_surumu?: number
           pin_hash?: string | null
           pin_kodu?: string | null
           rol?: string
           telefon: string
-          oturum_surumu?: number
         }
         Update: {
           ad_soyad?: string
@@ -205,11 +205,11 @@ export type Database = {
           durum_guncelleme?: string
           id?: string
           mesai_durumu?: string
+          oturum_surumu?: number
           pin_hash?: string | null
           pin_kodu?: string | null
           rol?: string
           telefon?: string
-          oturum_surumu?: number
         }
         Relationships: []
       }
