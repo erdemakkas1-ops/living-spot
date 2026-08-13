@@ -196,11 +196,11 @@ export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelK
   return [...enYeni.values()];
 }
 
-/** Personel durum çubuğu: tüm oturumlar (saha dahil) okuyabilir; konumlar yalnız İK için. */
+/** Personel durum çubuğu yalnızca İK / yönetim tarafından okunabilir. */
 export async function personelDurumlariSunucu(
   token: unknown,
 ): Promise<{ personeller: Personel[]; konumlar: PersonelKonum[] }> {
-  const claims = await oturumDogrula(token);
+  await ikOturumDogrula(token);
   const sb = await db();
   const { data, error } = await sb
     .from("personel")
@@ -209,10 +209,9 @@ export async function personelDurumlariSunucu(
     .order("ad_soyad");
   if (error) throw error;
   const personeller = (data ?? []) as unknown as Personel[];
-  const ik = claims.rol === "ik";
   return {
-    personeller: ik ? personeller : personeller.map((p) => ({ ...p, telefon: "" })),
-    konumlar: ik ? await sonKonumlariGetirSunucu(token) : [],
+    personeller,
+    konumlar: await sonKonumlariGetirSunucu(token),
   };
 }
 
