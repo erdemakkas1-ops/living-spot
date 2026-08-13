@@ -77,7 +77,7 @@ export type Database = {
         Insert: {
           deneme_tarihi?: string
           id?: string
-          kaynak_ozeti: string
+          kaynak_ozeti?: string
           telefon: string
         }
         Update: {
