@@ -195,7 +195,8 @@ export const personelDuzenleFn = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         ad_soyad: z.string().min(2).max(120),
         telefon: z.string().min(10).max(20),
-        pin_kodu: z.string().regex(/^\d{4}$/).optional(),
+        // Hedef rol sunucuda veritabanından doğrulanır: personel 4, yönetici 6-8 hane.
+        pin_kodu: z.string().regex(/^\d{4,8}$/).optional(),
         aktif: z.boolean(),
       })
       .parse(d),

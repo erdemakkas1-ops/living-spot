@@ -501,6 +501,19 @@ export async function personelDuzenleSunucu(
   if (onceki && (onceki as { rol?: string }).rol === "ik" && !input.aktif) {
     throw new Error("Yönetici hesabı pasife alınamaz.");
   }
+  if (input.pin_kodu) {
+    const yoneticiHesabi = (onceki as { rol?: string } | null)?.rol === "ik";
+    const pinGecerli = yoneticiHesabi
+      ? /^\d{6,8}$/.test(input.pin_kodu)
+      : /^\d{4}$/.test(input.pin_kodu);
+    if (!pinGecerli) {
+      throw new Error(
+        yoneticiHesabi
+          ? "Yönetici PIN kodu 6-8 haneli olmalıdır."
+          : "Personel PIN kodu 4 haneli olmalıdır.",
+      );
+    }
+  }
   const { data: mevcut, error: kontrolHatasi } = await sb
     .from("personel")
     .select("id")

@@ -58,6 +58,12 @@ export function PersonelYonetimi({
   const [duzenlemeAd, setDuzenlemeAd] = useState("");
   const [duzenlemeTelefon, setDuzenlemeTelefon] = useState("");
   const [duzenlemePin, setDuzenlemePin] = useState("");
+  const yoneticiDuzenleniyor = duzenlenen?.rol === "ik";
+  const duzenlemePinGecerli =
+    duzenlemePin.length === 0 ||
+    (yoneticiDuzenleniyor
+      ? duzenlemePin.length >= 6 && duzenlemePin.length <= 8
+      : duzenlemePin.length === 4);
 
   const yenile = () => {
     void qc.invalidateQueries({ queryKey: ["personel"] });
@@ -291,9 +297,9 @@ export function PersonelYonetimi({
           <div className="grid gap-3">
             <div className="grid gap-1.5"><Label htmlFor="duzenle-ad">Ad Soyad</Label><Input id="duzenle-ad" value={duzenlemeAd} onChange={(e) => setDuzenlemeAd(e.target.value)} /></div>
             <div className="grid gap-1.5"><Label htmlFor="duzenle-tel">Telefon</Label><Input id="duzenle-tel" inputMode="numeric" value={duzenlemeTelefon} onChange={(e) => setDuzenlemeTelefon(e.target.value)} /></div>
-            <div className="grid gap-1.5"><Label htmlFor="duzenle-pin">Yeni PIN (4 hane)</Label><Input id="duzenle-pin" inputMode="numeric" maxLength={4} value={duzenlemePin} onChange={(e) => setDuzenlemePin(e.target.value.replace(/\D/g, ""))} placeholder="Boş bırakırsanız mevcut PIN korunur" /><p className="text-xs text-muted-foreground">Boş bırakılırsa personelin mevcut PIN kodu değişmez.</p></div>
+            <div className="grid gap-1.5"><Label htmlFor="duzenle-pin">{yoneticiDuzenleniyor ? "Yeni yönetici PIN'i (6-8 hane)" : "Yeni PIN (4 hane)"}</Label><Input id="duzenle-pin" inputMode="numeric" type="password" autoComplete="new-password" maxLength={yoneticiDuzenleniyor ? 8 : 4} value={duzenlemePin} onChange={(e) => setDuzenlemePin(e.target.value.replace(/\D/g, ""))} placeholder="Boş bırakırsanız mevcut PIN korunur" /><p className="text-xs text-muted-foreground">Boş bırakılırsa mevcut PIN korunur. {yoneticiDuzenleniyor ? "Yeni yönetici PIN'i 6-8 haneli olmalıdır." : "Personel PIN'i 4 haneli olmalıdır."}</p></div>
           </div>
-          <DialogFooter><Button onClick={() => duzenle.mutate()} disabled={duzenle.isPending || duzenlemeAd.trim().length < 2 || duzenlemeTelefon.replace(/\D/g, "").length < 10 || (duzenlemePin.length > 0 && duzenlemePin.length !== 4)}>{duzenle.isPending ? "Kaydediliyor..." : "Kaydet"}</Button></DialogFooter>
+          <DialogFooter><Button onClick={() => duzenle.mutate()} disabled={duzenle.isPending || duzenlemeAd.trim().length < 2 || duzenlemeTelefon.replace(/\D/g, "").length < 10 || !duzenlemePinGecerli}>{duzenle.isPending ? "Kaydediliyor..." : "Kaydet"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </section>
