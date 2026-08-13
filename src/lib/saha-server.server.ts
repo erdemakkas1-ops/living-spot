@@ -187,9 +187,11 @@ export async function mesaiDurumuGetirSunucu(token: unknown): Promise<MesaiDurum
 export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelKonum[]> {
   await ikOturumDogrula(token);
   const sb = await db();
+  const saklamaEsigi = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await sb
     .from("personel_konumlari")
     .select("id, personel_id, enlem, boylam, dogruluk, kayit_tarihi, personel(ad_soyad, telefon)")
+    .gte("kayit_tarihi", saklamaEsigi)
     .order("kayit_tarihi", { ascending: false })
     .limit(500);
   if (error) throw error;
