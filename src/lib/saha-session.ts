@@ -108,6 +108,8 @@ export function oturumSil() {
  * Yetkisiz / süresi dolmuş sunucu yanıtında çağrılır: yerel oturumu temizler,
  * giriş ekranında gösterilecek bildirimi bırakır ve kullanıcıyı yönlendirir.
  */
+let yonlendiriliyor = false;
+
 export function oturumSonlandir(mesaj = OTURUM_SURESI_DOLDU) {
   if (typeof window === "undefined") return;
   // Aynı sayfa yaşam döngüsünde tek yönlendirme yapılır (yenileme döngüsü olmasın).
