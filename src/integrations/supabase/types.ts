@@ -183,7 +183,6 @@ export type Database = {
           pin_kodu: string | null
           rol: string
           telefon: string
-          oturum_surumu: number
         }
         Insert: {
           ad_soyad: string
@@ -196,7 +195,6 @@ export type Database = {
           pin_kodu?: string | null
           rol?: string
           telefon: string
-          oturum_surumu?: number
         }
         Update: {
           ad_soyad?: string
@@ -209,7 +207,6 @@ export type Database = {
           pin_kodu?: string | null
           rol?: string
           telefon?: string
-          oturum_surumu?: number
         }
         Relationships: []
       }
