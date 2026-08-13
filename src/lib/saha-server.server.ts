@@ -15,6 +15,9 @@ async function db() {
 
 export const OTURUM_GECERSIZ = "Oturum geçersiz. Lütfen tekrar giriş yapın.";
 export const HESAP_PASIF = "Hesabınız pasif durumda. Yönetimle iletişime geçin.";
+/** PIN yenilendiğinde eski oturumlar geçersizdir; istemci bu mesajda oturumu kapatır. */
+export const OTURUM_YENILENDI =
+  "Oturum geçersiz: giriş bilgileriniz güncellendi. Lütfen tekrar giriş yapın.";
 
 type Sb = Awaited<ReturnType<typeof db>>;
 
@@ -53,7 +56,7 @@ async function oturumDogrula(token: unknown): Promise<SahaClaims> {
   const kayit = data as { id: string; rol: string; aktif: boolean; oturum_surumu: number } | null;
   // Silinen kullanıcı veya rolü değişmiş oturum: genel geçersizlik mesajı.
   if (!kayit || kayit.rol !== claims.rol) throw new Error(OTURUM_GECERSIZ);
-  if (kayit.oturum_surumu !== claims.oturumSurumu) throw new Error(OTURUM_GECERSIZ);
+  if (kayit.oturum_surumu !== claims.oturumSurumu) throw new Error(OTURUM_YENILENDI);
   if (!kayit.aktif) {
     await oturumIptalLogla(sb, claims.id);
     throw new Error(HESAP_PASIF);
