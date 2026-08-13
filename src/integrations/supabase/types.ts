@@ -256,7 +256,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      gorev_tamamla_atomik: {
+        Args: {
+          p_foto_yolu: string
+          p_gorev_id: string
+          p_personel_notu: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -447,17 +447,12 @@ export async function gorevTamamlaSunucu(
     .from("is-fotolari")
     .download(input.fotoYolu);
   if (fotoHatasi || !foto) throw new Error("Göreve ait fotoğraf bulunamadı.");
-  const { error } = await sb.from("is_loglari").insert({
-    gorev_id: input.gorevId,
-    foto_url: input.fotoYolu,
-    personel_notu: input.not,
+  const { error } = await sb.rpc("gorev_tamamla_atomik", {
+    p_gorev_id: input.gorevId,
+    p_foto_yolu: input.fotoYolu,
+    p_personel_notu: input.not,
   });
-  if (error) throw error;
-  const { error: hata2 } = await sb
-    .from("gorevler")
-    .update({ durum: "tamamlandi" })
-    .eq("id", input.gorevId);
-  if (hata2) throw hata2;
+  if (error) throw new Error(error.message || "Görev tamamlanamadı.");
   return { ok: true };
 }
 /** İK: yeni saha personeli ekler. Telefon numarası sistemde tekil olmalıdır. */
