@@ -19,7 +19,7 @@ function jpegMetadataTemizle(bytes: Uint8Array) {
   while (i + 4 <= bytes.length && bytes[i] === 0xff) {
     const marker = bytes[i + 1];
     if (marker === 0xda || marker === 0xd9) { parcalar.push(bytes.slice(i)); return birlestir(parcalar); }
-    const uzunluk = (bytes[i + 2] << 8) | bytes[i + 3];
+    const uzunluk = ((bytes[i + 2] ?? 0) << 8) | (bytes[i + 3] ?? 0);
     if (uzunluk < 2 || i + 2 + uzunluk > bytes.length) throw new Error("JPEG yapısı geçersiz.");
     // APP1(EXIF/GPS/XMP), APP13(IPTC) ve yorum blokları kişisel metadata taşıyabilir.
     if (marker !== 0xe1 && marker !== 0xed && marker !== 0xfe) {
@@ -56,7 +56,7 @@ function webpMetadataTemizle(bytes: Uint8Array) {
     if (son > bytes.length) throw new Error("WebP yapısı geçersiz.");
     if (tur !== "EXIF" && tur !== "XMP ") {
       const parca = bytes.slice(i, son);
-      if (tur === "VP8X" && parca.length > 8) parca[8] &= ~0x0c;
+      if (tur === "VP8X" && parca.length > 8) parca[8] = (parca[8] ?? 0) & ~0x0c;
       parcalar.push(parca);
     }
     i = son;
