@@ -24,7 +24,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Sb = SupabaseClient<Database>;
 
-/** Denetim kaydını yazar; log hatası ana işlemi bozmaz. */
+/** Denetim kaydını yazar; kayıt başarısızsa hata sessizce yutulmaz. */
 export async function auditYaz(
   sb: Sb,
   kayit: {
@@ -34,14 +34,14 @@ export async function auditYaz(
     aciklama?: string;
   },
 ) {
-  try {
-    await sb.from("audit_loglari").insert({
-      yonetici_id: kayit.yonetici_id ?? null,
-      islem_turu: kayit.islem_turu,
-      hedef_personel_id: kayit.hedef_personel_id ?? null,
-      aciklama: (kayit.aciklama ?? "").slice(0, 500),
-    });
-  } catch {
-    /* denetim kaydı yazılamazsa işlem devam eder */
+  const { error } = await sb.from("audit_loglari").insert({
+    yonetici_id: kayit.yonetici_id ?? null,
+    islem_turu: kayit.islem_turu,
+    hedef_personel_id: kayit.hedef_personel_id ?? null,
+    aciklama: (kayit.aciklama ?? "").slice(0, 500),
+  });
+  if (error) {
+    console.error("[Audit] Denetim kaydı yazılamadı:", error.code);
+    throw new Error("İşlem güvenlik kaydına yazılamadı. Lütfen tekrar deneyin.");
   }
 }
