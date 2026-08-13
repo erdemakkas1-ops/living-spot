@@ -45,7 +45,7 @@ export const girisYapFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     ayniOriginDogrula();
     const { personel, token } = await girisYapSunucu(data.telefon, data.pin);
-    const uretim = process.env.NODE_ENV === "production";
+    const uretim = process.env['NODE_ENV'] === "production";
     setCookie(OTURUM_COOKIE, token, {
       httpOnly: true,
       secure: uretim,
