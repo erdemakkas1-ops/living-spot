@@ -71,19 +71,16 @@ export type Database = {
         Row: {
           deneme_tarihi: string
           id: string
-          kaynak_ozeti: string
           telefon: string
         }
         Insert: {
           deneme_tarihi?: string
           id?: string
-          kaynak_ozeti: string
           telefon: string
         }
         Update: {
           deneme_tarihi?: string
           id?: string
-          kaynak_ozeti?: string
           telefon?: string
         }
         Relationships: []
@@ -256,14 +253,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      gorev_tamamla_atomik: {
-        Args: {
-          p_foto_yolu: string
-          p_gorev_id: string
-          p_personel_notu: string
-        }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
