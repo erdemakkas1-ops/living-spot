@@ -2,6 +2,7 @@
 import { tokenDogrula, tokenUret, type SahaClaims } from "./saha-token.server";
 import { pinDogrula, pinHashle } from "./saha-pin.server";
 import { auditYaz, telefonMaskele } from "./saha-audit.server";
+import { fotoMetadataTemizle } from "./saha-foto.server";
 import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
 const GOREV_SELECT =
@@ -388,8 +389,20 @@ export async function fotoYukleSunucu(
   }
   if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Fotoğraf 8MB'dan büyük olamaz.");
   const tur = fotoTurunuAlgila(bytes);
+  bytes = fotoMetadataTemizle(bytes, tur.mime);
   const yol = `${input.gorevId}/${crypto.randomUUID()}.${tur.uzanti}`;
   const sb = await db();
+  // Aynı görevde daha önce yüklenmiş fakat iş_loglarına bağlanmamış dosyaları temizle.
+  const { data: oncekiDosyalar } = await sb.storage.from("is-fotolari").list(input.gorevId, {
+    limit: 100,
+  });
+  if (oncekiDosyalar?.length) {
+    const yollar = oncekiDosyalar.map((f) => `${input.gorevId}/${f.name}`);
+    const { data: bagli } = await sb.from("is_loglari").select("foto_url").in("foto_url", yollar);
+    const bagliYollar = new Set((bagli ?? []).map((k) => k.foto_url).filter(Boolean));
+    const sahipsiz = yollar.filter((p) => !bagliYollar.has(p));
+    if (sahipsiz.length) await sb.storage.from("is-fotolari").remove(sahipsiz);
+  }
   const { error } = await sb.storage
     .from("is-fotolari")
     .upload(yol, bytes, { contentType: tur.mime, upsert: false });
