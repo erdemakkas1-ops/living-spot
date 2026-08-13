@@ -24,6 +24,12 @@ const BASLIKLAR = [
 ];
 
 function satirlar(gorevler: Gorev[]) {
+  const tarihMetni = (deger: string) => {
+    const tarih = new Date(deger);
+    const parca = (n: number) => String(n).padStart(2, "0");
+    // Başındaki apostrof Excel'in değeri dar tarih hücresine çevirip #### göstermesini önler.
+    return `'${parca(tarih.getDate())}.${parca(tarih.getMonth() + 1)}.${tarih.getFullYear()} ${parca(tarih.getHours())}:${parca(tarih.getMinutes())}`;
+  };
   return gorevler.map((g) => {
     const log = g.is_loglari[g.is_loglari.length - 1];
     return [
@@ -33,8 +39,8 @@ function satirlar(gorevler: Gorev[]) {
       g.personel?.ad_soyad ?? "Atanmadı",
       g.aciliyet === "acil" ? "ACİL" : "Normal",
       DURUM_ETIKET[g.durum],
-      new Date(g.olusturma_tarihi).toLocaleString("tr-TR"),
-      log ? new Date(log.tamamlanma_tarihi).toLocaleString("tr-TR") : "",
+      tarihMetni(g.olusturma_tarihi),
+      log ? tarihMetni(log.tamamlanma_tarihi) : "",
       log?.foto_url ? "Var" : "Yok",
     ];
   });
