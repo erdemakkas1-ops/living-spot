@@ -92,12 +92,12 @@ async function totp(secret: string, counter: number) {
   }
   const hash = new Uint8Array(await crypto.subtle.sign("HMAC", key, bytes));
   if (hash.length < 20) throw new Error("TOTP hash hesaplanamadı.");
-  const offset = hash[hash.length - 1] & 15;
+  const offset = (hash.at(-1) ?? 0) & 15;
   const binary =
-    (((Number(hash[offset]) || 0) & 127) << 24) |
-    ((Number(hash[offset + 1]) || 0) << 16) |
-    ((Number(hash[offset + 2]) || 0) << 8) |
-    (Number(hash[offset + 3]) || 0);
+    (((hash.at(offset) ?? 0) & 127) << 24) |
+    ((hash.at(offset + 1) ?? 0) << 16) |
+    ((hash.at(offset + 2) ?? 0) << 8) |
+    (hash.at(offset + 3) ?? 0);
   return String(binary % 1_000_000).padStart(6, "0");
 }
 

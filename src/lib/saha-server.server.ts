@@ -181,7 +181,7 @@ export async function girisYapSunucu(
       kurulum: secret ? { anahtar: secret, uri: mfaKurulumUri(secret, personel.ad_soyad) } : undefined,
     };
   }
-  return { personel, token: await tokenUret(personel.id, personel.rol, kayit.oturum_surumu) };
+  return { mfaGerekli: false as const, personel, token: await tokenUret(personel.id, personel.rol, kayit.oturum_surumu) };
 }
 
 export async function mfaDogrulaSunucu(adayToken: unknown, kod: string) {
