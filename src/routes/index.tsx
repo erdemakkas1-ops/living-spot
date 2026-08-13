@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
-import { girisYap } from "@/lib/saha-api";
+import { girisYap, mfaDogrula } from "@/lib/saha-api";
 import { oturumSebebiAl, oturumYaz, useOturum } from "@/lib/saha-session";
 
 export const Route = createFileRoute("/")({
@@ -38,6 +38,8 @@ function GirisSayfasi() {
   const [telefon, setTelefon] = useState("");
   const [pin, setPin] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [mfa, setMfa] = useState<{ kurulum?: { anahtar: string; uri: string } } | null>(null);
+  const [mfaKodu, setMfaKodu] = useState("");
 
   useEffect(() => {
     if (kullanici) {
@@ -55,12 +57,34 @@ function GirisSayfasi() {
     e.preventDefault();
     setYukleniyor(true);
     try {
-      const p = await girisYap(telefon, pin);
+      const sonuc = await girisYap(telefon, pin);
+      if (sonuc.mfaGerekli) {
+        setMfa({ kurulum: sonuc.kurulum });
+        setPin("");
+        toast.success(sonuc.kurulum ? "Authenticator kurulumunu tamamlayın." : "Authenticator kodunu girin.");
+        return;
+      }
+      const p = sonuc.personel;
       oturumYaz(p);
       toast.success(`Hoş geldin, ${p.ad_soyad}`);
       navigate({ to: p.rol === "ik" ? "/panel" : "/saha" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Giriş başarısız.");
+    } finally {
+      setYukleniyor(false);
+    }
+  };
+
+  const mfaGonder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setYukleniyor(true);
+    try {
+      const p = await mfaDogrula(mfaKodu);
+      oturumYaz(p);
+      toast.success(`Hoş geldin, ${p.ad_soyad}`);
+      navigate({ to: "/panel" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Kod doğrulanamadı.");
     } finally {
       setYukleniyor(false);
     }
@@ -82,9 +106,65 @@ function GirisSayfasi() {
         </div>
 
         <form
-          onSubmit={gonder}
+          onSubmit={mfa ? mfaGonder : gonder}
           className="rounded-2xl bg-card p-6 shadow-card"
         >
+          {mfa ? (
+            <>
+              <div className="text-center">
+                <ShieldCheck className="mx-auto h-10 w-10 text-primary" />
+                <h2 className="mt-3 text-lg font-bold">İki aşamalı doğrulama</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {mfa.kurulum
+                    ? "Google veya Microsoft Authenticator uygulamasında Kurulum anahtarı ekle seçeneğini açın."
+                    : "Authenticator uygulamanızdaki 6 haneli kodu girin."}
+                </p>
+              </div>
+              {mfa.kurulum && (
+                <div className="mt-4 rounded-lg border bg-muted p-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Hesap: Saha İş Takip</p>
+                  <code className="mt-2 block break-all text-center text-sm font-bold tracking-wider">
+                    {mfa.kurulum.anahtar}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-3 w-full"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(mfa.kurulum!.anahtar);
+                      toast.success("Kurulum anahtarı kopyalandı.");
+                    }}
+                  >
+                    Anahtarı Kopyala
+                  </Button>
+                </div>
+              )}
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="mfa-kodu" className="text-sm font-semibold">Authenticator Kodu</Label>
+                <Input
+                  id="mfa-kodu"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="000000"
+                  value={mfaKodu}
+                  onChange={(e) => setMfaKodu(e.target.value.replace(/\D/g, ""))}
+                  required
+                  minLength={6}
+                  maxLength={6}
+                  className="h-14 text-center text-xl tracking-[0.4em]"
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" disabled={yukleniyor || mfaKodu.length !== 6} className="mt-6 h-14 w-full text-base font-semibold">
+                <ShieldCheck className="h-5 w-5" />
+                {yukleniyor ? "Doğrulanıyor..." : "Kodu Doğrula"}
+              </Button>
+              <Button type="button" variant="ghost" className="mt-2 w-full" onClick={() => { setMfa(null); setMfaKodu(""); }}>
+                Giriş ekranına dön
+              </Button>
+            </>
+          ) : (
+          <>
           <div className="space-y-2">
             <Label htmlFor="telefon" className="text-sm font-semibold">
               Telefon Numarası
@@ -141,6 +221,8 @@ function GirisSayfasi() {
             </span>
             <BaglantiRozeti />
           </div>
+          </>
+          )}
         </form>
         <p className="mt-5 text-center text-xs text-navy-foreground/70">
           Kişisel verilerinizin işlenmesi hakkında{" "}

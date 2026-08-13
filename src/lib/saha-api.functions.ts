@@ -8,6 +8,7 @@ import {
   fotoUrlAlSunucu,
   fotoYukleSunucu,
   girisYapSunucu,
+  mfaDogrulaSunucu,
   gorevDurumGuncelleSunucu,
   gorevGetirSunucu,
   gorevOlusturSunucu,
@@ -27,6 +28,11 @@ import {
 } from "./saha-server.server";
 
 const OTURUM_COOKIE = "saha-oturum-token";
+const MFA_ADAY_COOKIE = "saha-mfa-aday";
+
+function guvenliCookie(maxAge: number) {
+  return { httpOnly: true, secure: true, sameSite: "none" as const, path: "/", maxAge };
+}
 
 // CSRF koruması src/start.ts içindeki createCsrfMiddleware tarafından yapılır.
 // Elle origin karşılaştırması yapılmaz: proxy/iframe (Lovable preview) arkasında
@@ -49,23 +55,29 @@ export const girisYapFn = createServerFn({ method: "POST" })
     const kaynakOzeti = Array.from(new Uint8Array(ozetBytes), (b) => b.toString(16).padStart(2, "0"))
       .join("")
       .slice(0, 32);
-    const { personel, token } = await girisYapSunucu(data.telefon, data.pin, kaynakOzeti);
-    setCookie(OTURUM_COOKIE, token, {
-      httpOnly: true,
-      secure: true,
-      // Uygulama Lovable önizlemesinde iframe (cross-site) içinde çalışır; Lax
-      // olduğunda çerez isteklere hiç eklenmediği için oturum hemen düşüyordu.
-      // SameSite=None + Secure her ortamda kullanılır (localhost güvenli sayılır).
-      sameSite: "none",
-      path: "/",
-      maxAge: 12 * 60 * 60,
-    });
+    const sonuc = await girisYapSunucu(data.telefon, data.pin, kaynakOzeti);
+    if ("mfaGerekli" in sonuc) {
+      setCookie(MFA_ADAY_COOKIE, sonuc.mfaAdayToken, guvenliCookie(5 * 60));
+      return { mfaGerekli: true as const, kurulum: sonuc.kurulum };
+    }
+    setCookie(OTURUM_COOKIE, sonuc.token, guvenliCookie(12 * 60 * 60));
+    return { mfaGerekli: false as const, personel: sonuc.personel };
+  });
+
+export const mfaDogrulaFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ kod: z.string().regex(/^\d{6}$/) }).parse(d))
+  .handler(async ({ data }) => {
+    ayniOriginDogrula();
+    const { personel, token } = await mfaDogrulaSunucu(getCookie(MFA_ADAY_COOKIE) ?? "", data.kod);
+    setCookie(OTURUM_COOKIE, token, guvenliCookie(12 * 60 * 60));
+    deleteCookie(MFA_ADAY_COOKIE, { path: "/" });
     return { personel };
   });
 
 export const cikisYapFn = createServerFn({ method: "POST" }).handler(() => {
   ayniOriginDogrula();
   deleteCookie(OTURUM_COOKIE, { path: "/" });
+  deleteCookie(MFA_ADAY_COOKIE, { path: "/" });
   return { ok: true };
 });
 

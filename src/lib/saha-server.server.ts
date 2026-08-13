@@ -1,6 +1,7 @@
 /** Sunucu tarafı saha veri erişimi. Tüm tablo erişimi burada, yetki kontrolü ile yapılır. */
-import { tokenDogrula, tokenUret, type SahaClaims } from "./saha-token.server";
+import { mfaAdayTokenDogrula, mfaAdayTokenUret, tokenDogrula, tokenUret, type SahaClaims } from "./saha-token.server";
 import { pinDogrula, pinHashle } from "./saha-pin.server";
+import { mfaAnahtariCoz, mfaAnahtariSifrele, mfaAnahtariUret, mfaKoduDogrula, mfaKurulumUri } from "./saha-mfa.server";
 import { auditYaz, telefonMaskele } from "./saha-audit.server";
 import { fotoMetadataTemizle } from "./saha-foto.server";
 import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
@@ -107,13 +108,13 @@ export async function girisYapSunucu(telefon: string, pin: string, kaynakOzeti: 
 
   const { data, error } = await sb
     .from("personel")
-    .select(`${PERSONEL_SELECT}, pin_kodu, pin_hash, oturum_surumu`)
+    .select(`${PERSONEL_SELECT}, pin_kodu, pin_hash, oturum_surumu, mfa_secret_enc, mfa_aktif`)
     .eq("telefon", tel)
     .eq("aktif", true)
     .maybeSingle();
   if (error) throw new Error("Giriş sırasında bir hata oluştu.");
   const kayit = data as unknown as
-    | (Personel & { pin_kodu: string | null; pin_hash: string | null; oturum_surumu: number })
+    | (Personel & { pin_kodu: string | null; pin_hash: string | null; oturum_surumu: number; mfa_secret_enc: string | null; mfa_aktif: boolean })
     | null;
   const girilen = pin.trim();
   // Hash varsa onunla doğrula; yoksa eski düz metin PIN ile doğrulayıp
@@ -151,9 +152,65 @@ export async function girisYapSunucu(telefon: string, pin: string, kaynakOzeti: 
     .eq("telefon", tel)
     .eq("kaynak_ozeti", kaynakOzeti);
   // PIN/hash alanları asla yanıt gövdesine konmaz.
-  const { pin_kodu: _pk, pin_hash: _ph, oturum_surumu: _os, ...temiz } = kayit;
+  const { pin_kodu: _pk, pin_hash: _ph, oturum_surumu: _os, mfa_secret_enc: _ms, mfa_aktif: _ma, ...temiz } = kayit;
   const personel = temiz as Personel;
+  if (personel.rol === "ik") {
+    let secretEnc = kayit.mfa_secret_enc;
+    let secret: string | undefined;
+    if (!secretEnc) {
+      secret = mfaAnahtariUret();
+      secretEnc = await mfaAnahtariSifrele(secret);
+      const { error: mfaError } = await sb
+        .from("personel")
+        .update({ mfa_secret_enc: secretEnc, mfa_aktif: false })
+        .eq("id", personel.id);
+      if (mfaError) throw new Error("MFA kurulumu başlatılamadı.");
+    } else if (!kayit.mfa_aktif) {
+      secret = await mfaAnahtariCoz(secretEnc);
+    }
+    return {
+      mfaGerekli: true as const,
+      mfaAdayToken: await mfaAdayTokenUret(personel.id),
+      kurulum: secret ? { anahtar: secret, uri: mfaKurulumUri(secret, personel.ad_soyad) } : undefined,
+    };
+  }
   return { personel, token: await tokenUret(personel.id, personel.rol, kayit.oturum_surumu) };
+}
+
+export async function mfaDogrulaSunucu(adayToken: unknown, kod: string) {
+  const claims = await mfaAdayTokenDogrula(adayToken);
+  const sb = await db();
+  const { data, error } = await sb
+    .from("personel")
+    .select(`${PERSONEL_SELECT}, oturum_surumu, mfa_secret_enc, mfa_aktif`)
+    .eq("id", claims.id)
+    .eq("rol", "ik")
+    .eq("aktif", true)
+    .maybeSingle();
+  if (error || !data) throw new Error("MFA doğrulama isteği geçersiz veya süresi dolmuş.");
+  const kayit = data as unknown as Personel & {
+    oturum_surumu: number;
+    mfa_secret_enc: string | null;
+    mfa_aktif: boolean;
+  };
+  if (!kayit.mfa_secret_enc) throw new Error("MFA kurulumu bulunamadı.");
+  const secret = await mfaAnahtariCoz(kayit.mfa_secret_enc);
+  if (!(await mfaKoduDogrula(secret, kod.trim()))) throw new Error("Authenticator kodu hatalı.");
+  if (!kayit.mfa_aktif) {
+    const { error: updateError } = await sb.from("personel").update({ mfa_aktif: true }).eq("id", kayit.id);
+    if (updateError) throw new Error("MFA kurulumu tamamlanamadı.");
+    await auditYaz(sb, {
+      yonetici_id: kayit.id,
+      islem_turu: "mfa_aktiflestirildi",
+      hedef_personel_id: kayit.id,
+      aciklama: "Yönetici hesabında Authenticator ikinci faktörü etkinleştirildi.",
+    });
+  }
+  const { oturum_surumu, mfa_secret_enc: _secret, mfa_aktif: _aktif, ...personel } = kayit;
+  return {
+    personel: personel as Personel,
+    token: await tokenUret(kayit.id, "ik", oturum_surumu),
+  };
 }
 
 export async function bloklariGetirSunucu(token: unknown): Promise<Blok[]> {

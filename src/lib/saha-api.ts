@@ -9,6 +9,7 @@ import {
   fotoUrlAlFn,
   fotoYukleFn,
   girisYapFn,
+  mfaDogrulaFn,
   gorevDurumGuncelleFn,
   gorevGetirFn,
   gorevOlusturFn,
@@ -75,10 +76,19 @@ function token() {
   return "http-only-cookie";
 }
 
-export async function girisYap(telefon: string, pin: string): Promise<Personel> {
+export type GirisSonucu =
+  | { mfaGerekli: false; personel: Personel }
+  | { mfaGerekli: true; kurulum?: { anahtar: string; uri: string } };
+
+export async function girisYap(telefon: string, pin: string): Promise<GirisSonucu> {
   const sonuc = await girisYapFn({
     data: { telefon: telefon.replace(/\D/g, ""), pin: pin.trim() },
   });
+  return sonuc as GirisSonucu;
+}
+
+export async function mfaDogrula(kod: string): Promise<Personel> {
+  const sonuc = await mfaDogrulaFn({ data: { kod: kod.trim() } });
   return sonuc.personel as Personel;
 }
 
