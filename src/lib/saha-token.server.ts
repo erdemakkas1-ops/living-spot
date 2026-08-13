@@ -21,11 +21,10 @@ function b64urlDecode(input: string) {
 }
 
 async function anahtar() {
-  const secret =
-    process.env["SAHA_SESSION_SECRET"] ??
-    process.env["SUPABASE_SECRET_KEY"] ??
-    process.env["SUPABASE_SERVICE_ROLE_KEY"];
-  if (!secret) throw new Error("Oturum anahtarı yapılandırılmamış.");
+  const secret = process.env["SAHA_SESSION_SECRET"];
+  if (!secret || secret.length < 32) {
+    throw new Error("SAHA_SESSION_SECRET en az 32 karakter olacak şekilde yapılandırılmamış.");
+  }
   return crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
