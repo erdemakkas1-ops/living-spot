@@ -5,6 +5,7 @@
 import {
   auditLoglariGetirFn,
   bloklariGetirFn,
+  cikisYapFn,
   fotoUrlAlFn,
   fotoYukleFn,
   girisYapFn,
@@ -28,10 +29,8 @@ import {
 import {
   HESAP_PASIF,
   OTURUM_SURESI_DOLDU,
+  oturumSil,
   oturumSonlandir,
-  tokenOku,
-  tokenSuresiDoldu,
-  tokenYaz,
 } from "./saha-session";
 import type { AnlikDurum, Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
@@ -72,22 +71,23 @@ async function cagir<T>(islem: Promise<T>): Promise<T> {
 }
 
 function token() {
-  const t = tokenOku();
-  if (!t) throw new Error("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
-  // Token'ın süresi dolmuşsa sunucuya gitmeden oturumu kapat.
-  if (tokenSuresiDoldu(t)) {
-    oturumSonlandir(OTURUM_SURESI_DOLDU);
-    throw new Error(OTURUM_SURESI_DOLDU);
-  }
-  return t;
+  // Gerçek token yalnız HttpOnly çerezde taşınır; bu değer gizli bilgi içermez.
+  return "http-only-cookie";
 }
 
 export async function girisYap(telefon: string, pin: string): Promise<Personel> {
   const sonuc = await girisYapFn({
     data: { telefon: telefon.replace(/\D/g, ""), pin: pin.trim() },
   });
-  tokenYaz(sonuc.token);
   return sonuc.personel as Personel;
+}
+
+export async function guvenliCikisYap() {
+  try {
+    await cikisYapFn();
+  } finally {
+    oturumSil();
+  }
 }
 
 const dogalSiralama = new Intl.Collator("tr", { numeric: true, sensitivity: "base" });

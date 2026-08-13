@@ -70,8 +70,8 @@ import { RaporIndir } from "@/components/rapor-indir";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import { FotoGoruntuleyici } from "@/components/foto-goruntuleyici";
 import { YardimButonu } from "@/components/yardim-butonu";
-import { bloklariGetir, gorevOlustur, personelGetir, tumGorevleriGetir } from "@/lib/saha-api";
-import { oturumSil, useOturum } from "@/lib/saha-session";
+import { bloklariGetir, gorevOlustur, guvenliCikisYap, personelGetir, tumGorevleriGetir } from "@/lib/saha-api";
+import { useOturum } from "@/lib/saha-session";
 import {
   DURUM_ETIKET,
   DURUM_SINIF,
@@ -108,8 +108,8 @@ function PanelSayfasi() {
   const panelQc = useQueryClient();
 
   // Çıkışta önbellekteki tüm sorgu verileri de temizlenir.
-  const cikisYap = () => {
-    oturumSil();
+  const cikisYap = async () => {
+    await guvenliCikisYap();
     panelQc.clear();
     navigate({ to: "/" });
   };

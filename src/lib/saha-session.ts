@@ -33,52 +33,12 @@ function degisikligiDuyur() {
   }
 }
 
-/** Token içindeki (gizli olmayan) claim'leri okur; imza doğrulaması sunucuda yapılır. */
-function tokenClaims(token: string): { id?: string; rol?: string; exp?: number } | null {
-  try {
-    const govde = token.split(".")[0] ?? "";
-    const json = atob(govde.replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(json) as { id?: string; rol?: string; exp?: number };
-  } catch {
-    return null;
-  }
-}
-
-/** Token'ın 12 saatlik geçerlilik süresi dolmuş mu? (exp milisaniye) */
-export function tokenSuresiDoldu(token: string): boolean {
-  const exp = tokenClaims(token)?.exp ?? 0;
-  if (!exp) return false;
-  // Sunucu exp'i milisaniye üretir; saniye biçimli eski token'lar da desteklenir.
-  const ms = exp < 1e12 ? exp * 1000 : exp;
-  return ms < Date.now();
-}
-
-export function tokenOku(): string {
-  if (typeof window === "undefined") return "";
-  return window.localStorage.getItem(TOKEN_KEY) ?? "";
-}
-
-export function tokenYaz(token: string) {
-  window.localStorage.setItem(TOKEN_KEY, token);
-}
-
 export function oturumOku(): Personel | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return null;
-    // Oturum kaydı olsa da imzalı token yoksa (eski sürümden kalan kayıt)
-    // oturum geçersizdir; yeniden PIN girişi gerekir.
-    const token = window.localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      window.localStorage.removeItem(KEY);
-      return null;
-    }
-    if (tokenSuresiDoldu(token)) return null;
     const personel = JSON.parse(raw) as Personel;
-    // Yönetici ve personel oturumları karışmasın: kayıtlı rol token ile eşleşmeli.
-    const claims = tokenClaims(token);
-    if (claims && (claims.id !== personel.id || claims.rol !== personel.rol)) return null;
     return personel;
   } catch {
     return null;
@@ -86,6 +46,8 @@ export function oturumOku(): Personel | null {
 }
 
 export function oturumYaz(p: Personel) {
+  // Eski sürümlerden kalan JavaScript-okunabilir tokenı temizle.
+  window.localStorage.removeItem(TOKEN_KEY);
   window.localStorage.setItem(KEY, JSON.stringify(p));
   degisikligiDuyur();
 }

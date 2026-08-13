@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import {
@@ -25,37 +26,55 @@ import {
   tumGorevleriGetirSunucu,
 } from "./saha-server.server";
 
+const OTURUM_COOKIE = "saha-oturum-token";
+const oturumTokeni = () => getCookie(OTURUM_COOKIE) ?? "";
+
 export const girisYapFn = createServerFn({ method: "POST" })
   .validator((d) =>
     z.object({ telefon: z.string().min(3).max(30), pin: z.string().min(3).max(12) }).parse(d),
   )
-  .handler(({ data }) => girisYapSunucu(data.telefon, data.pin));
+  .handler(async ({ data }) => {
+    const { personel, token } = await girisYapSunucu(data.telefon, data.pin);
+    setCookie(OTURUM_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 12 * 60 * 60,
+    });
+    return { personel };
+  });
+
+export const cikisYapFn = createServerFn({ method: "POST" }).handler(() => {
+  deleteCookie(OTURUM_COOKIE, { path: "/" });
+  return { ok: true };
+});
 
 export const bloklariGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(({ data }) => bloklariGetirSunucu(data.token));
+  .handler(() => bloklariGetirSunucu(oturumTokeni()));
 
 export const personelGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(({ data }) => personelGetirSunucu(data.token));
+  .handler(() => personelGetirSunucu(oturumTokeni()));
 
 export const mesaiDurumuGuncelleFn = createServerFn({ method: "POST" })
   .validator((d) =>
     z.object({ token: z.string().min(10), durum: z.enum(["calisiyor", "molada"]) }).parse(d),
   )
-  .handler(({ data }) => mesaiDurumuGuncelleSunucu(data.token, data.durum));
+  .handler(({ data }) => mesaiDurumuGuncelleSunucu(oturumTokeni(), data.durum));
 
 export const mesaiDurumuGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(({ data }) => mesaiDurumuGetirSunucu(data.token));
+  .handler(() => mesaiDurumuGetirSunucu(oturumTokeni()));
 
 export const personelDurumlariFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(({ data }) => personelDurumlariSunucu(data.token));
+  .handler(() => personelDurumlariSunucu(oturumTokeni()));
 
 export const sonKonumlariGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(({ data }) => sonKonumlariGetirSunucu(data.token));
+  .handler(() => sonKonumlariGetirSunucu(oturumTokeni()));
 
 export const konumGonderFn = createServerFn({ method: "POST" })
   .validator((d) =>
@@ -68,19 +87,19 @@ export const konumGonderFn = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(({ data }) => konumGonderSunucu(data.token, data));
+  .handler(({ data }) => konumGonderSunucu(oturumTokeni(), data));
 
 export const tumGorevleriGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(({ data }) => tumGorevleriGetirSunucu(data.token));
+  .handler(() => tumGorevleriGetirSunucu(oturumTokeni()));
 
 export const personelGorevleriniGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(({ data }) => personelGorevleriniGetirSunucu(data.token));
+  .handler(() => personelGorevleriniGetirSunucu(oturumTokeni()));
 
 export const gorevGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10), id: z.string().uuid() }).parse(d))
-  .handler(({ data }) => gorevGetirSunucu(data.token, data.id));
+  .handler(({ data }) => gorevGetirSunucu(oturumTokeni(), data.id));
 
 export const gorevOlusturFn = createServerFn({ method: "POST" })
   .validator((d) =>
@@ -107,7 +126,7 @@ export const gorevOlusturFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(({ data }) =>
-    gorevOlusturSunucu(data.token, {
+    gorevOlusturSunucu(oturumTokeni(), {
       blok_id: data.blok_id,
       personel_id: data.personel_id,
       is_basligi: data.is_basligi,
@@ -128,7 +147,7 @@ export const gorevDurumGuncelleFn = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(({ data }) => gorevDurumGuncelleSunucu(data.token, data.id, data.durum));
+  .handler(({ data }) => gorevDurumGuncelleSunucu(oturumTokeni(), data.id, data.durum));
 
 export const fotoYukleFn = createServerFn({ method: "POST" })
   .validator((d) =>
@@ -142,13 +161,13 @@ export const fotoYukleFn = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(({ data }) => fotoYukleSunucu(data.token, data));
+  .handler(({ data }) => fotoYukleSunucu(oturumTokeni(), data));
 
 export const fotoUrlAlFn = createServerFn({ method: "POST" })
   .validator((d) =>
     z.object({ token: z.string().min(10), yol: z.string().min(3).max(300) }).parse(d),
   )
-  .handler(({ data }) => fotoUrlAlSunucu(data.token, data.yol));
+  .handler(({ data }) => fotoUrlAlSunucu(oturumTokeni(), data.yol));
 
 export const gorevTamamlaFn = createServerFn({ method: "POST" })
   .validator((d) =>
@@ -161,7 +180,7 @@ export const gorevTamamlaFn = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(({ data }) => gorevTamamlaSunucu(data.token, data));
+  .handler(({ data }) => gorevTamamlaSunucu(oturumTokeni(), data));
 export const personelEkleFn = createServerFn({ method: "POST" })
   .validator((d) =>
     z
@@ -174,7 +193,7 @@ export const personelEkleFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(({ data }) =>
-    personelEkleSunucu(data.token, {
+    personelEkleSunucu(oturumTokeni(), {
       ad_soyad: data.ad_soyad,
       telefon: data.telefon,
       pin_kodu: data.pin_kodu,
@@ -185,7 +204,7 @@ export const personelAktiflikGuncelleFn = createServerFn({ method: "POST" })
   .validator((d) =>
     z.object({ token: z.string().min(10), id: z.string().uuid(), aktif: z.boolean() }).parse(d),
   )
-  .handler(({ data }) => personelAktiflikGuncelleSunucu(data.token, data.id, data.aktif));
+  .handler(({ data }) => personelAktiflikGuncelleSunucu(oturumTokeni(), data.id, data.aktif));
 
 export const personelDuzenleFn = createServerFn({ method: "POST" })
   .validator((d) =>
@@ -201,12 +220,12 @@ export const personelDuzenleFn = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(({ data }) => personelDuzenleSunucu(data.token, data));
+  .handler(({ data }) => personelDuzenleSunucu(oturumTokeni(), data));
 
 export const personelSilFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10), id: z.string().uuid() }).parse(d))
-  .handler(({ data }) => personelSilSunucu(data.token, data.id));
+  .handler(({ data }) => personelSilSunucu(oturumTokeni(), data.id));
 
 export const auditLoglariGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(({ data }) => auditLoglariGetirSunucu(data.token));
+  .handler(() => auditLoglariGetirSunucu(oturumTokeni()));

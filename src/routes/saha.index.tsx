@@ -20,10 +20,11 @@ import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import {
   mesaiDurumuGetir,
   mesaiDurumuGuncelle,
+  guvenliCikisYap,
   personelGorevleriniGetir,
   tumGorevleriGetir,
 } from "@/lib/saha-api";
-import { oturumSil, useOturum } from "@/lib/saha-session";
+import { useOturum } from "@/lib/saha-session";
 import { useKonumPaylas } from "@/lib/konum-takip";
 import { DURUM_ETIKET, DURUM_SINIF, type MesaiDurumu } from "@/lib/saha-types";
 
@@ -54,8 +55,8 @@ function SahaListesi() {
   const { kullanici, hazir } = useOturum();
   const qc = useQueryClient();
 
-  const cikisYap = () => {
-    oturumSil();
+  const cikisYap = async () => {
+    await guvenliCikisYap();
     qc.clear();
     navigate({ to: "/" });
   };
