@@ -46,13 +46,14 @@ async function oturumDogrula(token: unknown): Promise<SahaClaims> {
   const sb = await db();
   const { data, error } = await sb
     .from("personel")
-    .select("id, rol, aktif")
+    .select("id, rol, aktif, oturum_surumu")
     .eq("id", claims.id)
     .maybeSingle();
   if (error) throw new Error(OTURUM_GECERSIZ);
-  const kayit = data as { id: string; rol: string; aktif: boolean } | null;
+  const kayit = data as { id: string; rol: string; aktif: boolean; oturum_surumu: number } | null;
   // Silinen kullanıcı veya rolü değişmiş oturum: genel geçersizlik mesajı.
   if (!kayit || kayit.rol !== claims.rol) throw new Error(OTURUM_GECERSIZ);
+  if (kayit.oturum_surumu !== claims.oturumSurumu) throw new Error(OTURUM_GECERSIZ);
   if (!kayit.aktif) {
     await oturumIptalLogla(sb, claims.id);
     throw new Error(HESAP_PASIF);
@@ -100,13 +101,13 @@ export async function girisYapSunucu(telefon: string, pin: string) {
 
   const { data, error } = await sb
     .from("personel")
-    .select(`${PERSONEL_SELECT}, pin_kodu, pin_hash`)
+    .select(`${PERSONEL_SELECT}, pin_kodu, pin_hash, oturum_surumu`)
     .eq("telefon", tel)
     .eq("aktif", true)
     .maybeSingle();
   if (error) throw new Error("Giriş sırasında bir hata oluştu.");
   const kayit = data as unknown as
-    | (Personel & { pin_kodu: string | null; pin_hash: string | null })
+    | (Personel & { pin_kodu: string | null; pin_hash: string | null; oturum_surumu: number })
     | null;
   const girilen = pin.trim();
   // Hash varsa onunla doğrula; yoksa eski düz metin PIN ile doğrulayıp
@@ -132,9 +133,9 @@ export async function girisYapSunucu(telefon: string, pin: string) {
   // Başarılı girişte o telefona ait deneme kayıtları temizlenir.
   await sb.from("giris_denemeleri").delete().eq("telefon", tel);
   // PIN/hash alanları asla yanıt gövdesine konmaz.
-  const { pin_kodu: _pk, pin_hash: _ph, ...temiz } = kayit;
+  const { pin_kodu: _pk, pin_hash: _ph, oturum_surumu: _os, ...temiz } = kayit;
   const personel = temiz as Personel;
-  return { personel, token: await tokenUret(personel.id, personel.rol) };
+  return { personel, token: await tokenUret(personel.id, personel.rol, kayit.oturum_surumu) };
 }
 
 export async function bloklariGetirSunucu(token: unknown): Promise<Blok[]> {
@@ -493,7 +494,7 @@ export async function personelDuzenleSunucu(
   const sb = await db();
   const { data: onceki } = await sb
     .from("personel")
-    .select("ad_soyad, telefon, aktif, rol")
+    .select("ad_soyad, telefon, aktif, rol, oturum_surumu")
     .eq("id", input.id)
     .maybeSingle();
   // Yönetici kaydı düzenlenebilir ama yanlışlıkla pasife alınamaz.
@@ -515,7 +516,13 @@ export async function personelDuzenleSunucu(
       telefon,
       aktif: input.aktif,
       // PIN alanı boş bırakıldıysa mevcut PIN korunur.
-      ...(input.pin_kodu ? { pin_kodu: null, pin_hash: pinHashle(input.pin_kodu) } : {}),
+      ...(input.pin_kodu
+        ? {
+            pin_kodu: null,
+            pin_hash: pinHashle(input.pin_kodu),
+            oturum_surumu: ((onceki as { oturum_surumu?: number } | null)?.oturum_surumu ?? 1) + 1,
+          }
+        : {}),
     })
     .eq("id", input.id);
   if (error) throw error;

@@ -2,7 +2,7 @@
  * PIN oturumları için imzalı (HMAC-SHA256) token üretimi ve doğrulaması.
  * Anahtar yalnızca sunucu tarafında bulunur; tarayıcıya asla gönderilmez.
  */
-export type SahaClaims = { id: string; rol: "ik" | "personel"; exp: number };
+export type SahaClaims = { id: string; rol: "ik" | "personel"; oturumSurumu: number; exp: number };
 
 const GECERLILIK_MS = 12 * 60 * 60 * 1000;
 
@@ -44,8 +44,8 @@ async function imzala(payload: string) {
   return b64url(new Uint8Array(sig));
 }
 
-export async function tokenUret(id: string, rol: "ik" | "personel") {
-  const claims: SahaClaims = { id, rol, exp: Date.now() + GECERLILIK_MS };
+export async function tokenUret(id: string, rol: "ik" | "personel", oturumSurumu: number) {
+  const claims: SahaClaims = { id, rol, oturumSurumu, exp: Date.now() + GECERLILIK_MS };
   const payload = b64url(new TextEncoder().encode(JSON.stringify(claims)));
   return `${payload}.${await imzala(payload)}`;
 }
@@ -74,6 +74,7 @@ export async function tokenDogrula(token: unknown): Promise<SahaClaims> {
     yetkisiz();
   }
   if (!claims.id || (claims.rol !== "ik" && claims.rol !== "personel")) yetkisiz();
+  if (!Number.isInteger(claims.oturumSurumu) || claims.oturumSurumu < 1) yetkisiz();
   if (!claims.exp || claims.exp < Date.now()) yetkisiz();
   return claims;
 }
