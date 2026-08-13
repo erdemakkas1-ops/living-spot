@@ -116,7 +116,10 @@ export function oturumSonlandir(mesaj = OTURUM_SURESI_DOLDU) {
   } catch {
     /* yoksay */
   }
+  // Giriş ekranına tam sayfa yönlendirme: askıda kalan istekler ve boş render
+  // ağacı temizlenir, böylece beyaz ekran yerine PIN formu görünür.
   if (window.location.pathname !== "/") window.location.replace("/");
+  else window.location.reload();
 }
 
 /** Giriş ekranı için bekleyen oturum bildirimini okur ve tüketir. */
