@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as KvkkRouteImport } from './routes/kvkk'
 import { Route as PanelRouteImport } from './routes/panel'
 import { Route as SahaIndexRouteImport } from './routes/saha.index'
 import { Route as SahaGorevIdRouteImport } from './routes/saha.$gorevId'
@@ -17,6 +18,11 @@ import { Route as SahaGorevIdRouteImport } from './routes/saha.$gorevId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KvkkRoute = KvkkRouteImport.update({
+  id: '/kvkk',
+  path: '/kvkk',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PanelRoute = PanelRouteImport.update({
@@ -37,12 +43,14 @@ const SahaGorevIdRoute = SahaGorevIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/kvkk': typeof KvkkRoute
   '/panel': typeof PanelRoute
   '/saha/$gorevId': typeof SahaGorevIdRoute
   '/saha/': typeof SahaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/kvkk': typeof KvkkRoute
   '/panel': typeof PanelRoute
   '/saha/$gorevId': typeof SahaGorevIdRoute
   '/saha': typeof SahaIndexRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/kvkk': typeof KvkkRoute
   '/panel': typeof PanelRoute
   '/saha/$gorevId': typeof SahaGorevIdRoute
   '/saha/': typeof SahaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/panel' | '/saha/$gorevId' | '/saha/'
+  fullPaths: '/' | '/kvkk' | '/panel' | '/saha/$gorevId' | '/saha/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/panel' | '/saha/$gorevId' | '/saha'
-  id: '__root__' | '/' | '/panel' | '/saha/$gorevId' | '/saha/'
+  to: '/' | '/kvkk' | '/panel' | '/saha/$gorevId' | '/saha'
+  id: '__root__' | '/' | '/kvkk' | '/panel' | '/saha/$gorevId' | '/saha/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  KvkkRoute: typeof KvkkRoute
   PanelRoute: typeof PanelRoute
   SahaGorevIdRoute: typeof SahaGorevIdRoute
   SahaIndexRoute: typeof SahaIndexRoute
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kvkk': {
+      id: '/kvkk'
+      path: '/kvkk'
+      fullPath: '/kvkk'
+      preLoaderRoute: typeof KvkkRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/panel': {
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  KvkkRoute: KvkkRoute,
   PanelRoute: PanelRoute,
   SahaGorevIdRoute: SahaGorevIdRoute,
   SahaIndexRoute: SahaIndexRoute,

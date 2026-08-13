@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Building2, KeyRound, LogIn, Phone, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -142,6 +142,12 @@ function GirisSayfasi() {
             <BaglantiRozeti />
           </div>
         </form>
+        <p className="mt-5 text-center text-xs text-navy-foreground/70">
+          Kişisel verilerinizin işlenmesi hakkında{" "}
+          <Link to="/kvkk" className="font-semibold underline underline-offset-4">
+            KVKK Aydınlatma Metni
+          </Link>
+        </p>
       </div>
     </main>
   );
