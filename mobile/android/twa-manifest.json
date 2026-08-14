@@ -20,8 +20,8 @@
     "path": "C:\\Users\\erdem\\.bubblewrap\\keys\\saha-is-takip-upload.keystore",
     "alias": "saha-is-takip"
   },
-  "appVersionName": "1.0.0",
-  "appVersionCode": 2,
+  "appVersionName": "1.0.1",
+  "appVersionCode": 3,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://living-spot.lovable.app/manifest.webmanifest",
@@ -47,5 +47,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "1.0.0"
+  "appVersion": "1.0.1"
 }
