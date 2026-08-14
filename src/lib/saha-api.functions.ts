@@ -14,6 +14,8 @@ import {
   gorevOlusturSunucu,
   gorevTamamlaSunucu,
   konumGonderSunucu,
+  konumIzniGetirSunucu,
+  konumIzniGuncelleSunucu,
   mesaiDurumuGetirSunucu,
   mesaiDurumuGuncelleSunucu,
   personelAktiflikGuncelleSunucu,
@@ -142,6 +144,14 @@ export const konumGonderFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(({ data }) => konumGonderSunucu(oturumTokeni(), data));
+
+export const konumIzniGetirFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
+  .handler(() => konumIzniGetirSunucu(oturumTokeni()));
+
+export const konumIzniGuncelleFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10), izinVerildi: z.boolean() }).parse(d))
+  .handler(({ data }) => konumIzniGuncelleSunucu(oturumTokeni(), data.izinVerildi));
 
 export const tumGorevleriGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))

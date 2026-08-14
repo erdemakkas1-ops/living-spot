@@ -296,6 +296,36 @@ export async function mesaiDurumuGetirSunucu(token: unknown): Promise<MesaiDurum
     "calisiyor") as MesaiDurumu;
 }
 
+export async function konumIzniGetirSunucu(token: unknown): Promise<boolean> {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") return false;
+  const sb = await db();
+  const { data, error } = await sb
+    .from("konum_izinleri")
+    .select("izin_verildi")
+    .eq("personel_id", claims.id)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data?.izin_verildi);
+}
+
+export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boolean) {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") throw new Error("Konum izni yalnız personel hesabında değiştirilebilir.");
+  const sb = await db();
+  const simdi = new Date().toISOString();
+  const { error } = await sb.from("konum_izinleri").upsert({
+    personel_id: claims.id,
+    izin_verildi: izinVerildi,
+    metin_surumu: "2026-08-14-v1",
+    verildi_at: izinVerildi ? simdi : null,
+    geri_cekildi_at: izinVerildi ? null : simdi,
+    guncellendi_at: simdi,
+  });
+  if (error) throw error;
+  return { izinVerildi };
+}
+
 export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelKonum[]> {
   await ikOturumDogrula(token);
   const sb = await db();
@@ -338,6 +368,15 @@ export async function konumGonderSunucu(
   input: { enlem: number; boylam: number; dogruluk?: number | null | undefined },
 ) {
   const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") throw new Error("Konum yalnız personel hesabından gönderilebilir.");
+  const sb = await db();
+  const { data: izin, error: izinHatasi } = await sb
+    .from("konum_izinleri")
+    .select("izin_verildi")
+    .eq("personel_id", claims.id)
+    .maybeSingle();
+  if (izinHatasi) throw izinHatasi;
+  if (!izin?.izin_verildi) throw new Error("Konum paylaşımı için açık onay gerekiyor.");
   if (!Number.isFinite(input.enlem) || input.enlem < -90 || input.enlem > 90) {
     throw new Error("Geçersiz enlem bilgisi.");
   }
@@ -350,7 +389,6 @@ export async function konumGonderSunucu(
   ) {
     throw new Error("Geçersiz konum doğruluk bilgisi.");
   }
-  const sb = await db();
   const { error } = await sb.from("personel_konumlari").insert({
     personel_id: claims.id,
     enlem: input.enlem,

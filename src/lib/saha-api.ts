@@ -15,6 +15,8 @@ import {
   gorevOlusturFn,
   gorevTamamlaFn,
   konumGonderFn,
+  konumIzniGetirFn,
+  konumIzniGuncelleFn,
   mesaiDurumuGetirFn,
   mesaiDurumuGuncelleFn,
   personelAktiflikGuncelleFn,
@@ -243,6 +245,14 @@ export async function konumGonder(input: {
       dogruluk: input.dogruluk ?? null,
     },
   });
+}
+
+export async function konumIzniGetir(): Promise<boolean> {
+  return Boolean(await cagir(konumIzniGetirFn({ data: { token: token() } })));
+}
+
+export async function konumIzniGuncelle(izinVerildi: boolean): Promise<void> {
+  await cagir(konumIzniGuncelleFn({ data: { token: token(), izinVerildi } }));
 }
 
 export async function sonKonumlariGetir(): Promise<PersonelKonum[]> {
