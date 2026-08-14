@@ -4,10 +4,10 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
 type ServerEntry = {
-  fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
+  fetch: (request: Request, options?: { context?: { nonce?: string } }) => Promise<Response> | Response;
 };
 
-function guvenlikBasliklari(response: Response, request: Request): Response {
+async function guvenlikBasliklari(response: Response, request: Request, nonce: string): Promise<Response> {
   const headers = new Headers(response.headers);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -21,7 +21,7 @@ function guvenlikBasliklari(response: Response, request: Request): Response {
       "base-uri 'self'",
       "object-src 'none'",
       "form-action 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      `script-src 'self' 'nonce-${nonce}'`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.supabase.co",
       "font-src 'self' data:",
@@ -39,7 +39,15 @@ function guvenlikBasliklari(response: Response, request: Request): Response {
   if (!headers.has("Cache-Control") && headers.get("content-type")?.includes("text/html")) {
     headers.set("Cache-Control", "no-store");
   }
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  let body: BodyInit | null = response.body;
+  if (headers.get("content-type")?.includes("text/html")) {
+    // TanStack'in akış sırasında ürettiği tüm başlangıç scriptlerine istek bazlı
+    // nonce eklenir; böylece CSP'de unsafe-inline gerekmeksizin SSR çalışır.
+    const html = await response.text();
+    body = html.replace(/<script(?![^>]*\bnonce=)([^>]*)>/gi, `<script nonce="${nonce}"$1>`);
+    headers.delete("content-length");
+  }
+  return new Response(body, { status: response.status, statusText: response.statusText, headers });
 }
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
@@ -81,16 +89,17 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const nonce = crypto.randomUUID().replaceAll("-", "");
     try {
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return guvenlikBasliklari(await normalizeCatastrophicSsrResponse(response), request);
+      const response = await handler.fetch(request, { context: { nonce } });
+      return await guvenlikBasliklari(await normalizeCatastrophicSsrResponse(response), request, nonce);
     } catch (error) {
       console.error(error);
-      return guvenlikBasliklari(new Response(renderErrorPage(), {
+      return await guvenlikBasliklari(new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
-      }), request);
+      }), request, nonce);
     }
   },
 };
