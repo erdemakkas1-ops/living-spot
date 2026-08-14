@@ -18,6 +18,7 @@ import {
   konumGonderFn,
   konumIzniGetirFn,
   konumIzniGuncelleFn,
+  konumRizasiYenilemeyeAcFn,
   konumTakipSaatleriGetirFn,
   konumTakipSaatiGuncelleFn,
   kendiKonumTakipDurumuGetirFn,
@@ -358,6 +359,9 @@ export async function konumIzniGetir(): Promise<{ izinVerildi: boolean; guncelMe
 }
 export async function konumIzniGuncelle(izinVerildi: boolean) {
   return await cagir(konumIzniGuncelleFn({ data: { token: token(), izinVerildi } }));
+}
+export async function konumRizasiYenilemeyeAc(personelId: string) {
+  await cagir(konumRizasiYenilemeyeAcFn({ data: { token: token(), personelId } }));
 }
 export type PersonelBildirimi = { id: string; tur: string; baslik: string; mesaj: string; created_at: string; okundu_at: string | null };
 export async function personelBildirimleriGetir(): Promise<PersonelBildirimi[]> {

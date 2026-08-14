@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Bell, CheckCircle } from "lucide-react";
 import {
   DropdownMenu,
@@ -9,8 +10,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Gorev } from "@/lib/saha-types";
+import { personelBildirimleriGetir, personelBildirimiOkundu } from "@/lib/saha-api";
 
 export function BildirimMenusu({ gorevler }: { gorevler: Gorev[] }) {
+  const qc = useQueryClient();
+  const sistemBildirimleri = useQuery({ queryKey: ["yonetici-bildirimleri"], queryFn: personelBildirimleriGetir, refetchInterval: 30_000 });
+  const okundu = useMutation({ mutationFn: personelBildirimiOkundu, onSuccess: () => void qc.invalidateQueries({ queryKey: ["yonetici-bildirimleri"] }) });
   const bildirimler = useMemo(() => {
     const acil = gorevler
       .filter((g) => g.aciliyet === "acil" && g.durum !== "tamamlandi")
@@ -30,10 +35,17 @@ export function BildirimMenusu({ gorevler }: { gorevler: Gorev[] }) {
         alt: `${g.bloklar?.blok_adi ?? "—"} · ${g.personel?.ad_soyad ?? "Atanmadı"}`,
         tarih: g.is_loglari[g.is_loglari.length - 1]?.tamamlanma_tarihi ?? g.olusturma_tarihi,
       }));
-    return [...acil, ...tamam]
+    const sistem = (sistemBildirimleri.data ?? []).filter((b) => !b.okundu_at).map((b) => ({
+      id: b.id,
+      tur: "sistem" as const,
+      baslik: b.baslik,
+      alt: b.mesaj,
+      tarih: b.created_at,
+    }));
+    return [...sistem, ...acil, ...tamam]
       .sort((a, b) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime())
       .slice(0, 12);
-  }, [gorevler]);
+  }, [gorevler, sistemBildirimleri.data]);
 
   return (
     <DropdownMenu>
@@ -61,11 +73,13 @@ export function BildirimMenusu({ gorevler }: { gorevler: Gorev[] }) {
         )}
         <div className="max-h-80 overflow-y-auto">
           {bildirimler.map((b) => (
-            <DropdownMenuItem key={b.id} className="items-start gap-2">
+            <DropdownMenuItem key={b.id} className="items-start gap-2" onClick={() => { if (b.tur === "sistem") okundu.mutate(b.id); }}>
               {b.tur === "acil" ? (
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              ) : (
+              ) : b.tur === "tamam" ? (
                 <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-status-tamam" />
+              ) : (
+                <Bell className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               )}
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">{b.baslik}</span>

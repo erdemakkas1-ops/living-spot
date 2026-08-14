@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Pencil, Phone, Trash2, UserPlus, Users } from "lucide-react";
+import { Bell, Pencil, Phone, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import {
   personelGetir,
   personelSil,
   personelBildirimiGonder,
+  konumRizasiYenilemeyeAc,
 } from "@/lib/saha-api";
 import type { Personel } from "@/lib/saha-types";
 
@@ -154,6 +155,11 @@ export function PersonelYonetimi({
       setBildirimMesaj("");
     },
     onError: (h: unknown) => toast.error(h instanceof Error ? h.message : "Bildirim gönderilemedi."),
+  });
+  const rizaYenile = useMutation({
+    mutationFn: konumRizasiYenilemeyeAc,
+    onSuccess: () => toast.success("Personel için yeniden rıza alım ekranı açıldı."),
+    onError: (h: unknown) => toast.error(h instanceof Error ? h.message : "Rıza süreci güncellenemedi."),
   });
 
   return (
@@ -299,6 +305,7 @@ export function PersonelYonetimi({
               >
                 {p.aktif ? "Pasife Al" : "Aktif Et"}
               </Button>
+              {p.rol === "personel" && <Button variant="outline" size="sm" disabled={rizaYenile.isPending} onClick={() => rizaYenile.mutate(p.id)} title="Geri çekilen konum rızasını yeniden değerlendirmeye aç"><ShieldCheck className="h-4 w-4" /><span className="hidden xl:inline">Rıza Yenile</span></Button>}
               {p.rol === "personel" && <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button

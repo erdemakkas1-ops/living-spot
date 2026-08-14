@@ -467,13 +467,28 @@ export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boole
     guncellendi_at: simdi,
   });
   if (error) throw new Error(`Konum onayı kaydedilemedi: ${error.message}`);
+  if (!izinVerildi && mevcut?.izin_verildi) {
+    const [{ data: yoneticiler }, { data: personel }] = await Promise.all([
+      sb.from("personel").select("id").eq("rol", "ik").eq("aktif", true),
+      sb.from("personel").select("ad_soyad").eq("id", claims.id).single(),
+    ]);
+    if (yoneticiler?.length) {
+      const { error: bildirimHatasi } = await sb.from("personel_bildirimleri").insert(yoneticiler.map((y) => ({
+        personel_id: y.id,
+        tur: "riza_geri_cekildi",
+        baslik: "Konum açık rızası geri çekildi",
+        mesaj: `${personel?.ad_soyad ?? "Personel"} konum açık rızasını geri çekti. Konum takibi hemen durduruldu; Personel Listesi üzerinden yeniden rıza alım sürecini yönetebilirsiniz.`,
+      })));
+      if (bildirimHatasi) throw new Error("Rıza geri çekildi ancak yönetici bildirimi oluşturulamadı.");
+    }
+    await auditYaz(sb, { yonetici_id: claims.id, hedef_personel_id: claims.id, islem_turu: "riza_geri_cekildi", aciklama: "Personel konum açık rızasını geri çekti." });
+  }
   return { izinVerildi };
 }
 
 export type PersonelBildirimi = { id: string; tur: string; baslik: string; mesaj: string; created_at: string; okundu_at: string | null };
 export async function personelBildirimleriGetirSunucu(token: unknown): Promise<PersonelBildirimi[]> {
   const claims = await oturumDogrula(token);
-  if (claims.rol !== "personel") return [];
   const sb = await db();
   await sb.from("personel_bildirimleri").delete().eq("personel_id", claims.id)
     .lt("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
@@ -486,11 +501,34 @@ export async function personelBildirimleriGetirSunucu(token: unknown): Promise<P
 
 export async function personelBildirimiOkunduSunucu(token: unknown, id: string) {
   const claims = await oturumDogrula(token);
-  if (claims.rol !== "personel") throw new Error("Bu işlem yalnız personel hesabında kullanılabilir.");
   const sb = await db();
   const { error } = await sb.from("personel_bildirimleri").update({ okundu_at: new Date().toISOString() })
     .eq("id", id).eq("personel_id", claims.id);
   if (error) throw new Error("Bildirim güncellenemedi.");
+  return { ok: true };
+}
+
+export async function konumRizasiYenilemeyeAcSunucu(token: unknown, personelId: string) {
+  const yonetici = await ikOturumDogrula(token);
+  const sb = await db();
+  const { data: mevcut, error: mevcutHatasi } = await sb.from("konum_izinleri")
+    .select("geri_cekildi_at").eq("personel_id", personelId).maybeSingle();
+  if (mevcutHatasi) throw mevcutHatasi;
+  if (!mevcut?.geri_cekildi_at) throw new Error("Bu personelin bekleyen bir rıza yenileme işlemi bulunmuyor.");
+  const { error } = await sb.from("konum_izinleri").update({
+    izin_verildi: false,
+    geri_cekildi_at: null,
+    verildi_at: null,
+    guncellendi_at: new Date().toISOString(),
+  }).eq("personel_id", personelId);
+  if (error) throw new Error("Rıza yenileme süreci açılamadı.");
+  await sb.from("personel_bildirimleri").insert({
+    personel_id: personelId,
+    tur: "riza_yenileme",
+    baslik: "Konum rızası yeniden değerlendirmeye açıldı",
+    mesaj: "Yönetici rıza yenileme sürecini açtı. Konum bilgilendirme metnini okuyup tercihinizi yeniden belirleyebilirsiniz.",
+  });
+  await auditYaz(sb, { yonetici_id: yonetici.id, hedef_personel_id: personelId, islem_turu: "riza_yenileme_acildi", aciklama: "Personel için konum rızası yenileme süreci açıldı." });
   return { ok: true };
 }
 
