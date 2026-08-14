@@ -281,6 +281,14 @@ export type Database = {
         }
         Returns: string
       }
+      veri_saklama_bakimi_baslat: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      veri_saklama_kayitlarini_temizle: {
+        Args: { p_log_ids: string[] }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

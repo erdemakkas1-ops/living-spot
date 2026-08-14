@@ -214,10 +214,43 @@ export async function mfaDogrulaSunucu(adayToken: unknown, kod: string) {
     });
   }
   const { oturum_surumu, mfa_secret_enc: _secret, mfa_aktif: _aktif, ...personel } = kayit;
+  // Saklama temizliği girişin başarısını engellemez; günde en fazla bir kez çalışır.
+  try {
+    await veriSaklamaBakimiSunucu(sb);
+  } catch (error) {
+    console.error("[KVKK] Günlük veri saklama temizliği tamamlanamadı:", error);
+  }
   return {
     personel: personel as Personel,
     token: await tokenUret(kayit.id, "ik", oturum_surumu),
   };
+}
+
+async function veriSaklamaBakimiSunucu(sb: Sb) {
+  const { data: calissin, error: kilitHatasi } = await sb.rpc("veri_saklama_bakimi_baslat");
+  if (kilitHatasi) throw kilitHatasi;
+  if (!calissin) return;
+
+  const fotoEsigi = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: eskiLoglar, error: logHatasi } = await sb
+    .from("is_loglari")
+    .select("id, foto_url")
+    .lt("tamamlanma_tarihi", fotoEsigi)
+    .order("tamamlanma_tarihi", { ascending: true })
+    .limit(500);
+  if (logHatasi) throw logHatasi;
+
+  const loglar = (eskiLoglar ?? []) as { id: string; foto_url: string | null }[];
+  const fotoYollari = loglar.flatMap((log) => (log.foto_url ? [log.foto_url] : []));
+  if (fotoYollari.length) {
+    const { error: storageHatasi } = await sb.storage.from("is-fotolari").remove(fotoYollari);
+    if (storageHatasi) throw storageHatasi;
+  }
+
+  const { error: temizlikHatasi } = await sb.rpc("veri_saklama_kayitlarini_temizle", {
+    p_log_ids: loglar.map((log) => log.id),
+  });
+  if (temizlikHatasi) throw temizlikHatasi;
 }
 
 export async function bloklariGetirSunucu(token: unknown): Promise<Blok[]> {
