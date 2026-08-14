@@ -270,17 +270,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      personel_yonet_atomik: {
-        Args: {
-          p_audit_aciklama: string
-          p_hedef_id: string | null
-          p_islem: string
-          p_pin_degisti?: boolean
-          p_veri: Json
-          p_yonetici_id: string
-        }
-        Returns: string
-      }
     }
     Enums: {
       [_ in never]: never
