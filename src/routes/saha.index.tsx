@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   AlertCircle,
   Building,
@@ -99,6 +100,9 @@ function SahaListesi() {
     try {
       await konumIzniGuncelle(izinVerildi);
       qc.setQueryData(["konum-izni", kullanici?.id], izinVerildi);
+      toast.success(izinVerildi ? "Konum paylaşımı onaylandı." : "Konum paylaşımı durduruldu.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Konum onayı kaydedilemedi.");
     } finally {
       setIzinKaydediliyor(false);
     }

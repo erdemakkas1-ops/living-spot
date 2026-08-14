@@ -313,16 +313,12 @@ export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boole
   const claims = await oturumDogrula(token);
   if (claims.rol !== "personel") throw new Error("Konum izni yalnız personel hesabında değiştirilebilir.");
   const sb = await db();
-  const simdi = new Date().toISOString();
-  const { error } = await sb.from("konum_izinleri").upsert({
-    personel_id: claims.id,
-    izin_verildi: izinVerildi,
-    metin_surumu: "2026-08-14-v1",
-    verildi_at: izinVerildi ? simdi : null,
-    geri_cekildi_at: izinVerildi ? null : simdi,
-    guncellendi_at: simdi,
+  const { error } = await sb.rpc("konum_izni_guncelle", {
+    p_personel_id: claims.id,
+    p_izin_verildi: izinVerildi,
+    p_metin_surumu: "2026-08-14-v1",
   });
-  if (error) throw error;
+  if (error) throw new Error(`Konum onayı kaydedilemedi: ${error.message}`);
   return { izinVerildi };
 }
 

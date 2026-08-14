@@ -312,6 +312,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      konum_izni_guncelle: {
+        Args: {
+          p_izin_verildi: boolean
+          p_metin_surumu: string
+          p_personel_id: string
+        }
+        Returns: undefined
+      }
       gorev_tamamla_atomik: {
         Args: {
           p_foto_yolu: string
