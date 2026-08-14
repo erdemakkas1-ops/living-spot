@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.livingspot.sahais",
+      "sha256_cert_fingerprints": [
+        "1A:F4:A5:60:24:EC:13:36:78:E4:D5:EB:DD:46:7D:B8:42:40:8C:D2:6E:26:D4:75:F2:D5:99:BA:33:35:96:E6"
+      ]
+    }
+  }
+]

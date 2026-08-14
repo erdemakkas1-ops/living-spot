@@ -33,3 +33,14 @@ dist-ssr
 
 # Local environment secrets
 .env
+
+# Android local/build outputs and signing secrets
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/android/*.apk
+mobile/android/*.apk.idsig
+mobile/android/*.aab
+*.keystore
+*.jks
