@@ -273,7 +273,7 @@ export type Database = {
       personel_yonet_atomik: {
         Args: {
           p_audit_aciklama: string
-          p_hedef_id: string | null
+          p_hedef_id: string
           p_islem: string
           p_pin_degisti?: boolean
           p_veri: Json
