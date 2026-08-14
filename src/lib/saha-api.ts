@@ -268,7 +268,7 @@ async function fotografiGuvenliJpegYap(file: File): Promise<File> {
   } finally { bitmap.close(); }
 }
 
-export async function fotoYukle(gorevId: string, file: File): Promise<string> {
+export async function fotoYukle(gorevId: string, file: File, islemId: string): Promise<string> {
   const izinliTurler = ["image/jpeg", "image/png", "image/webp"];
   if (!izinliTurler.includes(file.type)) {
     throw new Error("Yalnızca JPEG, PNG veya WebP fotoğrafı seçebilirsiniz.");
@@ -283,6 +283,7 @@ export async function fotoYukle(gorevId: string, file: File): Promise<string> {
       base64,
       contentType: "image/jpeg",
       uzanti: "jpg",
+      islemId,
     },
   });
   return yol;
@@ -293,7 +294,7 @@ export async function fotoUrlAl(yol: string): Promise<string | null> {
   return url;
 }
 
-export async function gorevTamamla(input: { gorevId: string; fotoYolu: string; not: string }) {
+export async function gorevTamamla(input: { gorevId: string; fotoYolu: string; not: string; islemId: string }) {
   await cagir(gorevTamamlaFn({ data: { token: token(), ...input } }));
 }
 
@@ -301,16 +302,17 @@ export async function goreviFotograflaTamamla(gorevId: string, file: File, not: 
   const personelId = oturumOku()?.id;
   if (!personelId) throw new Error("Oturum bulunamadı.");
   const guvenliDosya = await fotografiGuvenliJpegYap(file);
+  const islemId = crypto.randomUUID();
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     await kuyrugaEkle({
       id: islemKimligi("tamamla", gorevId), tur: "tamamla", personelId, gorevId,
-      not: not.trim().slice(0, 1000), foto: guvenliDosya, createdAt: Date.now(),
+      islemId, not: not.trim().slice(0, 1000), foto: guvenliDosya, createdAt: Date.now(),
     });
     await kayitliGoreviGuncelle(personelId, gorevId, "tamamlandi");
     return { kuyrukta: true };
   }
-  const yol = await fotoYukle(gorevId, guvenliDosya);
-  await gorevTamamla({ gorevId, fotoYolu: yol, not: not.trim().slice(0, 1000) });
+  const yol = await fotoYukle(gorevId, guvenliDosya, islemId);
+  await gorevTamamla({ gorevId, fotoYolu: yol, not: not.trim().slice(0, 1000), islemId });
   await kayitliGoreviGuncelle(personelId, gorevId, "tamamlandi");
   return { kuyrukta: false };
 }
@@ -325,8 +327,8 @@ export async function cevrimdisiKuyruguEsitle(): Promise<number> {
       await cagir(gorevDurumGuncelleFn({ data: { token: token(), id: kayit.gorevId } }));
     } else {
       const dosya = new File([kayit.foto], "gorev-fotografi.jpg", { type: "image/jpeg" });
-      const yol = await fotoYukle(kayit.gorevId, dosya);
-      await gorevTamamla({ gorevId: kayit.gorevId, fotoYolu: yol, not: kayit.not });
+      const yol = await fotoYukle(kayit.gorevId, dosya, kayit.islemId);
+      await gorevTamamla({ gorevId: kayit.gorevId, fotoYolu: yol, not: kayit.not, islemId: kayit.islemId });
     }
     await kuyruktanSil(kayit.id);
     tamamlanan += 1;

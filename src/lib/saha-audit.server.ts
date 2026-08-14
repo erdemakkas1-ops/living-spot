@@ -11,7 +11,13 @@ export type AuditIslem =
   | "personel_sil"
   | "oturum_iptal"
   | "basarisiz_giris"
-  | "mfa_aktiflestirildi";
+  | "mfa_aktiflestirildi"
+  | "gorev_olustur"
+  | "gorev_baslat"
+  | "gorev_tamamla"
+  | "foto_yukle"
+  | "foto_goruntule"
+  | "konum_goruntule";
 
 /** "05335335353" -> "0533***53" biçiminde maskeler. */
 export function telefonMaskele(telefon: string | null | undefined): string {

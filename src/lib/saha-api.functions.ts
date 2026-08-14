@@ -269,6 +269,7 @@ export const fotoYukleFn = createServerFn({ method: "POST" })
         base64: z.string().min(1).max(15_000_000),
         contentType: z.string().max(100),
         uzanti: z.string().regex(/^[a-zA-Z0-9]{1,5}$/),
+        islemId: z.string().uuid(),
       })
       .parse(d),
   )
@@ -288,6 +289,7 @@ export const gorevTamamlaFn = createServerFn({ method: "POST" })
         gorevId: z.string().uuid(),
         fotoYolu: z.string().min(3).max(300),
         not: z.string().max(2000),
+        islemId: z.string().uuid(),
       })
       .parse(d),
   )

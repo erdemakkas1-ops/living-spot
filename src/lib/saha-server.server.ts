@@ -368,6 +368,13 @@ export async function mesaiDurumuGetirSunucu(token: unknown): Promise<MesaiDurum
     "calisiyor") as MesaiDurumu;
 }
 
+async function auditSinirli(sb: Sb, actorId: string, tur: "foto_goruntule" | "konum_goruntule", aciklama: string) {
+  const esik = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { count } = await sb.from("audit_loglari").select("id", { count: "exact", head: true })
+    .eq("yonetici_id", actorId).eq("islem_turu", tur).gte("created_at", esik);
+  if ((count ?? 0) === 0) await auditYaz(sb, { yonetici_id: actorId, hedef_personel_id: actorId, islem_turu: tur, aciklama });
+}
+
 /** İstemcide saklanan profil yalnız görüntü önbelleğidir; gerçek kullanıcıyı oturumdan döndürür. */
 export async function oturumKullanicisiGetirSunucu(token: unknown): Promise<Personel> {
   const claims = await oturumDogrula(token);
@@ -539,7 +546,7 @@ export async function kendiKonumTakipDurumuGetirSunucu(token: unknown) {
 }
 
 export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelKonum[]> {
-  await ikOturumDogrula(token);
+  const yonetici = await ikOturumDogrula(token);
   const sb = await db();
   const saklamaEsigi = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await sb
@@ -549,6 +556,7 @@ export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelK
     .order("kayit_tarihi", { ascending: false })
     .limit(500);
   if (error) throw error;
+  await auditSinirli(sb, yonetici.id, "konum_goruntule", "Yönetici personel konum takip ekranını görüntüledi.");
   const enYeni = new Map<string, PersonelKonum>();
   for (const k of (data ?? []) as unknown as PersonelKonum[]) {
     if (!enYeni.has(k.personel_id)) enYeni.set(k.personel_id, k);
@@ -680,7 +688,7 @@ export async function gorevOlusturSunucu(
     planlanan_tarih: string;
   },
 ) {
-  await ikOturumDogrula(token);
+  const yonetici = await ikOturumDogrula(token);
   const sb = await db();
   const { data: hedef, error: hedefHatasi } = await sb
     .from("personel")
@@ -691,8 +699,14 @@ export async function gorevOlusturSunucu(
     .maybeSingle();
   if (hedefHatasi) throw hedefHatasi;
   if (!hedef) throw new Error("Seçilen personel aktif değil veya görev almaya yetkili değil.");
-  const { error } = await sb.from("gorevler").insert(input);
+  const { data: gorev, error } = await sb.from("gorevler").insert(input).select("id").single();
   if (error) throw error;
+  await auditYaz(sb, {
+    yonetici_id: yonetici.id,
+    hedef_personel_id: input.personel_id,
+    islem_turu: "gorev_olustur",
+    aciklama: `Görev oluşturuldu: ${gorev.id}`,
+  });
   return { ok: true };
 }
 
@@ -710,7 +724,15 @@ export async function gorevDurumGuncelleSunucu(token: unknown, id: string) {
     .select("id")
     .maybeSingle();
   if (error) throw error;
-  if (guncellenen) return { ok: true, degisti: true };
+  if (guncellenen) {
+    await auditYaz(sb, {
+      yonetici_id: gorev.personel_id,
+      hedef_personel_id: gorev.personel_id,
+      islem_turu: "gorev_baslat",
+      aciklama: `Görev başlatıldı: ${id}`,
+    });
+    return { ok: true, degisti: true };
+  }
   const { data: mevcut, error: mevcutHatasi } = await sb
     .from("gorevler").select("durum").eq("id", id).eq("personel_id", gorev.personel_id).maybeSingle();
   if (mevcutHatasi) throw mevcutHatasi;
@@ -762,9 +784,13 @@ function fotoTurunuAlgila(bytes: Uint8Array) {
 
 export async function fotoYukleSunucu(
   token: unknown,
-  input: { gorevId: string; base64: string; contentType: string; uzanti: string },
+  input: { gorevId: string; base64: string; contentType: string; uzanti: string; islemId: string },
 ) {
   const gorev = await gorevYazmaErisimiDogrula(token, input.gorevId);
+  const sb = await db();
+  const { data: dahaOnce } = await sb.from("is_loglari").select("foto_url")
+    .eq("istemci_islem_id", input.islemId).maybeSingle();
+  if (dahaOnce?.foto_url) return { yol: dahaOnce.foto_url };
   if (gorev.durum === "tamamlandi") throw new Error("Tamamlanmış göreve fotoğraf yüklenemez.");
   let bytes: Uint8Array;
   try {
@@ -778,7 +804,6 @@ export async function fotoYukleSunucu(
   bytes = fotoMetadataTemizle(bytes, tur.mime);
   fotoYapisiniDogrula(bytes, tur.mime);
   const yol = `${input.gorevId}/${crypto.randomUUID()}.${tur.uzanti}`;
-  const sb = await db();
   // Aynı görevde daha önce yüklenmiş fakat iş_loglarına bağlanmamış dosyaları temizle.
   const { data: oncekiDosyalar } = await sb.storage.from("is-fotolari").list(input.gorevId, {
     limit: 100,
@@ -794,24 +819,32 @@ export async function fotoYukleSunucu(
     .from("is-fotolari")
     .upload(yol, bytes, { contentType: tur.mime, upsert: false });
   if (error) throw error;
+  await auditYaz(sb, {
+    yonetici_id: gorev.personel_id,
+    hedef_personel_id: gorev.personel_id,
+    islem_turu: "foto_yukle",
+    aciklama: `Görev fotoğrafı yüklendi: ${input.gorevId}`,
+  });
   return { yol };
 }
 
 /** Fotoğraf için kısa süreli imzalı bağlantı üretir; erişim görev yetkisine bağlıdır. */
 export async function fotoUrlAlSunucu(token: unknown, yol: string) {
   const gorevId = yol.split("/")[0] ?? "";
+  const claims = await oturumDogrula(token);
   await gorevErisimiDogrula(token, gorevId);
   const sb = await db();
   const { data } = await sb.storage.from("is-fotolari").createSignedUrl(yol, 60 * 60);
+  await auditSinirli(sb, claims.id, "foto_goruntule", `Görev fotoğrafı görüntülendi: ${gorevId}`);
   return { url: data?.signedUrl ?? null };
 }
 
 export async function gorevTamamlaSunucu(
   token: unknown,
-  input: { gorevId: string; fotoYolu: string; not: string },
+  input: { gorevId: string; fotoYolu: string; not: string; islemId: string },
 ) {
+  const claims = await oturumDogrula(token);
   const gorev = await gorevYazmaErisimiDogrula(token, input.gorevId);
-  if (gorev.durum === "tamamlandi") throw new Error("Görev zaten tamamlanmış.");
   if (!input.fotoYolu.startsWith(`${input.gorevId}/`)) {
     throw new Error("Fotoğraf bu göreve ait değil.");
   }
@@ -824,6 +857,8 @@ export async function gorevTamamlaSunucu(
     p_gorev_id: input.gorevId,
     p_foto_yolu: input.fotoYolu,
     p_personel_notu: input.not,
+    p_personel_id: claims.id,
+    p_istemci_islem_id: input.islemId,
   });
   if (error) throw new Error(error.message || "Görev tamamlanamadı.");
   return { ok: true };

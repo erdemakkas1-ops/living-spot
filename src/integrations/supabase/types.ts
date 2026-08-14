@@ -147,6 +147,7 @@ export type Database = {
           foto_url: string | null
           gorev_id: string
           id: string
+          istemci_islem_id: string | null
           personel_notu: string | null
           tamamlanma_tarihi: string
         }
@@ -154,6 +155,7 @@ export type Database = {
           foto_url?: string | null
           gorev_id: string
           id?: string
+          istemci_islem_id?: string | null
           personel_notu?: string | null
           tamamlanma_tarihi?: string
         }
@@ -161,6 +163,7 @@ export type Database = {
           foto_url?: string | null
           gorev_id?: string
           id?: string
+          istemci_islem_id?: string | null
           personel_notu?: string | null
           tamamlanma_tarihi?: string
         }
@@ -341,6 +344,8 @@ export type Database = {
           p_foto_yolu: string
           p_gorev_id: string
           p_personel_notu: string
+          p_personel_id: string
+          p_istemci_islem_id: string
         }
         Returns: undefined
       }

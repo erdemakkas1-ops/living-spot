@@ -10,7 +10,7 @@ const SAKLAMA_SURESI = 24 * 60 * 60 * 1000;
 
 export type CevrimdisiIslem =
   | { id: string; tur: "baslat"; personelId: string; gorevId: string; createdAt: number }
-  | { id: string; tur: "tamamla"; personelId: string; gorevId: string; not: string; foto: Blob; createdAt: number };
+  | { id: string; tur: "tamamla"; personelId: string; gorevId: string; islemId: string; not: string; foto: Blob; createdAt: number };
 
 type SifreliKayit = {
   id: string;
