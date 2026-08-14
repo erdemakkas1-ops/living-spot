@@ -116,8 +116,14 @@ export function useOturum() {
       const buIstek = ++istekNo;
       const baslangicNesli = oturumNesli;
       try {
-        const sunucuKullanicisi = (await oturumKullanicisiGetirFn()) as Personel;
+        const sunucuKullanicisi = (await oturumKullanicisiGetirFn()) as Personel | null;
         if (!aktif || buIstek !== istekNo || baslangicNesli !== oturumNesli) return;
+        if (!sunucuKullanicisi) {
+          window.localStorage.removeItem(KEY);
+          window.localStorage.removeItem(TOKEN_KEY);
+          setKullanici(null);
+          return;
+        }
         window.localStorage.removeItem(TOKEN_KEY);
         window.localStorage.setItem(KEY, JSON.stringify(sunucuKullanicisi));
         setKullanici(sunucuKullanicisi);
