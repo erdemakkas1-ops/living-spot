@@ -583,7 +583,7 @@ export async function personelEkleSunucu(
   const { error } = await sb.rpc("personel_yonet_atomik", {
     p_islem: "ekle",
     p_yonetici_id: yonetici.id,
-    p_hedef_id: null,
+    p_hedef_id: null as unknown as string,
     p_veri: { ad_soyad: input.ad_soyad.trim(), telefon, pin_hash: pinHashle(input.pin_kodu) },
     p_audit_aciklama: `Personel eklendi: ${input.ad_soyad.trim()} (${telefonMaskele(telefon)})`,
     p_pin_degisti: false,
