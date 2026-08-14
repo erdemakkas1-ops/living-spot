@@ -257,6 +257,12 @@ export type Database = {
         }
         Relationships: []
       }
+      personel_bildirimleri: {
+        Row: { id: string; personel_id: string; tur: string; baslik: string; mesaj: string; created_at: string; okundu_at: string | null }
+        Insert: { id?: string; personel_id: string; tur: string; baslik: string; mesaj: string; created_at?: string; okundu_at?: string | null }
+        Update: { id?: string; personel_id?: string; tur?: string; baslik?: string; mesaj?: string; created_at?: string; okundu_at?: string | null }
+        Relationships: [{ foreignKeyName: "personel_bildirimleri_personel_id_fkey"; columns: ["personel_id"]; isOneToOne: false; referencedRelation: "personel"; referencedColumns: ["id"] }]
+      }
       personel_konumlari: {
         Row: {
           boylam: number

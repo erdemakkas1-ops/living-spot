@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -12,6 +12,8 @@ import {
   HardHat,
   LogOut,
   MapPin,
+  Bell,
+  ShieldCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,10 @@ import {
   personelGorevleriniGetir,
   tumGorevleriGetir,
   cevrimdisiKuyruguEsitle,
+  konumIzniGetir,
+  konumIzniGuncelle,
+  personelBildirimleriGetir,
+  personelBildirimiOkundu,
 } from "@/lib/saha-api";
 import { useCevrimici, useOturum } from "@/lib/saha-session";
 import { useKonumPaylas } from "@/lib/konum-takip";
@@ -108,6 +114,23 @@ function SahaListesi() {
     enabled: Boolean(kullanici?.id && !onizleme),
     refetchInterval: 60_000,
   });
+  const konumIzni = useQuery({
+    queryKey: ["konum-acik-riza", kullanici?.id], queryFn: konumIzniGetir,
+    enabled: Boolean(kullanici?.id && !onizleme),
+  });
+  const bildirimler = useQuery({
+    queryKey: ["personel-bildirimleri", kullanici?.id], queryFn: personelBildirimleriGetir,
+    enabled: Boolean(kullanici?.id && !onizleme && cevrimici), refetchInterval: cevrimici ? 60_000 : false,
+  });
+  const izinDegistir = useMutation({
+    mutationFn: konumIzniGuncelle,
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["konum-acik-riza"] }); toast.success("Konum tercihiniz kaydedildi."); },
+    onError: () => toast.error("Konum tercihi kaydedilemedi."),
+  });
+  const bildirimiKapat = useMutation({
+    mutationFn: personelBildirimiOkundu,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["personel-bildirimleri"] }),
+  });
 
   const molaDegistir = () => {
     if (!kullanici?.id) return;
@@ -119,10 +142,13 @@ function SahaListesi() {
   // Konum paylaşımı yalnızca yöneticinin belirlediği saatlerde ve mola dışında aktiftir.
   const konumDurum = useKonumPaylas(
     kullanici?.id,
-    !!kullanici && !onizleme && mesai === "calisiyor" && takipPlani.data?.takip_aktif === true && takipPlani.data?.saat_icinde === true,
+    !!kullanici && !onizleme && mesai === "calisiyor" && takipPlani.data?.takip_aktif === true && takipPlani.data?.saat_icinde === true &&
+      konumIzni.data?.izinVerildi === true && konumIzni.data?.guncelMetin === true,
   );
   const konumEtiket =
-    konumDurum === "aktif"
+    konumIzni.data && (!konumIzni.data.izinVerildi || !konumIzni.data.guncelMetin)
+      ? "Konum takibi için güncel açık rıza bekleniyor"
+      : konumDurum === "aktif"
       ? "Konum paylaşımı açık"
       : konumDurum === "bekleniyor"
         ? "Konum alınıyor..."
@@ -202,6 +228,32 @@ function SahaListesi() {
       </header>
 
       <main className="mx-auto -mt-4 max-w-lg px-4">
+        {(bildirimler.data ?? []).filter((b) => !b.okundu_at).map((b) => (
+          <div key={b.id} className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-950 shadow-card">
+            <div className="flex items-start gap-3"><Bell className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1"><p className="font-bold">{b.baslik}</p><p className="mt-1 text-sm leading-5">{b.mesaj}</p>
+                <Button variant="link" className="mt-1 h-auto p-0 text-xs" onClick={() => bildirimiKapat.mutate(b.id)}>Okudum</Button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {!onizleme && konumIzni.data && (!konumIzni.data.izinVerildi || !konumIzni.data.guncelMetin) && (
+          <div className="mb-4 rounded-xl border bg-card px-4 py-4 shadow-card">
+            <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div><p className="font-bold">Konum takibi açık rıza ve bilgilendirme</p>
+                <p className="mt-1 text-sm text-muted-foreground">Konumunuz yalnız yöneticinin tanımladığı çalışma ve ek çalışma saatlerinde alınır; bu saatlerin dışında takip kapalıdır. Kayıtlar en fazla 30 gün saklanır. Tercihinizi daha sonra geri çekebilirsiniz.</p>
+                <div className="mt-3 flex flex-wrap gap-2"><Button size="sm" onClick={() => izinDegistir.mutate(true)} disabled={izinDegistir.isPending}>Açık rıza veriyorum</Button>
+                  <Button asChild size="sm" variant="outline"><Link to="/kvkk">Metni oku</Link></Button></div>
+              </div>
+            </div>
+          </div>
+        )}
+        {!onizleme && konumIzni.data?.izinVerildi && konumIzni.data?.guncelMetin && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-card px-4 py-3 text-xs text-muted-foreground shadow-card">
+            <span>Konum açık rızası kayıtlıdır; takip yalnız tanımlı mesai saatlerinde çalışır.</span>
+            <Button variant="ghost" size="sm" className="shrink-0" onClick={() => izinDegistir.mutate(false)}>Geri çek</Button>
+          </div>
+        )}
         {!cevrimici && !onizleme && (
           <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-card">
             Çevrimdışı moddasınız. Görev ve fotoğraf işlemleriniz bu cihazda bekletilip bağlantı gelince otomatik gönderilecek.

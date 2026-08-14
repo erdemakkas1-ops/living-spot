@@ -16,6 +16,8 @@ import {
   gorevOlusturFn,
   gorevTamamlaFn,
   konumGonderFn,
+  konumIzniGetirFn,
+  konumIzniGuncelleFn,
   konumTakipSaatleriGetirFn,
   konumTakipSaatiGuncelleFn,
   kendiKonumTakipDurumuGetirFn,
@@ -28,6 +30,8 @@ import {
   personelGetirFn,
   personelGorevleriniGetirFn,
   personelSilFn,
+  personelBildirimleriGetirFn,
+  personelBildirimiOkunduFn,
   sonKonumlariGetirFn,
   tumGorevleriGetirFn,
 } from "./saha-api.functions";
@@ -221,14 +225,14 @@ export async function gorevOlustur(input: {
   await cagir(gorevOlusturFn({ data: { token: token(), ...input } }));
 }
 
-export async function gorevDurumGuncelle(id: string, durum: "bekliyor" | "devam_ediyor") {
+export async function gorevDurumGuncelle(id: string, durum: "devam_ediyor") {
   const personelId = oturumOku()?.id;
   if (typeof navigator !== "undefined" && !navigator.onLine && personelId) {
     await kuyrugaEkle({ id: islemKimligi("baslat", id), tur: "baslat", personelId, gorevId: id, createdAt: Date.now() });
     await kayitliGoreviGuncelle(personelId, id, durum);
     return { kuyrukta: true };
   }
-  await cagir(gorevDurumGuncelleFn({ data: { token: token(), id, durum } }));
+  await cagir(gorevDurumGuncelleFn({ data: { token: token(), id } }));
   if (personelId) await kayitliGoreviGuncelle(personelId, id, durum);
   return { kuyrukta: false };
 }
@@ -318,7 +322,7 @@ export async function cevrimdisiKuyruguEsitle(): Promise<number> {
   let tamamlanan = 0;
   for (const kayit of await kuyruguGetir(personelId)) {
     if (kayit.tur === "baslat") {
-      await cagir(gorevDurumGuncelleFn({ data: { token: token(), id: kayit.gorevId, durum: "devam_ediyor" } }));
+      await cagir(gorevDurumGuncelleFn({ data: { token: token(), id: kayit.gorevId } }));
     } else {
       const dosya = new File([kayit.foto], "gorev-fotografi.jpg", { type: "image/jpeg" });
       const yol = await fotoYukle(kayit.gorevId, dosya);
@@ -344,6 +348,20 @@ export async function konumGonder(input: {
       dogruluk: input.dogruluk ?? null,
     },
   });
+}
+
+export async function konumIzniGetir(): Promise<{ izinVerildi: boolean; guncelMetin: boolean }> {
+  return await cagir(konumIzniGetirFn({ data: { token: token() } }));
+}
+export async function konumIzniGuncelle(izinVerildi: boolean) {
+  return await cagir(konumIzniGuncelleFn({ data: { token: token(), izinVerildi } }));
+}
+export type PersonelBildirimi = { id: string; tur: string; baslik: string; mesaj: string; created_at: string; okundu_at: string | null };
+export async function personelBildirimleriGetir(): Promise<PersonelBildirimi[]> {
+  return (await cagir(personelBildirimleriGetirFn({ data: { token: token() } }))) as PersonelBildirimi[];
+}
+export async function personelBildirimiOkundu(id: string) {
+  await cagir(personelBildirimiOkunduFn({ data: { token: token(), id } }));
 }
 
 export type KonumTakipSaati = { personel_id: string; ad_soyad: string; ise_baslangic: string; is_bitisi: string; ek_calisma_bitisi: string | null; takip_aktif: boolean };

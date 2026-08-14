@@ -9,6 +9,7 @@ import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-t
 const GOREV_SELECT =
   "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, is_turu, olusturma_tarihi, planlanan_tarih, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
 const PERSONEL_SELECT = "id, ad_soyad, rol, telefon, aktif, mesai_durumu, durum_guncelleme";
+export const KONUM_METIN_SURUMU = "2026-08-14-v2";
 
 async function db() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -200,9 +201,21 @@ export async function girisYapSunucu(
   return { mfaGerekli: false as const, personel, token: await tokenUret(personel.id, personel.rol, kayit.oturum_surumu) };
 }
 
-export async function mfaDogrulaSunucu(adayToken: unknown, kod: string) {
+export async function mfaDogrulaSunucu(adayToken: unknown, kod: string, kaynakOzeti: string) {
   const claims = await mfaAdayTokenDogrula(adayToken);
   const sb = await db();
+  const mfaKimligi = `mfa:${claims.id}`;
+  const pencereBasi = new Date(Date.now() - PENCERE_MS).toISOString();
+  const [kaynakSayimi, hesapSayimi] = await Promise.all([
+    sb.from("giris_denemeleri").select("id", { count: "exact", head: true })
+      .eq("telefon", mfaKimligi).eq("kaynak_ozeti", kaynakOzeti).gte("deneme_tarihi", pencereBasi),
+    sb.from("giris_denemeleri").select("id", { count: "exact", head: true })
+      .eq("telefon", mfaKimligi).gte("deneme_tarihi", pencereBasi),
+  ]);
+  if (kaynakSayimi.error || hesapSayimi.error) throw new Error("MFA güvenlik kontrolü yapılamadı.");
+  if ((kaynakSayimi.count ?? 0) >= 5 || (hesapSayimi.count ?? 0) >= 10) {
+    throw new Error("Çok fazla MFA denemesi yapıldı. PIN ile yeniden giriş yapın.");
+  }
   const { data, error } = await sb
     .from("personel")
     .select(`${PERSONEL_SELECT}, oturum_surumu, mfa_secret_enc, mfa_aktif`)
@@ -221,7 +234,22 @@ export async function mfaDogrulaSunucu(adayToken: unknown, kod: string) {
   const girilenKod = kod.trim().toUpperCase();
   const totpGecerli = await mfaKoduDogrula(mfaVerisi.secret, girilenKod);
   const kurtarmaIndex = totpGecerli ? -1 : await kurtarmaKoduBul(mfaVerisi.kurtarmaHashleri, girilenKod);
-  if (!totpGecerli && kurtarmaIndex < 0) throw new Error("Authenticator veya kurtarma kodu hatalı.");
+  if (!totpGecerli && kurtarmaIndex < 0) {
+    await sb.from("giris_denemeleri").insert({ telefon: mfaKimligi, kaynak_ozeti: kaynakOzeti });
+    const yeniKaynak = (kaynakSayimi.count ?? 0) + 1;
+    const yeniHesap = (hesapSayimi.count ?? 0) + 1;
+    if (yeniKaynak >= 3 || yeniHesap >= 5) {
+      await auditYaz(sb, {
+        yonetici_id: null, islem_turu: "basarisiz_giris", hedef_personel_id: claims.id,
+        aciklama: `Başarısız MFA denemesi (kaynak: ${yeniKaynak}, hesap geneli: ${yeniHesap}).`,
+      });
+    }
+    if (yeniKaynak >= 5 || yeniHesap >= 10) {
+      throw new Error("Çok fazla MFA denemesi yapıldı. PIN ile yeniden giriş yapın.");
+    }
+    throw new Error("Authenticator veya kurtarma kodu hatalı.");
+  }
+  await sb.from("giris_denemeleri").delete().eq("telefon", mfaKimligi);
 
   let kurtarmaKodlari: string[] | undefined;
   let yeniMfaVerisi = mfaVerisi;
@@ -386,17 +414,17 @@ export async function bakimDurumuGetirSunucu(token: unknown): Promise<BakimDurum
   };
 }
 
-export async function konumIzniGetirSunucu(token: unknown): Promise<boolean> {
+export async function konumIzniGetirSunucu(token: unknown) {
   const claims = await oturumDogrula(token);
-  if (claims.rol !== "personel") return false;
+  if (claims.rol !== "personel") return { izinVerildi: false, guncelMetin: false };
   const sb = await db();
   const { data, error } = await sb
     .from("konum_izinleri")
-    .select("izin_verildi")
+    .select("izin_verildi, metin_surumu")
     .eq("personel_id", claims.id)
     .maybeSingle();
   if (error) throw error;
-  return Boolean(data?.izin_verildi);
+  return { izinVerildi: Boolean(data?.izin_verildi), guncelMetin: data?.metin_surumu === KONUM_METIN_SURUMU };
 }
 
 export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boolean) {
@@ -407,13 +435,37 @@ export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boole
   const { error } = await sb.from("konum_izinleri").upsert({
     personel_id: claims.id,
     izin_verildi: izinVerildi,
-    metin_surumu: "2026-08-14-v1",
+    metin_surumu: KONUM_METIN_SURUMU,
     verildi_at: izinVerildi ? simdi : null,
     geri_cekildi_at: izinVerildi ? null : simdi,
     guncellendi_at: simdi,
   });
   if (error) throw new Error(`Konum onayı kaydedilemedi: ${error.message}`);
   return { izinVerildi };
+}
+
+export type PersonelBildirimi = { id: string; tur: string; baslik: string; mesaj: string; created_at: string; okundu_at: string | null };
+export async function personelBildirimleriGetirSunucu(token: unknown): Promise<PersonelBildirimi[]> {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") return [];
+  const sb = await db();
+  await sb.from("personel_bildirimleri").delete().eq("personel_id", claims.id)
+    .lt("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+  const { data, error } = await sb.from("personel_bildirimleri")
+    .select("id, tur, baslik, mesaj, created_at, okundu_at")
+    .eq("personel_id", claims.id).order("created_at", { ascending: false }).limit(20);
+  if (error) throw new Error("Bildirimler alınamadı.");
+  return (data ?? []) as PersonelBildirimi[];
+}
+
+export async function personelBildirimiOkunduSunucu(token: unknown, id: string) {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") throw new Error("Bu işlem yalnız personel hesabında kullanılabilir.");
+  const sb = await db();
+  const { error } = await sb.from("personel_bildirimleri").update({ okundu_at: new Date().toISOString() })
+    .eq("id", id).eq("personel_id", claims.id);
+  if (error) throw new Error("Bildirim güncellenemedi.");
+  return { ok: true };
 }
 
 export type KonumTakipSaati = {
@@ -532,6 +584,10 @@ export async function konumGonderSunucu(
   const sb = await db();
   const takip = await kendiKonumTakipDurumuGetirSunucu(token);
   if (!takip.takip_aktif || !takip.saat_icinde) throw new Error("Konum takibi çalışma saatleri dışında kapalıdır.");
+  const izin = await konumIzniGetirSunucu(token);
+  if (!izin.izinVerildi || !izin.guncelMetin) {
+    throw new Error("Güncel konum aydınlatma ve açık rıza kaydı bulunmuyor.");
+  }
   if (!Number.isFinite(input.enlem) || input.enlem < -90 || input.enlem > 90) {
     throw new Error("Geçersiz enlem bilgisi.");
   }
@@ -640,15 +696,28 @@ export async function gorevOlusturSunucu(
   return { ok: true };
 }
 
-export async function gorevDurumGuncelleSunucu(token: unknown, id: string, durum: string) {
-  if (durum !== "bekliyor" && durum !== "devam_ediyor") {
-    throw new Error("Görev yalnızca fotoğraflı tamamlama akışıyla kapatılabilir.");
-  }
-  await gorevYazmaErisimiDogrula(token, id);
+export async function gorevDurumGuncelleSunucu(token: unknown, id: string) {
+  const gorev = await gorevYazmaErisimiDogrula(token, id);
+  // Yalnız bekliyor -> devam_ediyor geçişine izin verilir. WHERE koşulu
+  // eşzamanlı/çevrimdışı eski isteklerin tamamlanmış görevi geriye almasını engeller.
   const sb = await db();
-  const { error } = await sb.from("gorevler").update({ durum }).eq("id", id);
+  const { data: guncellenen, error } = await sb
+    .from("gorevler")
+    .update({ durum: "devam_ediyor" })
+    .eq("id", id)
+    .eq("personel_id", gorev.personel_id)
+    .eq("durum", "bekliyor")
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
-  return { ok: true };
+  if (guncellenen) return { ok: true, degisti: true };
+  const { data: mevcut, error: mevcutHatasi } = await sb
+    .from("gorevler").select("durum").eq("id", id).eq("personel_id", gorev.personel_id).maybeSingle();
+  if (mevcutHatasi) throw mevcutHatasi;
+  if (mevcut?.durum === "devam_ediyor" || mevcut?.durum === "tamamlandi") {
+    return { ok: true, degisti: false };
+  }
+  throw new Error("Görev mevcut durumundan başlatılamaz.");
 }
 
 function base64ToBytes(base64: string) {

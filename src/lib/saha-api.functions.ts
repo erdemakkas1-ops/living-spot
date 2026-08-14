@@ -15,6 +15,8 @@ import {
   gorevOlusturSunucu,
   gorevTamamlaSunucu,
   konumGonderSunucu,
+  konumIzniGetirSunucu,
+  konumIzniGuncelleSunucu,
   konumTakipSaatleriGetirSunucu,
   konumTakipSaatiGuncelleSunucu,
   kendiKonumTakipDurumuGetirSunucu,
@@ -27,6 +29,8 @@ import {
   personelDurumlariSunucu,
   personelGorevleriniGetirSunucu,
   personelSilSunucu,
+  personelBildirimleriGetirSunucu,
+  personelBildirimiOkunduSunucu,
   sonKonumlariGetirSunucu,
   tumGorevleriGetirSunucu,
 } from "./saha-server.server";
@@ -100,10 +104,19 @@ export const mfaDogrulaFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ kod: z.string().regex(/^(?:\d{6}|[A-Z0-9]{4}-?[A-Z0-9]{4})$/i) }).parse(d))
   .handler(async ({ data }) => {
     ayniOriginDogrula();
-    const { personel, token, kurtarmaKodlari } = await mfaDogrulaSunucu(getCookie(MFA_ADAY_COOKIE) ?? "", data.kod);
-    setCookie(OTURUM_COOKIE, token, guvenliCookie(12 * 60 * 60));
-    deleteCookie(MFA_ADAY_COOKIE, { path: "/" });
-    return { personel, kurtarmaKodlari };
+    const kaynak = getRequestIP({ xForwardedFor: true }) ?? "bilinmeyen";
+    const kaynakOzeti = await girisKaynagiHmac(kaynak);
+    try {
+      const { personel, token, kurtarmaKodlari } = await mfaDogrulaSunucu(getCookie(MFA_ADAY_COOKIE) ?? "", data.kod, kaynakOzeti);
+      setCookie(OTURUM_COOKIE, token, guvenliCookie(12 * 60 * 60));
+      deleteCookie(MFA_ADAY_COOKIE, { path: "/" });
+      return { personel, kurtarmaKodlari };
+    } catch (hata) {
+      if (hata instanceof Error && hata.message.includes("Çok fazla MFA")) {
+        deleteCookie(MFA_ADAY_COOKIE, { path: "/", secure: true, sameSite: "none" });
+      }
+      throw hata;
+    }
   });
 
 export const cikisYapFn = createServerFn({ method: "POST" }).handler(() => {
@@ -153,6 +166,22 @@ export const konumGonderFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(({ data }) => konumGonderSunucu(oturumTokeni(), data));
+
+export const konumIzniGetirFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
+  .handler(() => konumIzniGetirSunucu(oturumTokeni()));
+
+export const konumIzniGuncelleFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10), izinVerildi: z.boolean() }).parse(d))
+  .handler(({ data }) => konumIzniGuncelleSunucu(oturumTokeni(), data.izinVerildi));
+
+export const personelBildirimleriGetirFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
+  .handler(() => personelBildirimleriGetirSunucu(oturumTokeni()));
+
+export const personelBildirimiOkunduFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10), id: z.string().uuid() }).parse(d))
+  .handler(({ data }) => personelBildirimiOkunduSunucu(oturumTokeni(), data.id));
 
 export const konumTakipSaatleriGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
@@ -226,11 +255,10 @@ export const gorevDurumGuncelleFn = createServerFn({ method: "POST" })
       .object({
         token: z.string().min(10),
         id: z.string().uuid(),
-        durum: z.enum(["bekliyor", "devam_ediyor"]),
       })
       .parse(d),
   )
-  .handler(({ data }) => gorevDurumGuncelleSunucu(oturumTokeni(), data.id, data.durum));
+  .handler(({ data }) => gorevDurumGuncelleSunucu(oturumTokeni(), data.id));
 
 export const fotoYukleFn = createServerFn({ method: "POST" })
   .validator((d) =>
