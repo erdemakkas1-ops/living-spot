@@ -107,8 +107,10 @@ export const mfaDogrulaFn = createServerFn({ method: "POST" })
 
 export const cikisYapFn = createServerFn({ method: "POST" }).handler(() => {
   ayniOriginDogrula();
-  deleteCookie(OTURUM_COOKIE, { path: "/" });
-  deleteCookie(MFA_ADAY_COOKIE, { path: "/" });
+  // Çerez hangi güvenlik özellikleriyle oluşturulduysa aynı kapsamla silinir.
+  // Bazı tarayıcılar yalnız path verilince SameSite=None/Secure çerezini koruyabiliyor.
+  deleteCookie(OTURUM_COOKIE, { path: "/", secure: true, sameSite: "none" });
+  deleteCookie(MFA_ADAY_COOKIE, { path: "/", secure: true, sameSite: "none" });
   return { ok: true };
 });
 

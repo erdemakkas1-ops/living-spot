@@ -18,6 +18,8 @@ export const OTURUM_GECERSIZ = "Oturum geçersiz. Lütfen tekrar giriş yapın."
  */
 const KANAL_ADI = "saha-oturum";
 let kanal: BroadcastChannel | null = null;
+// Çıkış sırasında daha önce başlamış profil isteğinin kullanıcıyı yeniden yazmasını engeller.
+let oturumNesli = 0;
 function kanalAl(): BroadcastChannel | null {
   if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null;
   if (!kanal) kanal = new BroadcastChannel(KANAL_ADI);
@@ -55,6 +57,7 @@ export function oturumYaz(p: Personel) {
 
 export function oturumSil() {
   if (typeof window === "undefined") return;
+  oturumNesli += 1;
   try {
     // Uygulamaya ait tüm yerel oturum verileri temizlenir.
     Object.keys(window.localStorage)
@@ -111,9 +114,10 @@ export function useOturum() {
     let istekNo = 0;
     const dogrula = async () => {
       const buIstek = ++istekNo;
+      const baslangicNesli = oturumNesli;
       try {
         const sunucuKullanicisi = (await oturumKullanicisiGetirFn()) as Personel;
-        if (!aktif || buIstek !== istekNo) return;
+        if (!aktif || buIstek !== istekNo || baslangicNesli !== oturumNesli) return;
         window.localStorage.removeItem(TOKEN_KEY);
         window.localStorage.setItem(KEY, JSON.stringify(sunucuKullanicisi));
         setKullanici(sunucuKullanicisi);
