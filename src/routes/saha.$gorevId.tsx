@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
-import { gorevDurumGuncelle, gorevGetir, gorevTamamla, fotoYukle } from "@/lib/saha-api";
+import { gorevDurumGuncelle, gorevGetir, goreviFotograflaTamamla } from "@/lib/saha-api";
 import { useOturum } from "@/lib/saha-session";
 import { DURUM_ETIKET, DURUM_SINIF } from "@/lib/saha-types";
 
@@ -71,14 +71,16 @@ function GorevDetay() {
   const gorev = useQuery({
     queryKey: ["gorev", gorevId],
     queryFn: () => gorevGetir(gorevId),
+    networkMode: "always",
   });
 
   const basla = useMutation({
     mutationFn: () => gorevDurumGuncelle(gorevId, "devam_ediyor"),
-    onSuccess: () => {
+    networkMode: "always",
+    onSuccess: (sonuc) => {
       qc.invalidateQueries({ queryKey: ["gorev", gorevId] });
       qc.invalidateQueries({ queryKey: ["gorevlerim"] });
-      toast.success("İşe başladınız.");
+      toast.success(sonuc.kuyrukta ? "İşlem çevrimdışı kaydedildi; bağlantı gelince gönderilecek." : "İşe başladınız.");
     },
     onError: () => toast.error("Durum güncellenemedi."),
   });
@@ -86,13 +88,13 @@ function GorevDetay() {
   const tamamla = useMutation({
     mutationFn: async () => {
       if (!foto) throw new Error("Fotoğraf zorunludur.");
-      const yol = await fotoYukle(gorevId, foto);
-      await gorevTamamla({ gorevId, fotoYolu: yol, not: not.trim().slice(0, 1000) });
+      return goreviFotograflaTamamla(gorevId, foto, not);
     },
-    onSuccess: () => {
+    networkMode: "always",
+    onSuccess: (sonuc) => {
       qc.invalidateQueries({ queryKey: ["gorev", gorevId] });
       qc.invalidateQueries({ queryKey: ["gorevlerim"] });
-      toast.success("Görev tamamlandı ve yönetime bildirildi.");
+      toast.success(sonuc.kuyrukta ? "Görev telefona kaydedildi; bağlantı gelince yönetime gönderilecek." : "Görev tamamlandı ve yönetime bildirildi.");
       navigate({ to: "/saha" });
     },
     onError: (e) =>

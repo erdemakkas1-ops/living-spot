@@ -1,4 +1,4 @@
-const CACHE = "saha-takip-shell-v2";
+const CACHE = "saha-takip-shell-v3";
 const SHELL = ["/offline.html", "/manifest.webmanifest", "/icons/pwa-192x192.png", "/icons/pwa-512x512.png"];
 
 self.addEventListener("install", (event) => {
@@ -7,9 +7,12 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
-    ),
+    Promise.all([
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
+      ),
+      self.clients.claim(),
+    ]),
   );
 });
 
@@ -24,7 +27,22 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match("/offline.html")));
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Saha sayfalarının HTML kabuğunda kişisel veri yoktur; görev verisi
+          // uygulama içinde kullanıcı kimliğine bağlı ve süreli olarak saklanır.
+          if (response.ok && url.pathname.startsWith("/saha")) {
+            void caches.open(CACHE).then((cache) => cache.put(request, response.clone()));
+          }
+          return response;
+        })
+        .catch(async () =>
+          (await caches.match(request, { ignoreSearch: true })) ??
+          (await caches.match("/saha/")) ??
+          caches.match("/offline.html"),
+        ),
+    );
     return;
   }
 

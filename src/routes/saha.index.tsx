@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   AlertCircle,
   Building,
@@ -24,8 +25,9 @@ import {
   guvenliCikisYap,
   personelGorevleriniGetir,
   tumGorevleriGetir,
+  cevrimdisiKuyruguEsitle,
 } from "@/lib/saha-api";
-import { useOturum } from "@/lib/saha-session";
+import { useCevrimici, useOturum } from "@/lib/saha-session";
 import { useKonumPaylas } from "@/lib/konum-takip";
 import { DURUM_ETIKET, DURUM_SINIF, type MesaiDurumu } from "@/lib/saha-types";
 
@@ -54,6 +56,7 @@ export const Route = createFileRoute("/saha/")({
 function SahaListesi() {
   const navigate = useNavigate();
   const { kullanici, hazir } = useOturum();
+  const cevrimici = useCevrimici();
   const qc = useQueryClient();
 
   const cikisYap = async () => {
@@ -72,7 +75,20 @@ function SahaListesi() {
     queryKey: ["gorevlerim", kullanici?.id, onizleme],
     queryFn: () => (onizleme ? tumGorevleriGetir() : personelGorevleriniGetir(kullanici?.id)),
     enabled: !!kullanici,
+    networkMode: "always",
   });
+
+  useEffect(() => {
+    if (!cevrimici || !kullanici || onizleme) return;
+    void cevrimdisiKuyruguEsitle()
+      .then((adet) => {
+        if (adet > 0) {
+          toast.success(`${adet} çevrimdışı işlem yönetime gönderildi.`);
+          void qc.invalidateQueries({ queryKey: ["gorevlerim"] });
+        }
+      })
+      .catch(() => toast.error("Bekleyen çevrimdışı işlemler henüz gönderilemedi; yeniden denenecek."));
+  }, [cevrimici, kullanici, onizleme, qc]);
 
   const liste = gorevler.data ?? [];
   const acikIsler = liste.filter((g) => g.durum !== "tamamlandi");
@@ -186,6 +202,11 @@ function SahaListesi() {
       </header>
 
       <main className="mx-auto -mt-4 max-w-lg px-4">
+        {!cevrimici && !onizleme && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-card">
+            Çevrimdışı moddasınız. Görev ve fotoğraf işlemleriniz bu cihazda bekletilip bağlantı gelince otomatik gönderilecek.
+          </div>
+        )}
         {!onizleme && takipPlani.data?.takip_aktif && (
           <div className="mb-4 rounded-xl bg-card px-4 py-3 text-xs text-muted-foreground shadow-card">
             Konum takibi çalışma saatlerinizde aktiftir: {takipPlani.data.ise_baslangic}–{takipPlani.data.bitis}. Cihaz konum iznini telefon ayarlarından yönetebilirsiniz. Kayıtlar en fazla 30 gün saklanır.

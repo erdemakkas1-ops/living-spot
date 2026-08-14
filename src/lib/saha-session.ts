@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { oturumKullanicisiGetirFn } from "./saha-session.functions";
 import type { Personel } from "./saha-types";
+import { cevrimdisiDepoyuTemizle } from "./cevrimdisi-depo";
 
 const KEY = "saha-oturum";
 const TOKEN_KEY = "saha-token";
@@ -67,6 +68,8 @@ export function oturumSil() {
   } catch {
     /* yoksay */
   }
+  // Başka bir personel aynı cihazı kullandığında önceki kişiye ait görev/fotoğraf kalmasın.
+  void cevrimdisiDepoyuTemizle();
   degisikligiDuyur();
 }
 

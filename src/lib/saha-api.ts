@@ -37,6 +37,16 @@ import {
   oturumSil,
   oturumSonlandir,
 } from "./saha-session";
+import { oturumOku } from "./saha-session";
+import {
+  gorevleriKaydet,
+  islemKimligi,
+  kayitliGoreviGuncelle,
+  kayitliGorevleriGetir,
+  kuyrugaEkle,
+  kuyruguGetir,
+  kuyruktanSil,
+} from "./cevrimdisi-depo";
 import type { AnlikDurum, Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
 /**
@@ -160,11 +170,35 @@ export async function tumGorevleriGetir(): Promise<Gorev[]> {
 }
 
 export async function personelGorevleriniGetir(_personelId?: string): Promise<Gorev[]> {
-  return (await cagir(personelGorevleriniGetirFn({ data: { token: token() } }))) as Gorev[];
+  const personelId = _personelId ?? oturumOku()?.id;
+  if (!personelId) return [];
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return (await kayitliGorevleriGetir(personelId)) ?? [];
+  }
+  try {
+    const gorevler = (await cagir(personelGorevleriniGetirFn({ data: { token: token() } }))) as Gorev[];
+    await gorevleriKaydet(personelId, gorevler);
+    return gorevler;
+  } catch (hata) {
+    const kayitli = await kayitliGorevleriGetir(personelId);
+    if (kayitli) return kayitli;
+    throw hata;
+  }
 }
 
 export async function gorevGetir(id: string): Promise<Gorev | null> {
-  return (await cagir(gorevGetirFn({ data: { token: token(), id } }))) as Gorev | null;
+  const personelId = oturumOku()?.id;
+  if (typeof navigator !== "undefined" && !navigator.onLine && personelId) {
+    return (await kayitliGorevleriGetir(personelId))?.find((g) => g.id === id) ?? null;
+  }
+  try {
+    return (await cagir(gorevGetirFn({ data: { token: token(), id } }))) as Gorev | null;
+  } catch (hata) {
+    const kayitli = personelId ? await kayitliGorevleriGetir(personelId) : null;
+    const gorev = kayitli?.find((g) => g.id === id);
+    if (gorev) return gorev;
+    throw hata;
+  }
 }
 
 export async function gorevOlustur(input: {
@@ -188,7 +222,15 @@ export async function gorevOlustur(input: {
 }
 
 export async function gorevDurumGuncelle(id: string, durum: "bekliyor" | "devam_ediyor") {
+  const personelId = oturumOku()?.id;
+  if (typeof navigator !== "undefined" && !navigator.onLine && personelId) {
+    await kuyrugaEkle({ id: islemKimligi("baslat", id), tur: "baslat", personelId, gorevId: id, createdAt: Date.now() });
+    await kayitliGoreviGuncelle(personelId, id, durum);
+    return { kuyrukta: true };
+  }
   await cagir(gorevDurumGuncelleFn({ data: { token: token(), id, durum } }));
+  if (personelId) await kayitliGoreviGuncelle(personelId, id, durum);
+  return { kuyrukta: false };
 }
 
 function dosyadanBase64(file: File): Promise<string> {
@@ -249,6 +291,43 @@ export async function fotoUrlAl(yol: string): Promise<string | null> {
 
 export async function gorevTamamla(input: { gorevId: string; fotoYolu: string; not: string }) {
   await cagir(gorevTamamlaFn({ data: { token: token(), ...input } }));
+}
+
+export async function goreviFotograflaTamamla(gorevId: string, file: File, not: string) {
+  const personelId = oturumOku()?.id;
+  if (!personelId) throw new Error("Oturum bulunamadı.");
+  const guvenliDosya = await fotografiGuvenliJpegYap(file);
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    await kuyrugaEkle({
+      id: islemKimligi("tamamla", gorevId), tur: "tamamla", personelId, gorevId,
+      not: not.trim().slice(0, 1000), foto: guvenliDosya, createdAt: Date.now(),
+    });
+    await kayitliGoreviGuncelle(personelId, gorevId, "tamamlandi");
+    return { kuyrukta: true };
+  }
+  const yol = await fotoYukle(gorevId, guvenliDosya);
+  await gorevTamamla({ gorevId, fotoYolu: yol, not: not.trim().slice(0, 1000) });
+  await kayitliGoreviGuncelle(personelId, gorevId, "tamamlandi");
+  return { kuyrukta: false };
+}
+
+export async function cevrimdisiKuyruguEsitle(): Promise<number> {
+  if (typeof navigator === "undefined" || !navigator.onLine) return 0;
+  const personelId = oturumOku()?.id;
+  if (!personelId) return 0;
+  let tamamlanan = 0;
+  for (const kayit of await kuyruguGetir(personelId)) {
+    if (kayit.tur === "baslat") {
+      await cagir(gorevDurumGuncelleFn({ data: { token: token(), id: kayit.gorevId, durum: "devam_ediyor" } }));
+    } else {
+      const dosya = new File([kayit.foto], "gorev-fotografi.jpg", { type: "image/jpeg" });
+      const yol = await fotoYukle(kayit.gorevId, dosya);
+      await gorevTamamla({ gorevId: kayit.gorevId, fotoYolu: yol, not: kayit.not });
+    }
+    await kuyruktanSil(kayit.id);
+    tamamlanan += 1;
+  }
+  return tamamlanan;
 }
 
 export async function konumGonder(input: {
