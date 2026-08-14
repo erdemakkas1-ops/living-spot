@@ -279,6 +279,11 @@ function PanelSayfasi() {
             </div>
           </div>
         )}
+        {bakim.isError && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+            Güvenlik sağlık kontrolü yüklenemedi. Sayfayı yenileyin; sorun sürerse sistem yöneticisine bildirin.
+          </div>
+        )}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <OzetKart
             baslik="Toplam"

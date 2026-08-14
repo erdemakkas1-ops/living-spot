@@ -413,10 +413,11 @@ export async function bakimDurumuGetirSunucu(token: unknown): Promise<BakimDurum
     sb.from("audit_loglari").select("id", { count: "exact", head: true }).lt("created_at", auditEsigi),
     sb.rpc("guvenlik_yapilandirmasi_dogrula"),
   ]);
-  const hata = bakim.error ?? konum.error ?? foto.error ?? audit.error ?? guvenlik.error;
+  const hata = bakim.error ?? konum.error ?? foto.error ?? audit.error;
   if (hata) throw new Error("Sistem bakım durumu okunamadı.");
   const sonCalisma = (bakim.data as { son_calisma?: string } | null)?.son_calisma ?? null;
-  const guvenlikDurumu = (guvenlik.data ?? {}) as {
+  if (guvenlik.error) console.error("[Güvenlik sağlık kontrolü]", guvenlik.error.code);
+  const guvenlikDurumu = (guvenlik.error ? {} : guvenlik.data ?? {}) as {
     kritik_rls?: boolean;
     public_yetki_yok?: boolean;
     kvkk_cron_aktif?: boolean;
