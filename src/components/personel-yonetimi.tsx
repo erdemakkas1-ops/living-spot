@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Phone, Trash2, UserPlus, Users } from "lucide-react";
+import { Bell, Pencil, Phone, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +34,7 @@ import {
   personelDuzenle,
   personelGetir,
   personelSil,
+  personelBildirimiGonder,
 } from "@/lib/saha-api";
 import type { Personel } from "@/lib/saha-types";
 
@@ -58,6 +61,11 @@ export function PersonelYonetimi({
   const [duzenlemeAd, setDuzenlemeAd] = useState("");
   const [duzenlemeTelefon, setDuzenlemeTelefon] = useState("");
   const [duzenlemePin, setDuzenlemePin] = useState("");
+  const [bildirimAcik, setBildirimAcik] = useState(false);
+  const [bildirimPersonel, setBildirimPersonel] = useState("");
+  const [bildirimTuru, setBildirimTuru] = useState<"fazla_mesai" | "vardiya" | "gorev_degisikligi" | "genel">("genel");
+  const [bildirimBaslik, setBildirimBaslik] = useState("");
+  const [bildirimMesaj, setBildirimMesaj] = useState("");
   const yoneticiDuzenleniyor = duzenlenen?.rol === "ik";
   const duzenlemePinGecerli =
     duzenlemePin.length === 0 ||
@@ -131,6 +139,23 @@ export function PersonelYonetimi({
     setDuzenlemePin("");
   };
 
+  const bildirimGonder = useMutation({
+    mutationFn: () => personelBildirimiGonder({
+      personelId: bildirimPersonel,
+      tur: bildirimTuru,
+      baslik: bildirimBaslik,
+      mesaj: bildirimMesaj,
+    }),
+    onSuccess: () => {
+      toast.success("Bildirim personele gönderildi.");
+      setBildirimAcik(false);
+      setBildirimPersonel("");
+      setBildirimBaslik("");
+      setBildirimMesaj("");
+    },
+    onError: (h: unknown) => toast.error(h instanceof Error ? h.message : "Bildirim gönderilemedi."),
+  });
+
   return (
     <section
       className={
@@ -147,6 +172,20 @@ export function PersonelYonetimi({
             {liste.filter((p) => p.aktif).length} aktif / {liste.length} kayıtlı personel
           </p>
         </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+        <Dialog open={bildirimAcik} onOpenChange={setBildirimAcik}>
+          <DialogTrigger asChild><Button size="sm" variant="outline"><Bell className="h-4 w-4" />Bildirim Gönder</Button></DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle>Personele Bildirim Gönder</DialogTitle><DialogDescription>Bildirim personelin saha ekranının üstünde görünür ve okundu bilgisi kaydedilir.</DialogDescription></DialogHeader>
+            <div className="grid gap-3">
+              <div className="grid gap-1.5"><Label>Personel</Label><Select value={bildirimPersonel} onValueChange={setBildirimPersonel}><SelectTrigger><SelectValue placeholder="Personel seçin" /></SelectTrigger><SelectContent>{liste.filter((p) => p.rol === "personel" && p.aktif).map((p) => <SelectItem key={p.id} value={p.id}>{p.ad_soyad}</SelectItem>)}</SelectContent></Select></div>
+              <div className="grid gap-1.5"><Label>Bildirim türü</Label><Select value={bildirimTuru} onValueChange={(v) => setBildirimTuru(v as typeof bildirimTuru)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="fazla_mesai">Fazla mesai</SelectItem><SelectItem value="vardiya">Vardiya bilgisi</SelectItem><SelectItem value="gorev_degisikligi">Görev değişikliği</SelectItem><SelectItem value="genel">Genel duyuru</SelectItem></SelectContent></Select></div>
+              <div className="grid gap-1.5"><Label htmlFor="bildirim-baslik">Başlık</Label><Input id="bildirim-baslik" value={bildirimBaslik} onChange={(e) => setBildirimBaslik(e.target.value)} maxLength={120} /></div>
+              <div className="grid gap-1.5"><Label htmlFor="bildirim-mesaj">Mesaj</Label><Textarea id="bildirim-mesaj" value={bildirimMesaj} onChange={(e) => setBildirimMesaj(e.target.value)} maxLength={1000} rows={5} /></div>
+            </div>
+            <DialogFooter><Button onClick={() => bildirimGonder.mutate()} disabled={bildirimGonder.isPending || !bildirimPersonel || bildirimBaslik.trim().length < 3 || bildirimMesaj.trim().length < 3}>{bildirimGonder.isPending ? "Gönderiliyor..." : "Bildirimi Gönder"}</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Dialog open={acik} onOpenChange={setAcik}>
           <DialogTrigger asChild>
             <Button size="sm" className="w-full sm:w-auto">
@@ -211,6 +250,7 @@ export function PersonelYonetimi({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div

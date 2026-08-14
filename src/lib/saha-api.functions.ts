@@ -31,6 +31,7 @@ import {
   personelSilSunucu,
   personelBildirimleriGetirSunucu,
   personelBildirimiOkunduSunucu,
+  personelBildirimiGonderSunucu,
   sonKonumlariGetirSunucu,
   tumGorevleriGetirSunucu,
 } from "./saha-server.server";
@@ -182,6 +183,16 @@ export const personelBildirimleriGetirFn = createServerFn({ method: "POST" })
 export const personelBildirimiOkunduFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10), id: z.string().uuid() }).parse(d))
   .handler(({ data }) => personelBildirimiOkunduSunucu(oturumTokeni(), data.id));
+
+export const personelBildirimiGonderFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({
+    token: z.string().min(10),
+    personelId: z.string().uuid(),
+    tur: z.enum(["fazla_mesai", "vardiya", "gorev_degisikligi", "genel"]),
+    baslik: z.string().trim().min(3).max(120),
+    mesaj: z.string().trim().min(3).max(1000),
+  }).parse(d))
+  .handler(({ data }) => personelBildirimiGonderSunucu(oturumTokeni(), data));
 
 export const konumTakipSaatleriGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))

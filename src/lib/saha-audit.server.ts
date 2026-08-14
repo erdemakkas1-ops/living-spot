@@ -17,7 +17,8 @@ export type AuditIslem =
   | "gorev_tamamla"
   | "foto_yukle"
   | "foto_goruntule"
-  | "konum_goruntule";
+  | "konum_goruntule"
+  | "bildirim_gonder";
 
 /** "05335335353" -> "0533***53" biçiminde maskeler. */
 export function telefonMaskele(telefon: string | null | undefined): string {

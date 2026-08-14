@@ -32,6 +32,7 @@ import {
   personelSilFn,
   personelBildirimleriGetirFn,
   personelBildirimiOkunduFn,
+  personelBildirimiGonderFn,
   sonKonumlariGetirFn,
   tumGorevleriGetirFn,
 } from "./saha-api.functions";
@@ -352,7 +353,7 @@ export async function konumGonder(input: {
   });
 }
 
-export async function konumIzniGetir(): Promise<{ izinVerildi: boolean; guncelMetin: boolean }> {
+export async function konumIzniGetir(): Promise<{ izinVerildi: boolean; guncelMetin: boolean; geriCekildi: boolean }> {
   return await cagir(konumIzniGetirFn({ data: { token: token() } }));
 }
 export async function konumIzniGuncelle(izinVerildi: boolean) {
@@ -364,6 +365,14 @@ export async function personelBildirimleriGetir(): Promise<PersonelBildirimi[]> 
 }
 export async function personelBildirimiOkundu(id: string) {
   await cagir(personelBildirimiOkunduFn({ data: { token: token(), id } }));
+}
+export async function personelBildirimiGonder(input: {
+  personelId: string;
+  tur: "fazla_mesai" | "vardiya" | "gorev_degisikligi" | "genel";
+  baslik: string;
+  mesaj: string;
+}) {
+  await cagir(personelBildirimiGonderFn({ data: { token: token(), ...input } }));
 }
 
 export type KonumTakipSaati = { personel_id: string; ad_soyad: string; ise_baslangic: string; is_bitisi: string; ek_calisma_bitisi: string | null; takip_aktif: boolean };

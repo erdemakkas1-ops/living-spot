@@ -241,8 +241,8 @@ function SahaListesi() {
           <div className="mb-4 rounded-xl border bg-card px-4 py-4 shadow-card">
             <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <div><p className="font-bold">Konum takibi açık rıza ve bilgilendirme</p>
-                <p className="mt-1 text-sm text-muted-foreground">Konumunuz yalnız yöneticinin tanımladığı çalışma ve ek çalışma saatlerinde alınır; bu saatlerin dışında takip kapalıdır. Kayıtlar en fazla 30 gün saklanır. Tercihinizi daha sonra geri çekebilirsiniz.</p>
-                <div className="mt-3 flex flex-wrap gap-2"><Button size="sm" onClick={() => izinDegistir.mutate(true)} disabled={izinDegistir.isPending}>Açık rıza veriyorum</Button>
+                <p className="mt-1 text-sm text-muted-foreground">Konumunuz yalnız yöneticinin tanımladığı çalışma ve ek çalışma saatlerinde alınır; bu saatlerin dışında takip kapalıdır. Kayıtlar en fazla 30 gün saklanır. Rızanızı geri çekebilirsiniz; geri çekildikten sonra yeniden etkinleştirme için yöneticinizle iletişime geçmeniz gerekir.</p>
+                <div className="mt-3 flex flex-wrap gap-2">{konumIzni.data.geriCekildi ? <p className="text-sm font-medium text-amber-700">Açık rıza geri çekildi. Yeniden etkinleştirme için yöneticinizle iletişime geçin.</p> : <Button size="sm" onClick={() => izinDegistir.mutate(true)} disabled={izinDegistir.isPending}>Açık rıza veriyorum</Button>}
                   <Button asChild size="sm" variant="outline"><Link to="/kvkk">Metni oku</Link></Button></div>
               </div>
             </div>
@@ -251,7 +251,7 @@ function SahaListesi() {
         {!onizleme && konumIzni.data?.izinVerildi && konumIzni.data?.guncelMetin && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-card px-4 py-3 text-xs text-muted-foreground shadow-card">
             <span>Konum açık rızası kayıtlıdır; takip yalnız tanımlı mesai saatlerinde çalışır.</span>
-            <Button variant="ghost" size="sm" className="shrink-0" onClick={() => izinDegistir.mutate(false)}>Geri çek</Button>
+            <Button variant="ghost" size="sm" className="shrink-0" onClick={() => { if (window.confirm("Açık rızanızı geri çekmek istediğinize emin misiniz? Bu işlemden sonra yeniden etkinleştirme için yöneticinizle iletişime geçmeniz gerekir.")) izinDegistir.mutate(false); }}>Rızayı geri çek</Button>
           </div>
         )}
         {!cevrimici && !onizleme && (

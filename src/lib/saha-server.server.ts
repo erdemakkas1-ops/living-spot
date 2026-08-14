@@ -436,15 +436,15 @@ export async function bakimDurumuGetirSunucu(token: unknown): Promise<BakimDurum
 
 export async function konumIzniGetirSunucu(token: unknown) {
   const claims = await oturumDogrula(token);
-  if (claims.rol !== "personel") return { izinVerildi: false, guncelMetin: false };
+  if (claims.rol !== "personel") return { izinVerildi: false, guncelMetin: false, geriCekildi: false };
   const sb = await db();
   const { data, error } = await sb
     .from("konum_izinleri")
-    .select("izin_verildi, metin_surumu")
+    .select("izin_verildi, metin_surumu, geri_cekildi_at")
     .eq("personel_id", claims.id)
     .maybeSingle();
   if (error) throw error;
-  return { izinVerildi: Boolean(data?.izin_verildi), guncelMetin: data?.metin_surumu === KONUM_METIN_SURUMU };
+  return { izinVerildi: Boolean(data?.izin_verildi), guncelMetin: data?.metin_surumu === KONUM_METIN_SURUMU, geriCekildi: Boolean(data?.geri_cekildi_at) };
 }
 
 export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boolean) {
@@ -452,6 +452,12 @@ export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boole
   if (claims.rol !== "personel") throw new Error("Konum izni yalnız personel hesabında değiştirilebilir.");
   const sb = await db();
   const simdi = new Date().toISOString();
+  const { data: mevcut, error: mevcutHatasi } = await sb.from("konum_izinleri")
+    .select("izin_verildi, geri_cekildi_at").eq("personel_id", claims.id).maybeSingle();
+  if (mevcutHatasi) throw new Error("Konum onayı durumu okunamadı.");
+  if (izinVerildi && mevcut?.geri_cekildi_at) {
+    throw new Error("Geri çekilmiş açık rıza personel tarafından yeniden etkinleştirilemez. Yöneticinizle iletişime geçin.");
+  }
   const { error } = await sb.from("konum_izinleri").upsert({
     personel_id: claims.id,
     izin_verildi: izinVerildi,
@@ -485,6 +491,32 @@ export async function personelBildirimiOkunduSunucu(token: unknown, id: string) 
   const { error } = await sb.from("personel_bildirimleri").update({ okundu_at: new Date().toISOString() })
     .eq("id", id).eq("personel_id", claims.id);
   if (error) throw new Error("Bildirim güncellenemedi.");
+  return { ok: true };
+}
+
+export async function personelBildirimiGonderSunucu(
+  token: unknown,
+  input: { personelId: string; tur: string; baslik: string; mesaj: string },
+) {
+  const yonetici = await ikOturumDogrula(token);
+  const sb = await db();
+  const { data: hedef, error: hedefHatasi } = await sb.from("personel")
+    .select("id, ad_soyad").eq("id", input.personelId).eq("rol", "personel").eq("aktif", true).maybeSingle();
+  if (hedefHatasi) throw hedefHatasi;
+  if (!hedef) throw new Error("Bildirim yalnız aktif saha personeline gönderilebilir.");
+  const { error } = await sb.from("personel_bildirimleri").insert({
+    personel_id: input.personelId,
+    tur: input.tur.slice(0, 40),
+    baslik: input.baslik.trim().slice(0, 120),
+    mesaj: input.mesaj.trim().slice(0, 1000),
+  });
+  if (error) throw new Error("Bildirim gönderilemedi.");
+  await auditYaz(sb, {
+    yonetici_id: yonetici.id,
+    hedef_personel_id: input.personelId,
+    islem_turu: "bildirim_gonder",
+    aciklama: `Personel bildirimi gönderildi: ${input.tur} - ${hedef.ad_soyad}`,
+  });
   return { ok: true };
 }
 
