@@ -429,7 +429,10 @@ export async function konumTakipSaatleriGetirSunucu(token: unknown): Promise<Kon
   await ikOturumDogrula(token);
   const sb = await db();
   const [personelSonucu, saatSonucu] = await Promise.all([
-    sb.from("personel").select("id, ad_soyad").eq("rol", "personel").eq("aktif", true).order("ad_soyad"),
+    // Pasif personeli de göster: yönetici, personeli yeniden aktifleştirmeden önce
+    // çalışma saatlerini hazırlayabilmeli. Konum gönderimi zaten aktif oturum
+    // denetiminden geçtiği için bu, pasif hesabın takip edilmesini sağlamaz.
+    sb.from("personel").select("id, ad_soyad").eq("rol", "personel").order("ad_soyad"),
     sb.from("personel_konum_takip_saatleri").select("personel_id, ise_baslangic, is_bitisi, ek_calisma_bitisi, takip_aktif"),
   ]);
   if (personelSonucu.error || saatSonucu.error) throw new Error("Konum takip saatleri alınamadı.");

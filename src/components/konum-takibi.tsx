@@ -82,6 +82,16 @@ export function KonumTakibi() {
           <div className="min-w-[650px] space-y-2">
             {(saatler.data ?? []).map((s) => <SaatSatiri key={s.personel_id} saat={s} onKaydet={() => void qc.invalidateQueries({ queryKey: ["konum-takip-saatleri"] })} />)}
             {saatler.isLoading && <p className="py-3 text-sm text-muted-foreground">Çalışma saatleri yükleniyor...</p>}
+            {saatler.isError && (
+              <p className="py-3 text-sm text-destructive">
+                Çalışma saatleri yüklenemedi. Pencereyi kapatıp yeniden açın.
+              </p>
+            )}
+            {!saatler.isLoading && !saatler.isError && saatler.data?.length === 0 && (
+              <p className="py-3 text-sm text-muted-foreground">
+                Saat tanımlanabilecek personel kaydı bulunamadı.
+              </p>
+            )}
           </div>
         </section>
 
