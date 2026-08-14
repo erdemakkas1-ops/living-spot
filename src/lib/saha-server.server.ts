@@ -702,6 +702,9 @@ export async function personelEkleSunucu(
   const yonetici = await ikOturumDogrula(token);
   const telefon = input.telefon.replace(/\D/g, "");
   if (telefon.length < 10) throw new Error("Geçerli bir telefon numarası girin.");
+  if (!/^\d{4,6}$/.test(input.pin_kodu)) {
+    throw new Error("Personel PIN kodu 4-6 haneli olmalıdır.");
+  }
   const sb = await db();
   const { data: mevcut, error: kontrolHatasi } = await sb
     .from("personel")
@@ -762,12 +765,12 @@ export async function personelDuzenleSunucu(
     const yoneticiHesabi = (onceki as { rol?: string } | null)?.rol === "ik";
     const pinGecerli = yoneticiHesabi
       ? /^\d{6,8}$/.test(input.pin_kodu)
-      : /^\d{4}$/.test(input.pin_kodu);
+      : /^\d{4,6}$/.test(input.pin_kodu);
     if (!pinGecerli) {
       throw new Error(
         yoneticiHesabi
           ? "Yönetici PIN kodu 6-8 haneli olmalıdır."
-          : "Personel PIN kodu 4 haneli olmalıdır.",
+          : "Personel PIN kodu 4-6 haneli olmalıdır.",
       );
     }
   }

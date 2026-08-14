@@ -260,7 +260,7 @@ export const personelEkleFn = createServerFn({ method: "POST" })
         token: z.string().min(10),
         ad_soyad: z.string().min(2).max(120),
         telefon: z.string().min(10).max(20),
-        pin_kodu: z.string().regex(/^\d{4}$/),
+        pin_kodu: z.string().regex(/^\d{4,6}$/),
       })
       .parse(d),
   )

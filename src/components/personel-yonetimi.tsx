@@ -63,7 +63,7 @@ export function PersonelYonetimi({
     duzenlemePin.length === 0 ||
     (yoneticiDuzenleniyor
       ? duzenlemePin.length >= 6 && duzenlemePin.length <= 8
-      : duzenlemePin.length === 4);
+      : duzenlemePin.length >= 4 && duzenlemePin.length <= 6);
 
   const yenile = () => {
     void qc.invalidateQueries({ queryKey: ["personel"] });
@@ -159,7 +159,7 @@ export function PersonelYonetimi({
               <DialogTitle>Yeni Personel</DialogTitle>
               <DialogDescription>
                 Saha personelini manuel olarak kadroya ekleyin. PIN, personelin
-                mobil girişte kullanacağı 4 haneli koddur.
+                mobil girişte kullanacağı 4-6 haneli koddur.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-3">
@@ -183,11 +183,12 @@ export function PersonelYonetimi({
                 />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="py-pin">PIN (4 hane)</Label>
+                <Label htmlFor="py-pin">PIN (4-6 hane)</Label>
                 <Input
                   id="py-pin"
                   inputMode="numeric"
-                  maxLength={4}
+                  minLength={4}
+                  maxLength={6}
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   placeholder="••••"
@@ -201,7 +202,8 @@ export function PersonelYonetimi({
                   ekle.isPending ||
                   adSoyad.trim().length < 2 ||
                   telefon.replace(/\D/g, "").length < 10 ||
-                  pin.length !== 4
+                  pin.length < 4 ||
+                  pin.length > 6
                 }
               >
                 {ekle.isPending ? "Ekleniyor..." : "Kadroya Ekle"}
@@ -297,7 +299,7 @@ export function PersonelYonetimi({
           <div className="grid gap-3">
             <div className="grid gap-1.5"><Label htmlFor="duzenle-ad">Ad Soyad</Label><Input id="duzenle-ad" value={duzenlemeAd} onChange={(e) => setDuzenlemeAd(e.target.value)} /></div>
             <div className="grid gap-1.5"><Label htmlFor="duzenle-tel">Telefon</Label><Input id="duzenle-tel" inputMode="numeric" value={duzenlemeTelefon} onChange={(e) => setDuzenlemeTelefon(e.target.value)} /></div>
-            <div className="grid gap-1.5"><Label htmlFor="duzenle-pin">{yoneticiDuzenleniyor ? "Yeni yönetici PIN'i (6-8 hane)" : "Yeni PIN (4 hane)"}</Label><Input id="duzenle-pin" inputMode="numeric" type="password" autoComplete="new-password" maxLength={yoneticiDuzenleniyor ? 8 : 4} value={duzenlemePin} onChange={(e) => setDuzenlemePin(e.target.value.replace(/\D/g, ""))} placeholder="Boş bırakırsanız mevcut PIN korunur" /><p className="text-xs text-muted-foreground">Boş bırakılırsa mevcut PIN korunur. {yoneticiDuzenleniyor ? "Yeni yönetici PIN'i 6-8 haneli olmalıdır." : "Personel PIN'i 4 haneli olmalıdır."}</p></div>
+            <div className="grid gap-1.5"><Label htmlFor="duzenle-pin">{yoneticiDuzenleniyor ? "Yeni yönetici PIN'i (6-8 hane)" : "Yeni PIN (4-6 hane)"}</Label><Input id="duzenle-pin" inputMode="numeric" type="password" autoComplete="new-password" minLength={yoneticiDuzenleniyor ? 6 : 4} maxLength={yoneticiDuzenleniyor ? 8 : 6} value={duzenlemePin} onChange={(e) => setDuzenlemePin(e.target.value.replace(/\D/g, ""))} placeholder="Boş bırakırsanız mevcut PIN korunur" /><p className="text-xs text-muted-foreground">Boş bırakılırsa mevcut PIN korunur. {yoneticiDuzenleniyor ? "Yeni yönetici PIN'i 6-8 haneli olmalıdır." : "Personel PIN'i 4-6 haneli olmalıdır."}</p></div>
           </div>
           <DialogFooter><Button onClick={() => duzenle.mutate()} disabled={duzenle.isPending || duzenlemeAd.trim().length < 2 || duzenlemeTelefon.replace(/\D/g, "").length < 10 || !duzenlemePinGecerli}>{duzenle.isPending ? "Kaydediliyor..." : "Kaydet"}</Button></DialogFooter>
         </DialogContent>
