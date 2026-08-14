@@ -13,7 +13,6 @@ import {
   LogOut,
   MapPin,
   Bell,
-  ShieldCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,8 +29,6 @@ import {
   personelGorevleriniGetir,
   tumGorevleriGetir,
   cevrimdisiKuyruguEsitle,
-  konumIzniGetir,
-  konumIzniGuncelle,
   personelBildirimleriGetir,
   personelBildirimiOkundu,
   kvkkIlkGirisDurumuGetir,
@@ -118,33 +115,22 @@ function SahaListesi() {
     enabled: Boolean(kullanici?.id && !onizleme),
     refetchInterval: 60_000,
   });
-  const konumIzni = useQuery({
-    queryKey: ["konum-acik-riza", kullanici?.id], queryFn: konumIzniGetir,
-    enabled: Boolean(kullanici?.id && !onizleme),
-  });
   const kvkkIlkGiris = useQuery({
     queryKey: ["kvkk-ilk-giris", kullanici?.id], queryFn: kvkkIlkGirisDurumuGetir,
     enabled: Boolean(kullanici?.id && !onizleme && cevrimici),
   });
   const [kvkkOkundu, setKvkkOkundu] = useState(false);
-  const [ilkGirisKonumRizasi, setIlkGirisKonumRizasi] = useState(false);
   const ilkGirisOnayla = useMutation({
-    mutationFn: () => kvkkIlkGirisOnayla(ilkGirisKonumRizasi),
+    mutationFn: kvkkIlkGirisOnayla,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["kvkk-ilk-giris"] });
-      void qc.invalidateQueries({ queryKey: ["konum-acik-riza"] });
-      toast.success("Tercihleriniz güvenli biçimde kaydedildi.");
+      toast.success("Aydınlatma bildiriminiz güvenli biçimde kaydedildi.");
     },
     onError: (hata) => toast.error(hata instanceof Error ? hata.message : "Onaylar kaydedilemedi."),
   });
   const bildirimler = useQuery({
     queryKey: ["personel-bildirimleri", kullanici?.id], queryFn: personelBildirimleriGetir,
     enabled: Boolean(kullanici?.id && !onizleme && cevrimici), refetchInterval: cevrimici ? 60_000 : false,
-  });
-  const izinDegistir = useMutation({
-    mutationFn: konumIzniGuncelle,
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["konum-acik-riza"] }); toast.success("Konum tercihiniz kaydedildi."); },
-    onError: () => toast.error("Konum tercihi kaydedilemedi."),
   });
   const bildirimiKapat = useMutation({
     mutationFn: personelBildirimiOkundu,
@@ -162,11 +148,11 @@ function SahaListesi() {
   const konumDurum = useKonumPaylas(
     kullanici?.id,
     !!kullanici && !onizleme && mesai === "calisiyor" && takipPlani.data?.takip_aktif === true && takipPlani.data?.saat_icinde === true &&
-      konumIzni.data?.izinVerildi === true && konumIzni.data?.guncelMetin === true,
+      kvkkIlkGiris.data?.okundu === true,
   );
   const konumEtiket =
-    konumIzni.data && (!konumIzni.data.izinVerildi || !konumIzni.data.guncelMetin)
-      ? "Konum takibi için güncel açık rıza bekleniyor"
+    kvkkIlkGiris.data && !kvkkIlkGiris.data.okundu
+      ? "Konum takibi aydınlatma bildirimi bekleniyor"
       : konumDurum === "aktif"
       ? "Konum paylaşımı açık"
       : konumDurum === "bekleniyor"
@@ -191,7 +177,7 @@ function SahaListesi() {
             <DialogHeader>
               <DialogTitle>Bilgilendirme ve tercihler</DialogTitle>
               <DialogDescription>
-                Uygulamayı kullanmaya devam etmeden önce KVKK aydınlatma metnini okuyun. Konum açık rızası isteğe bağlıdır.
+                Uygulamayı kullanmaya devam etmeden önce KVKK ve çalışma saatleri içindeki konum takibi hakkında bilgilendirmeyi okuyun.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -199,21 +185,13 @@ function SahaListesi() {
                 <div className="flex items-start gap-3">
                   <Checkbox id="kvkk-okundu" checked={kvkkOkundu} onCheckedChange={(v) => setKvkkOkundu(v === true)} />
                   <label htmlFor="kvkk-okundu" className="text-sm leading-5">
-                    <Link to="/kvkk" target="_blank" className="font-semibold text-primary underline">KVKK Aydınlatma Metni</Link>'ni okudum ve kişisel verilerimin işlenmesi hakkında bilgilendirildim. <span className="font-semibold">(Zorunlu)</span>
+                    <Link to="/kvkk" target="_blank" className="font-semibold text-primary underline">KVKK Aydınlatma Metni</Link>'ni okudum; konum verimin yalnız yöneticinin tanımladığı çalışma ve ek çalışma saatlerinde görev koordinasyonu amacıyla işleneceği konusunda bilgilendirildim. <span className="font-semibold">(Zorunlu bilgilendirme)</span>
                   </label>
                 </div>
               </div>
-              <div className="rounded-lg border p-4">
-                <div className="flex items-start gap-3">
-                  <Checkbox id="konum-rizasi" checked={ilkGirisKonumRizasi}
-                    disabled={konumIzni.data?.geriCekildi === true}
-                    onCheckedChange={(v) => setIlkGirisKonumRizasi(v === true)} />
-                  <label htmlFor="konum-rizasi" className="text-sm leading-5">
-                    Konum verimin yalnız yöneticinin belirlediği çalışma ve ek çalışma saatlerinde görev koordinasyonu amacıyla işlenmesine açık rıza veriyorum. <span className="font-semibold">(İsteğe bağlı)</span>
-                  </label>
-                </div>
-                <p className="mt-3 text-xs text-muted-foreground">Mesai saatleri dışında konum takibi kapalıdır. Kayıtlar en fazla 30 gün saklanır. Rıza vermeden de uygulamayı kullanabilirsiniz.</p>
-                {konumIzni.data?.geriCekildi && <p className="mt-2 text-xs font-medium text-amber-700">Önceki rıza geri çekildiği için yeniden açılması yönetici onayı gerektirir.</p>}
+              <div className="rounded-lg border bg-muted/40 p-4 text-sm">
+                <p className="font-semibold">Konum takibi sınırları</p>
+                <p className="mt-2 text-muted-foreground">Takip yalnız yönetici tarafından tanımlanan işe başlangıç, iş bitiş ve ek çalışma aralığında aktiftir. Mesai dışında kapalıdır; kayıtlar en fazla 30 gün saklanır. KVKK başvuru ve itiraz haklarınız aydınlatma metninde açıklanmıştır.</p>
               </div>
               <Button className="w-full" disabled={!kvkkOkundu || ilkGirisOnayla.isPending} onClick={() => ilkGirisOnayla.mutate()}>
                 {ilkGirisOnayla.isPending ? "Kaydediliyor..." : "Tercihlerimi Kaydet ve Devam Et"}
@@ -297,23 +275,6 @@ function SahaListesi() {
             </div>
           </div>
         ))}
-        {!onizleme && konumIzni.data && (!konumIzni.data.izinVerildi || !konumIzni.data.guncelMetin) && (
-          <div className="mb-4 rounded-xl border bg-card px-4 py-4 shadow-card">
-            <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-              <div><p className="font-bold">Konum takibi açık rıza ve bilgilendirme</p>
-                <p className="mt-1 text-sm text-muted-foreground">Konumunuz yalnız yöneticinin tanımladığı çalışma ve ek çalışma saatlerinde alınır; bu saatlerin dışında takip kapalıdır. Kayıtlar en fazla 30 gün saklanır. Rızanızı geri çekebilirsiniz; geri çekildikten sonra yeniden etkinleştirme için yöneticinizle iletişime geçmeniz gerekir.</p>
-                <div className="mt-3 flex flex-wrap gap-2">{konumIzni.data.geriCekildi ? <p className="text-sm font-medium text-amber-700">Açık rıza geri çekildi. Yeniden etkinleştirme için yöneticinizle iletişime geçin.</p> : <Button size="sm" onClick={() => izinDegistir.mutate(true)} disabled={izinDegistir.isPending}>Açık rıza veriyorum</Button>}
-                  <Button asChild size="sm" variant="outline"><Link to="/kvkk">Metni oku</Link></Button></div>
-              </div>
-            </div>
-          </div>
-        )}
-        {!onizleme && konumIzni.data?.izinVerildi && konumIzni.data?.guncelMetin && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-card px-4 py-3 text-xs text-muted-foreground shadow-card">
-            <span>Konum açık rızası kayıtlıdır; takip yalnız tanımlı mesai saatlerinde çalışır.</span>
-            <Button variant="ghost" size="sm" className="shrink-0" onClick={() => { if (window.confirm("Açık rızanızı geri çekmek istediğinize emin misiniz? Bu işlemden sonra yeniden etkinleştirme için yöneticinizle iletişime geçmeniz gerekir.")) izinDegistir.mutate(false); }}>Rızayı geri çek</Button>
-          </div>
-        )}
         {!cevrimici && !onizleme && (
           <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-card">
             Çevrimdışı moddasınız. Görev ve fotoğraf işlemleriniz bu cihazda bekletilip bağlantı gelince otomatik gönderilecek.

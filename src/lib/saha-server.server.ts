@@ -459,7 +459,7 @@ export async function kvkkIlkGirisDurumuGetirSunucu(token: unknown) {
   return { okundu: Boolean(data), metinSurumu: KVKK_METIN_SURUMU };
 }
 
-export async function kvkkIlkGirisOnaylaSunucu(token: unknown, konumRizasi: boolean) {
+export async function kvkkIlkGirisOnaylaSunucu(token: unknown) {
   const claims = await oturumDogrula(token);
   if (claims.rol !== "personel") throw new Error("Bu işlem yalnız personel hesabında yapılabilir.");
   const sb = await db();
@@ -475,8 +475,7 @@ export async function kvkkIlkGirisOnaylaSunucu(token: unknown, konumRizasi: bool
     await auditYaz(sb, { yonetici_id: claims.id, hedef_personel_id: claims.id,
       islem_turu: "kvkk_aydinlatma_okundu", aciklama: `KVKK aydınlatma metni okundu (${KVKK_METIN_SURUMU}).` });
   }
-  if (konumRizasi) await konumIzniGuncelleSunucu(token, true);
-  return { okundu: true, konumRizasi };
+  return { okundu: true };
 }
 
 export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boolean) {
@@ -707,9 +706,9 @@ export async function konumGonderSunucu(
   const sb = await db();
   const takip = await kendiKonumTakipDurumuGetirSunucu(token);
   if (!takip.takip_aktif || !takip.saat_icinde) throw new Error("Konum takibi çalışma saatleri dışında kapalıdır.");
-  const izin = await konumIzniGetirSunucu(token);
-  if (!izin.izinVerildi || !izin.guncelMetin) {
-    throw new Error("Güncel konum aydınlatma ve açık rıza kaydı bulunmuyor.");
+  const aydinlatma = await kvkkIlkGirisDurumuGetirSunucu(token);
+  if (!aydinlatma.okundu) {
+    throw new Error("Güncel KVKK ve konum takibi aydınlatma metni okunmamış.");
   }
   if (!Number.isFinite(input.enlem) || input.enlem < -90 || input.enlem > 90) {
     throw new Error("Geçersiz enlem bilgisi.");

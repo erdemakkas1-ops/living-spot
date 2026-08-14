@@ -184,8 +184,8 @@ export const kvkkIlkGirisDurumuGetirFn = createServerFn({ method: "POST" })
   .handler(() => kvkkIlkGirisDurumuGetirSunucu(oturumTokeni()));
 
 export const kvkkIlkGirisOnaylaFn = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ token: z.string().min(10), konumRizasi: z.boolean() }).parse(d))
-  .handler(({ data }) => kvkkIlkGirisOnaylaSunucu(oturumTokeni(), data.konumRizasi));
+  .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
+  .handler(() => kvkkIlkGirisOnaylaSunucu(oturumTokeni()));
 
 export const konumRizasiYenilemeyeAcFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10), personelId: z.string().uuid() }).parse(d))

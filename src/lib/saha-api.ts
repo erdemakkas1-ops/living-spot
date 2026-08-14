@@ -365,8 +365,8 @@ export async function konumIzniGuncelle(izinVerildi: boolean) {
 export async function kvkkIlkGirisDurumuGetir(): Promise<{ okundu: boolean; metinSurumu: string }> {
   return await cagir(kvkkIlkGirisDurumuGetirFn({ data: { token: token() } }));
 }
-export async function kvkkIlkGirisOnayla(konumRizasi: boolean) {
-  return await cagir(kvkkIlkGirisOnaylaFn({ data: { token: token(), konumRizasi } }));
+export async function kvkkIlkGirisOnayla() {
+  return await cagir(kvkkIlkGirisOnaylaFn({ data: { token: token() } }));
 }
 export async function konumRizasiYenilemeyeAc(personelId: string) {
   await cagir(konumRizasiYenilemeyeAcFn({ data: { token: token(), personelId } }));
