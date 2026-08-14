@@ -7,13 +7,35 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
-function guvenlikBasliklari(response: Response): Response {
+function guvenlikBasliklari(response: Response, request: Request): Response {
   const headers = new Headers(response.headers);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(self), geolocation=(self), microphone=()");
   headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   headers.set("X-Permitted-Cross-Domain-Policies", "none");
+  headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "form-action 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://*.supabase.co",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      "frame-src 'self' https://www.openstreetmap.org",
+      "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
+      "manifest-src 'self'",
+      "worker-src 'self' blob:",
+      "upgrade-insecure-requests",
+    ].join("; "),
+  );
+  if (new URL(request.url).protocol === "https:") {
+    headers.set("Strict-Transport-Security", "max-age=31536000");
+  }
   if (!headers.has("Cache-Control") && headers.get("content-type")?.includes("text/html")) {
     headers.set("Cache-Control", "no-store");
   }
@@ -62,13 +84,13 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return guvenlikBasliklari(await normalizeCatastrophicSsrResponse(response));
+      return guvenlikBasliklari(await normalizeCatastrophicSsrResponse(response), request);
     } catch (error) {
       console.error(error);
       return guvenlikBasliklari(new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
-      }));
+      }), request);
     }
   },
 };
