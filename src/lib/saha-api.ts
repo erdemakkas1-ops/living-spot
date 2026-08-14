@@ -201,22 +201,40 @@ function dosyadanBase64(file: File): Promise<string> {
   });
 }
 
+async function fotografiGuvenliJpegYap(file: File): Promise<File> {
+  let bitmap: ImageBitmap;
+  try { bitmap = await createImageBitmap(file); }
+  catch { throw new Error("Seçilen dosya geçerli bir fotoğraf değil."); }
+  try {
+    if (bitmap.width < 1 || bitmap.height < 1 || bitmap.width * bitmap.height > 40_000_000) throw new Error("Fotoğraf boyutları güvenli sınırı aşıyor.");
+    const oran = Math.min(1, 4096 / bitmap.width, 4096 / bitmap.height, Math.sqrt(16_000_000 / (bitmap.width * bitmap.height)));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * oran));
+    canvas.height = Math.max(1, Math.round(bitmap.height * oran));
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) throw new Error("Fotoğraf işlenemedi.");
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+    if (!blob) throw new Error("Fotoğraf güvenli biçime dönüştürülemedi.");
+    return new File([blob], "gorev-fotografi.jpg", { type: "image/jpeg" });
+  } finally { bitmap.close(); }
+}
+
 export async function fotoYukle(gorevId: string, file: File): Promise<string> {
   const izinliTurler = ["image/jpeg", "image/png", "image/webp"];
   if (!izinliTurler.includes(file.type)) {
     throw new Error("Yalnızca JPEG, PNG veya WebP fotoğrafı seçebilirsiniz.");
   }
   if (file.size > 8 * 1024 * 1024) throw new Error("Fotoğraf 8MB'dan büyük olamaz.");
-  const uzanti =
-    (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").slice(0, 5) || "jpg";
-  const base64 = await dosyadanBase64(file);
+  const guvenliDosya = await fotografiGuvenliJpegYap(file);
+  const base64 = await dosyadanBase64(guvenliDosya);
   const { yol } = await fotoYukleFn({
     data: {
       token: token(),
       gorevId,
       base64,
-      contentType: file.type || "image/jpeg",
-      uzanti,
+      contentType: "image/jpeg",
+      uzanti: "jpg",
     },
   });
   return yol;

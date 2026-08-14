@@ -3,7 +3,7 @@ import { mfaAdayTokenDogrula, mfaAdayTokenUret, tokenDogrula, tokenUret, type Sa
 import { pinDogrula, pinHashle } from "./saha-pin.server";
 import { kurtarmaKoduBul, kurtarmaKodlariUret, mfaAnahtariCoz, mfaAnahtariSifrele, mfaAnahtariUret, mfaKoduDogrula, mfaKurulumUri, mfaVerisiCoz, mfaVerisiSifrele } from "./saha-mfa.server";
 import { auditYaz, telefonMaskele } from "./saha-audit.server";
-import { fotoMetadataTemizle } from "./saha-foto.server";
+import { fotoMetadataTemizle, fotoYapisiniDogrula } from "./saha-foto.server";
 import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
 
 const GOREV_SELECT =
@@ -594,7 +594,9 @@ export async function fotoYukleSunucu(
   }
   if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Fotoğraf 8MB'dan büyük olamaz.");
   const tur = fotoTurunuAlgila(bytes);
+  fotoYapisiniDogrula(bytes, tur.mime);
   bytes = fotoMetadataTemizle(bytes, tur.mime);
+  fotoYapisiniDogrula(bytes, tur.mime);
   const yol = `${input.gorevId}/${crypto.randomUUID()}.${tur.uzanti}`;
   const sb = await db();
   // Aynı görevde daha önce yüklenmiş fakat iş_loglarına bağlanmamış dosyaları temizle.
