@@ -349,6 +349,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      guvenlik_yapilandirmasi_dogrula: { Args: never; Returns: Json }
       personel_yonet_atomik: {
         Args: {
           p_audit_aciklama: string

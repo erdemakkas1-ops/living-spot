@@ -394,6 +394,9 @@ export type BakimDurumu = {
   eskiKonum: number;
   eskiFoto: number;
   eskiAudit: number;
+  kritikRls: boolean;
+  publicYetkiYok: boolean;
+  kvkkCronAktif: boolean;
 };
 
 /** Yalnız yöneticinin görebildiği KVKK saklama/temizlik sağlık özeti. */
@@ -403,21 +406,30 @@ export async function bakimDurumuGetirSunucu(token: unknown): Promise<BakimDurum
   const konumEsigi = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const fotoEsigi = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
   const auditEsigi = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString();
-  const [bakim, konum, foto, audit] = await Promise.all([
+  const [bakim, konum, foto, audit, guvenlik] = await Promise.all([
     sb.from("sistem_bakim_durumu").select("son_calisma").eq("anahtar", "kvkk-gunluk-temizlik").maybeSingle(),
     sb.from("personel_konumlari").select("id", { count: "exact", head: true }).lt("kayit_tarihi", konumEsigi),
     sb.from("is_loglari").select("id", { count: "exact", head: true }).lt("tamamlanma_tarihi", fotoEsigi),
     sb.from("audit_loglari").select("id", { count: "exact", head: true }).lt("created_at", auditEsigi),
+    sb.rpc("guvenlik_yapilandirmasi_dogrula"),
   ]);
-  const hata = bakim.error ?? konum.error ?? foto.error ?? audit.error;
+  const hata = bakim.error ?? konum.error ?? foto.error ?? audit.error ?? guvenlik.error;
   if (hata) throw new Error("Sistem bakım durumu okunamadı.");
   const sonCalisma = (bakim.data as { son_calisma?: string } | null)?.son_calisma ?? null;
+  const guvenlikDurumu = (guvenlik.data ?? {}) as {
+    kritik_rls?: boolean;
+    public_yetki_yok?: boolean;
+    kvkk_cron_aktif?: boolean;
+  };
   return {
     sonCalisma,
     gecikmis: !sonCalisma || Date.now() - new Date(sonCalisma).getTime() > 48 * 60 * 60 * 1000,
     eskiKonum: konum.count ?? 0,
     eskiFoto: foto.count ?? 0,
     eskiAudit: audit.count ?? 0,
+    kritikRls: guvenlikDurumu.kritik_rls === true,
+    publicYetkiYok: guvenlikDurumu.public_yetki_yok === true,
+    kvkkCronAktif: guvenlikDurumu.kvkk_cron_aktif === true,
   };
 }
 
