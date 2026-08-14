@@ -416,6 +416,73 @@ export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boole
   return { izinVerildi };
 }
 
+export type KonumTakipSaati = {
+  personel_id: string;
+  ad_soyad: string;
+  ise_baslangic: string;
+  is_bitisi: string;
+  ek_calisma_bitisi: string | null;
+  takip_aktif: boolean;
+};
+
+export async function konumTakipSaatleriGetirSunucu(token: unknown): Promise<KonumTakipSaati[]> {
+  await ikOturumDogrula(token);
+  const sb = await db();
+  const [personelSonucu, saatSonucu] = await Promise.all([
+    sb.from("personel").select("id, ad_soyad").eq("rol", "personel").eq("aktif", true).order("ad_soyad"),
+    sb.from("personel_konum_takip_saatleri").select("personel_id, ise_baslangic, is_bitisi, ek_calisma_bitisi, takip_aktif"),
+  ]);
+  if (personelSonucu.error || saatSonucu.error) throw new Error("Konum takip saatleri alınamadı.");
+  const saatler = new Map((saatSonucu.data ?? []).map((s) => [s.personel_id, s]));
+  return (personelSonucu.data ?? []).map((p) => {
+    const s = saatler.get(p.id);
+    return {
+      personel_id: p.id,
+      ad_soyad: p.ad_soyad,
+      ise_baslangic: s?.ise_baslangic?.slice(0, 5) ?? "08:00",
+      is_bitisi: s?.is_bitisi?.slice(0, 5) ?? "18:00",
+      ek_calisma_bitisi: s?.ek_calisma_bitisi?.slice(0, 5) ?? null,
+      takip_aktif: s?.takip_aktif ?? false,
+    };
+  });
+}
+
+export async function konumTakipSaatiGuncelleSunucu(token: unknown, input: Omit<KonumTakipSaati, "ad_soyad">) {
+  const yonetici = await ikOturumDogrula(token);
+  const saatDeseni = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+  if (!saatDeseni.test(input.ise_baslangic) || !saatDeseni.test(input.is_bitisi) ||
+      (input.ek_calisma_bitisi !== null && !saatDeseni.test(input.ek_calisma_bitisi))) {
+    throw new Error("Çalışma saatleri HH:MM biçiminde olmalıdır.");
+  }
+  if (input.ise_baslangic === input.is_bitisi) throw new Error("Başlangıç ve bitiş aynı olamaz.");
+  const sb = await db();
+  const { error } = await sb.rpc("konum_takip_saati_guncelle", {
+    p_yonetici_id: yonetici.id, p_personel_id: input.personel_id,
+    p_ise_baslangic: input.ise_baslangic, p_is_bitisi: input.is_bitisi,
+    p_ek_calisma_bitisi: input.ek_calisma_bitisi, p_takip_aktif: input.takip_aktif,
+  });
+  if (error) throw new Error(error.message || "Konum takip saati kaydedilemedi.");
+  return { ok: true };
+}
+
+export async function kendiKonumTakipDurumuGetirSunucu(token: unknown) {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") return { takip_aktif: false, saat_icinde: false, ise_baslangic: null, bitis: null };
+  const sb = await db();
+  const { data, error } = await sb.from("personel_konum_takip_saatleri")
+    .select("ise_baslangic, is_bitisi, ek_calisma_bitisi, takip_aktif").eq("personel_id", claims.id).maybeSingle();
+  if (error) throw new Error("Konum takip planı alınamadı.");
+  if (!data?.takip_aktif) return { takip_aktif: false, saat_icinde: false, ise_baslangic: data?.ise_baslangic?.slice(0,5) ?? null, bitis: null };
+  const parcalar = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
+  const simdi = Number(parcalar.find((p) => p.type === "hour")?.value) * 60 + Number(parcalar.find((p) => p.type === "minute")?.value);
+  const dakikaya = (s: string) => Number(s.slice(0,2)) * 60 + Number(s.slice(3,5));
+  const bas = dakikaya(data.ise_baslangic);
+  const bitisMetni = data.ek_calisma_bitisi ?? data.is_bitisi;
+  const bit = dakikaya(bitisMetni);
+  const saat_icinde = bas < bit ? simdi >= bas && simdi <= bit : simdi >= bas || simdi <= bit;
+  return { takip_aktif: true, saat_icinde, ise_baslangic: data.ise_baslangic.slice(0,5), bitis: bitisMetni.slice(0,5) };
+}
+
 export async function sonKonumlariGetirSunucu(token: unknown): Promise<PersonelKonum[]> {
   await ikOturumDogrula(token);
   const sb = await db();
@@ -460,13 +527,8 @@ export async function konumGonderSunucu(
   const claims = await oturumDogrula(token);
   if (claims.rol !== "personel") throw new Error("Konum yalnız personel hesabından gönderilebilir.");
   const sb = await db();
-  const { data: izin, error: izinHatasi } = await sb
-    .from("konum_izinleri")
-    .select("izin_verildi")
-    .eq("personel_id", claims.id)
-    .maybeSingle();
-  if (izinHatasi) throw izinHatasi;
-  if (!izin?.izin_verildi) throw new Error("Konum paylaşımı için açık onay gerekiyor.");
+  const takip = await kendiKonumTakipDurumuGetirSunucu(token);
+  if (!takip.takip_aktif || !takip.saat_icinde) throw new Error("Konum takibi çalışma saatleri dışında kapalıdır.");
   if (!Number.isFinite(input.enlem) || input.enlem < -90 || input.enlem > 90) {
     throw new Error("Geçersiz enlem bilgisi.");
   }

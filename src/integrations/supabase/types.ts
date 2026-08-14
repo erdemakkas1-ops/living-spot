@@ -292,6 +292,12 @@ export type Database = {
           },
         ]
       }
+      personel_konum_takip_saatleri: {
+        Row: { personel_id: string; ise_baslangic: string; is_bitisi: string; ek_calisma_bitisi: string | null; takip_aktif: boolean; guncellendi_at: string; guncelleyen_id: string | null }
+        Insert: { personel_id: string; ise_baslangic: string; is_bitisi: string; ek_calisma_bitisi?: string | null; takip_aktif?: boolean; guncellendi_at?: string; guncelleyen_id?: string | null }
+        Update: { personel_id?: string; ise_baslangic?: string; is_bitisi?: string; ek_calisma_bitisi?: string | null; takip_aktif?: boolean; guncellendi_at?: string; guncelleyen_id?: string | null }
+        Relationships: []
+      }
       sistem_bakim_durumu: {
         Row: {
           anahtar: string
@@ -318,6 +324,10 @@ export type Database = {
           p_metin_surumu: string
           p_personel_id: string
         }
+        Returns: undefined
+      }
+      konum_takip_saati_guncelle: {
+        Args: { p_yonetici_id: string; p_personel_id: string; p_ise_baslangic: string; p_is_bitisi: string; p_ek_calisma_bitisi: string | null; p_takip_aktif: boolean }
         Returns: undefined
       }
       gorev_tamamla_atomik: {

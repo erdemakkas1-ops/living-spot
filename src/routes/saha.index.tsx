@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import {
   AlertCircle,
   Building,
@@ -21,8 +20,7 @@ import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
 import {
   mesaiDurumuGetir,
   mesaiDurumuGuncelle,
-  konumIzniGetir,
-  konumIzniGuncelle,
+  kendiKonumTakipDurumuGetir,
   guvenliCikisYap,
   personelGorevleriniGetir,
   tumGorevleriGetir,
@@ -81,7 +79,6 @@ function SahaListesi() {
   const bitenIsler = liste.filter((g) => g.durum === "tamamlandi");
 
   const [mesai, setMesai] = useState<MesaiDurumu>("calisiyor");
-  const [izinKaydediliyor, setIzinKaydediliyor] = useState(false);
   useEffect(() => {
     if (!kullanici?.id || onizleme) return;
     void mesaiDurumuGetir(kullanici.id)
@@ -89,24 +86,12 @@ function SahaListesi() {
       .catch(() => setMesai("calisiyor"));
   }, [kullanici?.id, onizleme]);
 
-  const konumIzni = useQuery({
-    queryKey: ["konum-izni", kullanici?.id],
-    queryFn: konumIzniGetir,
+  const takipPlani = useQuery({
+    queryKey: ["kendi-konum-takip-plani", kullanici?.id],
+    queryFn: kendiKonumTakipDurumuGetir,
     enabled: Boolean(kullanici?.id && !onizleme),
+    refetchInterval: 60_000,
   });
-
-  const izinDegistir = async (izinVerildi: boolean) => {
-    setIzinKaydediliyor(true);
-    try {
-      await konumIzniGuncelle(izinVerildi);
-      qc.setQueryData(["konum-izni", kullanici?.id], izinVerildi);
-      toast.success(izinVerildi ? "Konum paylaşımı onaylandı." : "Konum paylaşımı durduruldu.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Konum onayı kaydedilemedi.");
-    } finally {
-      setIzinKaydediliyor(false);
-    }
-  };
 
   const molaDegistir = () => {
     if (!kullanici?.id) return;
@@ -115,10 +100,10 @@ function SahaListesi() {
     void mesaiDurumuGuncelle(kullanici.id, yeni).catch(() => setMesai(mesai));
   };
 
-  // Konum paylaşımı yalnızca mesai sürerken aktiftir.
+  // Konum paylaşımı yalnızca yöneticinin belirlediği saatlerde ve mola dışında aktiftir.
   const konumDurum = useKonumPaylas(
     kullanici?.id,
-    !!kullanici && !onizleme && mesai === "calisiyor" && konumIzni.data === true,
+    !!kullanici && !onizleme && mesai === "calisiyor" && takipPlani.data?.takip_aktif === true && takipPlani.data?.saat_icinde === true,
   );
   const konumEtiket =
     konumDurum === "aktif"
@@ -129,7 +114,9 @@ function SahaListesi() {
           ? "Konum izni verilmedi"
           : konumDurum === "hata"
             ? "Konum alınamadı"
-            : "Konum paylaşımı kapalı";
+            : takipPlani.data?.takip_aktif
+              ? `Takip saati dışında (${takipPlani.data.ise_baslangic}-${takipPlani.data.bitis})`
+              : "Yönetici tarafından konum takibi kapalı";
 
   return (
     <div className="min-h-screen bg-background pb-10">
@@ -199,35 +186,9 @@ function SahaListesi() {
       </header>
 
       <main className="mx-auto -mt-4 max-w-lg px-4">
-        {!onizleme && konumIzni.isSuccess && !konumIzni.data && (
-          <section className="mb-4 rounded-2xl border border-primary/20 bg-card p-4 shadow-card">
-            <div className="flex items-start gap-3">
-              <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-              <div>
-                <h2 className="font-bold">Konum paylaşımı onayı</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Konumunuz yalnız çalıştığınız sırada görev koordinasyonu ve güvenlik amacıyla,
-                  yaklaşık dakikada bir paylaşılır. Kayıtlar en fazla 30 gün saklanır. Onayı
-                  istediğiniz zaman geri çekebilirsiniz.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" disabled={izinKaydediliyor} onClick={() => void izinDegistir(true)}>
-                    Konum paylaşımına izin ver
-                  </Button>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link to="/kvkk">Aydınlatma metni</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-        {!onizleme && konumIzni.data === true && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-card px-4 py-3 text-xs shadow-card">
-            <span className="text-muted-foreground">Konum paylaşımı onayınız kayıtlıdır.</span>
-            <Button size="sm" variant="ghost" disabled={izinKaydediliyor} onClick={() => void izinDegistir(false)}>
-              Onayı geri çek
-            </Button>
+        {!onizleme && takipPlani.data?.takip_aktif && (
+          <div className="mb-4 rounded-xl bg-card px-4 py-3 text-xs text-muted-foreground shadow-card">
+            Konum takibi çalışma saatlerinizde aktiftir: {takipPlani.data.ise_baslangic}–{takipPlani.data.bitis}. Cihaz konum iznini telefon ayarlarından yönetebilirsiniz. Kayıtlar en fazla 30 gün saklanır.
           </div>
         )}
         <div className="grid grid-cols-2 gap-3">

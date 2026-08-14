@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, MapPin, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { sonKonumlariGetir } from "@/lib/saha-api";
+import { konumTakipSaatleriGetir, konumTakipSaatiGuncelle, sonKonumlariGetir, type KonumTakipSaati } from "@/lib/saha-api";
+import { toast } from "sonner";
 import type { PersonelKonum } from "@/lib/saha-types";
 
 function gecenSure(tarih: string) {
@@ -28,6 +30,7 @@ function canli(tarih: string) {
 }
 
 export function KonumTakibi() {
+  const qc = useQueryClient();
   const [acik, setAcik] = useState(false);
   const [secili, setSecili] = useState<PersonelKonum | null>(null);
 
@@ -37,6 +40,7 @@ export function KonumTakibi() {
     enabled: acik,
     refetchInterval: acik ? 30_000 : false,
   });
+  const saatler = useQuery({ queryKey: ["konum-takip-saatleri"], queryFn: konumTakipSaatleriGetir, enabled: acik });
 
   const liste = konumlar.data ?? [];
   const aktifSayi = liste.filter((k) => canli(k.kayit_tarihi)).length;
@@ -70,6 +74,16 @@ export function KonumTakibi() {
             içinde sinyal gönderenler "sahada" olarak işaretlenir.
           </DialogDescription>
         </DialogHeader>
+
+        <section className="max-h-64 overflow-auto rounded-xl border p-3">
+          <div className="mb-2 grid min-w-[650px] grid-cols-[minmax(150px,1fr)_110px_110px_130px_100px] gap-2 text-xs font-semibold text-muted-foreground">
+            <span>Personel</span><span>İşe başlangıç</span><span>İş bitişi</span><span>Ek çalışma bitişi</span><span>İşlem</span>
+          </div>
+          <div className="min-w-[650px] space-y-2">
+            {(saatler.data ?? []).map((s) => <SaatSatiri key={s.personel_id} saat={s} onKaydet={() => void qc.invalidateQueries({ queryKey: ["konum-takip-saatleri"] })} />)}
+            {saatler.isLoading && <p className="py-3 text-sm text-muted-foreground">Çalışma saatleri yükleniyor...</p>}
+          </div>
+        </section>
 
         <div className="grid gap-4 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
           <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
@@ -172,4 +186,23 @@ export function KonumTakibi() {
       </DialogContent>
     </Dialog>
   );
+}
+
+function SaatSatiri({ saat, onKaydet }: { saat: KonumTakipSaati; onKaydet: () => void }) {
+  const [baslangic, setBaslangic] = useState(saat.ise_baslangic);
+  const [bitis, setBitis] = useState(saat.is_bitisi);
+  const [ekBitis, setEkBitis] = useState(saat.ek_calisma_bitisi ?? "");
+  const [aktif, setAktif] = useState(saat.takip_aktif);
+  const kaydet = useMutation({
+    mutationFn: () => konumTakipSaatiGuncelle({ personel_id: saat.personel_id, ise_baslangic: baslangic, is_bitisi: bitis, ek_calisma_bitisi: ekBitis || null, takip_aktif: aktif }),
+    onSuccess: () => { toast.success(`${saat.ad_soyad} takip saatleri kaydedildi.`); onKaydet(); },
+    onError: (h: unknown) => toast.error(h instanceof Error ? h.message : "Saatler kaydedilemedi."),
+  });
+  return <div className="grid grid-cols-[minmax(150px,1fr)_110px_110px_130px_100px] items-center gap-2">
+    <button type="button" onClick={() => setAktif(!aktif)} className={`truncate rounded-md px-2 py-2 text-left text-sm font-medium ${aktif ? "bg-emerald-100 text-emerald-900" : "bg-muted text-muted-foreground"}`}>{saat.ad_soyad} · {aktif ? "Açık" : "Kapalı"}</button>
+    <Input type="time" value={baslangic} onChange={(e) => setBaslangic(e.target.value)} aria-label={`${saat.ad_soyad} işe başlangıç`} />
+    <Input type="time" value={bitis} onChange={(e) => setBitis(e.target.value)} aria-label={`${saat.ad_soyad} iş bitişi`} />
+    <Input type="time" value={ekBitis} onChange={(e) => setEkBitis(e.target.value)} aria-label={`${saat.ad_soyad} ek çalışma bitişi`} />
+    <Button size="sm" onClick={() => kaydet.mutate()} disabled={kaydet.isPending}>{kaydet.isPending ? "..." : "Kaydet"}</Button>
+  </div>;
 }

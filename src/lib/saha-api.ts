@@ -16,8 +16,9 @@ import {
   gorevOlusturFn,
   gorevTamamlaFn,
   konumGonderFn,
-  konumIzniGetirFn,
-  konumIzniGuncelleFn,
+  konumTakipSaatleriGetirFn,
+  konumTakipSaatiGuncelleFn,
+  kendiKonumTakipDurumuGetirFn,
   mesaiDurumuGetirFn,
   mesaiDurumuGuncelleFn,
   personelAktiflikGuncelleFn,
@@ -266,12 +267,16 @@ export async function konumGonder(input: {
   });
 }
 
-export async function konumIzniGetir(): Promise<boolean> {
-  return Boolean(await cagir(konumIzniGetirFn({ data: { token: token() } })));
+export type KonumTakipSaati = { personel_id: string; ad_soyad: string; ise_baslangic: string; is_bitisi: string; ek_calisma_bitisi: string | null; takip_aktif: boolean };
+export async function konumTakipSaatleriGetir(): Promise<KonumTakipSaati[]> {
+  return (await cagir(konumTakipSaatleriGetirFn({ data: { token: token() } }))) as KonumTakipSaati[];
 }
-
-export async function konumIzniGuncelle(izinVerildi: boolean): Promise<void> {
-  await cagir(konumIzniGuncelleFn({ data: { token: token(), izinVerildi } }));
+export async function konumTakipSaatiGuncelle(input: Omit<KonumTakipSaati, "ad_soyad">): Promise<void> {
+  await cagir(konumTakipSaatiGuncelleFn({ data: { token: token(), ...input } }));
+}
+export type KendiKonumTakipDurumu = { takip_aktif: boolean; saat_icinde: boolean; ise_baslangic: string | null; bitis: string | null };
+export async function kendiKonumTakipDurumuGetir(): Promise<KendiKonumTakipDurumu> {
+  return (await cagir(kendiKonumTakipDurumuGetirFn({ data: { token: token() } }))) as KendiKonumTakipDurumu;
 }
 
 export async function sonKonumlariGetir(): Promise<PersonelKonum[]> {

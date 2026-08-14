@@ -15,8 +15,9 @@ import {
   gorevOlusturSunucu,
   gorevTamamlaSunucu,
   konumGonderSunucu,
-  konumIzniGetirSunucu,
-  konumIzniGuncelleSunucu,
+  konumTakipSaatleriGetirSunucu,
+  konumTakipSaatiGuncelleSunucu,
+  kendiKonumTakipDurumuGetirSunucu,
   mesaiDurumuGetirSunucu,
   mesaiDurumuGuncelleSunucu,
   personelAktiflikGuncelleSunucu,
@@ -153,13 +154,23 @@ export const konumGonderFn = createServerFn({ method: "POST" })
   )
   .handler(({ data }) => konumGonderSunucu(oturumTokeni(), data));
 
-export const konumIzniGetirFn = createServerFn({ method: "POST" })
+export const konumTakipSaatleriGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
-  .handler(() => konumIzniGetirSunucu(oturumTokeni()));
+  .handler(() => konumTakipSaatleriGetirSunucu(oturumTokeni()));
 
-export const konumIzniGuncelleFn = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ token: z.string().min(10), izinVerildi: z.boolean() }).parse(d))
-  .handler(({ data }) => konumIzniGuncelleSunucu(oturumTokeni(), data.izinVerildi));
+export const konumTakipSaatiGuncelleFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({
+    token: z.string().min(10), personel_id: z.string().uuid(),
+    ise_baslangic: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
+    is_bitisi: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
+    ek_calisma_bitisi: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullable(),
+    takip_aktif: z.boolean(),
+  }).parse(d))
+  .handler(({ data }) => konumTakipSaatiGuncelleSunucu(oturumTokeni(), data));
+
+export const kendiKonumTakipDurumuGetirFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
+  .handler(() => kendiKonumTakipDurumuGetirSunucu(oturumTokeni()));
 
 export const tumGorevleriGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))

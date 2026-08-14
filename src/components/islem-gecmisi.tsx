@@ -9,6 +9,7 @@ const ISLEM_ETIKET: Record<string, string> = {
   personel_pin_degistir: "PIN değiştirildi",
   personel_aktiflik: "Aktiflik değişti",
   personel_sil: "Personel silindi",
+  konum_takip_saati: "Konum takip saati güncellendi",
 };
 
 /** İK'ya özel denetim kaydı listesi; PIN, hash veya token bilgisi göstermez. */
