@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS public.sistem_bakim_durumu (
   anahtar text PRIMARY KEY,
   son_calisma timestamptz NOT NULL DEFAULT to_timestamp(0)
 );
+ALTER TABLE public.sistem_bakim_durumu ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sistem_bakim_durumu FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.sistem_bakim_durumu FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.sistem_bakim_durumu TO service_role;
 
