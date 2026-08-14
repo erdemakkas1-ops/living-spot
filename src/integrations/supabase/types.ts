@@ -174,39 +174,6 @@ export type Database = {
           },
         ]
       }
-      konum_izinleri: {
-        Row: {
-          geri_cekildi_at: string | null
-          guncellendi_at: string
-          izin_verildi: boolean
-          metin_surumu: string
-          personel_id: string
-          verildi_at: string | null
-        }
-        Insert: {
-          geri_cekildi_at?: string | null
-          guncellendi_at?: string
-          izin_verildi?: boolean
-          metin_surumu?: string
-          personel_id: string
-          verildi_at?: string | null
-        }
-        Update: {
-          geri_cekildi_at?: string | null
-          guncellendi_at?: string
-          izin_verildi?: boolean
-          metin_surumu?: string
-          personel_id?: string
-          verildi_at?: string | null
-        }
-        Relationships: [{
-          foreignKeyName: "konum_izinleri_personel_id_fkey"
-          columns: ["personel_id"]
-          isOneToOne: true
-          referencedRelation: "personel"
-          referencedColumns: ["id"]
-        }]
-      }
       personel: {
         Row: {
           ad_soyad: string
@@ -313,14 +280,6 @@ export type Database = {
           p_yonetici_id: string
         }
         Returns: string
-      }
-      veri_saklama_bakimi_baslat: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      veri_saklama_kayitlarini_temizle: {
-        Args: { p_log_ids: string[] }
-        Returns: undefined
       }
     }
     Enums: {
