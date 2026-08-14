@@ -1,0 +1,16 @@
+{
+  "applicationName": "Saha İş Takip",
+  "launcherName": "Saha Takip",
+  "packageId": "com.livingspot.sahais",
+  "productionOrigin": "https://living-spot.lovable.app",
+  "startUrl": "/",
+  "webManifestUrl": "https://living-spot.lovable.app/manifest.webmanifest",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "minSdkVersion": 23,
+  "orientation": "portrait-primary",
+  "themeColor": "#112b52",
+  "backgroundColor": "#112b52",
+  "fallbackType": "customtabs",
+  "assetLinksState": "pending-signing-certificate"
+}

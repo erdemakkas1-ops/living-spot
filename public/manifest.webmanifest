@@ -1,14 +1,18 @@
 {
+  "id": "/",
   "name": "Saha İş ve Personel Takip",
   "short_name": "Saha Takip",
   "description": "Site yönetimi ve saha personeli için görev takip uygulaması.",
   "lang": "tr",
+  "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#112b52",
   "theme_color": "#112b52",
+  "prefer_related_applications": false,
   "categories": ["business", "productivity"],
   "icons": [
     {

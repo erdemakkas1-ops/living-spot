@@ -1,4 +1,4 @@
-const CACHE = "saha-takip-shell-v1";
+const CACHE = "saha-takip-shell-v2";
 const SHELL = ["/offline.html", "/manifest.webmanifest", "/icons/pwa-192x192.png", "/icons/pwa-512x512.png"];
 
 self.addEventListener("install", (event) => {
