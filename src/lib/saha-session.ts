@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { oturumKullanicisiGetirFn } from "./saha-session.functions";
 import type { Personel } from "./saha-types";
 
 const KEY = "saha-oturum";
@@ -106,22 +107,55 @@ export function useOturum() {
   const [hazir, setHazir] = useState(false);
 
   useEffect(() => {
-    const oku = () => setKullanici(oturumOku());
-    oku();
-    setHazir(true);
-    window.addEventListener("saha-oturum-degisti", oku);
-    window.addEventListener("storage", oku);
+    let aktif = true;
+    let istekNo = 0;
+    const dogrula = async () => {
+      const buIstek = ++istekNo;
+      try {
+        const sunucuKullanicisi = (await oturumKullanicisiGetirFn()) as Personel;
+        if (!aktif || buIstek !== istekNo) return;
+        window.localStorage.removeItem(TOKEN_KEY);
+        window.localStorage.setItem(KEY, JSON.stringify(sunucuKullanicisi));
+        setKullanici(sunucuKullanicisi);
+      } catch (hata) {
+        if (!aktif || buIstek !== istekNo) return;
+        const mesaj = hata instanceof Error ? hata.message : String(hata);
+        const oturumYok =
+          mesaj.includes("Oturum geçersiz") ||
+          mesaj.includes("Oturum bulunamadı") ||
+          mesaj.includes("süresi dolmuş") ||
+          mesaj.includes("Unauthorized");
+        if (oturumYok) {
+          window.localStorage.removeItem(KEY);
+          window.localStorage.removeItem(TOKEN_KEY);
+          setKullanici(null);
+        } else {
+          // Geçici bağlantı hatasında çevrimdışı görünüm için son güvenilir profil korunur.
+          setKullanici(oturumOku());
+        }
+      } finally {
+        if (aktif && buIstek === istekNo) setHazir(true);
+      }
+    };
+    const okuVeDogrula = () => {
+      setKullanici(oturumOku());
+      void dogrula();
+    };
+    void dogrula();
+    window.addEventListener("saha-oturum-degisti", okuVeDogrula);
+    window.addEventListener("storage", okuVeDogrula);
     // Sekme yeniden öne geldiğinde oturum durumu tazelenir.
-    window.addEventListener("focus", oku);
-    document.addEventListener("visibilitychange", oku);
+    window.addEventListener("focus", okuVeDogrula);
+    document.addEventListener("visibilitychange", okuVeDogrula);
     const bc = kanalAl();
-    if (bc) bc.addEventListener("message", oku);
+    if (bc) bc.addEventListener("message", okuVeDogrula);
     return () => {
-      window.removeEventListener("saha-oturum-degisti", oku);
-      window.removeEventListener("storage", oku);
-      window.removeEventListener("focus", oku);
-      document.removeEventListener("visibilitychange", oku);
-      if (bc) bc.removeEventListener("message", oku);
+      aktif = false;
+      window.removeEventListener("saha-oturum-degisti", okuVeDogrula);
+      window.removeEventListener("storage", okuVeDogrula);
+      window.removeEventListener("focus", okuVeDogrula);
+      document.removeEventListener("visibilitychange", okuVeDogrula);
+      if (bc) bc.removeEventListener("message", okuVeDogrula);
     };
   }, []);
 

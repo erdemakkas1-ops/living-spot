@@ -340,6 +340,19 @@ export async function mesaiDurumuGetirSunucu(token: unknown): Promise<MesaiDurum
     "calisiyor") as MesaiDurumu;
 }
 
+/** İstemcide saklanan profil yalnız görüntü önbelleğidir; gerçek kullanıcıyı oturumdan döndürür. */
+export async function oturumKullanicisiGetirSunucu(token: unknown): Promise<Personel> {
+  const claims = await oturumDogrula(token);
+  const sb = await db();
+  const { data, error } = await sb
+    .from("personel")
+    .select(PERSONEL_SELECT)
+    .eq("id", claims.id)
+    .maybeSingle();
+  if (error || !data) throw new Error(OTURUM_GECERSIZ);
+  return data as unknown as Personel;
+}
+
 export type BakimDurumu = {
   sonCalisma: string | null;
   gecikmis: boolean;
