@@ -292,6 +292,21 @@ export type Database = {
           },
         ]
       }
+      sistem_bakim_durumu: {
+        Row: {
+          anahtar: string
+          son_calisma: string
+        }
+        Insert: {
+          anahtar: string
+          son_calisma?: string
+        }
+        Update: {
+          anahtar?: string
+          son_calisma?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -315,6 +330,11 @@ export type Database = {
           p_yonetici_id: string
         }
         Returns: string
+      }
+      veri_saklama_bakimi_baslat: { Args: never; Returns: boolean }
+      veri_saklama_kayitlarini_temizle: {
+        Args: { p_log_ids: string[] }
+        Returns: undefined
       }
     }
     Enums: {
