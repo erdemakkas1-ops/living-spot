@@ -73,7 +73,71 @@ export async function mfaAnahtariCoz(value: string) {
     await sifrelemeAnahtari(),
     b64Decode(encrypted),
   );
-  return new TextDecoder().decode(plain);
+  const decoded = new TextDecoder().decode(plain);
+  try {
+    const bundle = JSON.parse(decoded) as { secret?: unknown };
+    return typeof bundle.secret === "string" ? bundle.secret : decoded;
+  } catch {
+    return decoded;
+  }
+}
+
+export type MfaVerisi = { secret: string; kurtarmaHashleri: string[] };
+
+export async function mfaVerisiCoz(value: string): Promise<MfaVerisi> {
+  const [version, iv, encrypted] = value.split(".");
+  if (version !== "v1" || !iv || !encrypted) throw new Error("MFA anahtarı okunamadı.");
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: b64Decode(iv) },
+    await sifrelemeAnahtari(),
+    b64Decode(encrypted),
+  );
+  const decoded = new TextDecoder().decode(plain);
+  try {
+    const bundle = JSON.parse(decoded) as Partial<MfaVerisi>;
+    if (typeof bundle.secret === "string") {
+      return { secret: bundle.secret, kurtarmaHashleri: bundle.kurtarmaHashleri ?? [] };
+    }
+  } catch {
+    // Eski kayıtlar yalnız TOTP anahtarını içerir.
+  }
+  return { secret: decoded, kurtarmaHashleri: [] };
+}
+
+export async function mfaVerisiSifrele(veri: MfaVerisi) {
+  return mfaAnahtariSifrele(JSON.stringify(veri));
+}
+
+async function kurtarmaKoduHashle(kod: string) {
+  const secret = process.env["SAHA_SESSION_SECRET"];
+  if (!secret) throw new Error("SAHA_SESSION_SECRET yapılandırılmamış.");
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const normalized = kod.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+  const hash = new Uint8Array(
+    await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`mfa-kurtarma:${normalized}`)),
+  );
+  return Array.from(hash, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export async function kurtarmaKodlariUret() {
+  const alfabe = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const kodlar = Array.from({ length: 8 }, () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(8));
+    const value = Array.from(bytes, (b) => alfabe[b % alfabe.length]).join("");
+    return `${value.slice(0, 4)}-${value.slice(4)}`;
+  });
+  return { kodlar, hashler: await Promise.all(kodlar.map(kurtarmaKoduHashle)) };
+}
+
+export async function kurtarmaKoduBul(hashler: string[], kod: string) {
+  const hash = await kurtarmaKoduHashle(kod);
+  return hashler.indexOf(hash);
 }
 
 async function totp(secret: string, counter: number) {

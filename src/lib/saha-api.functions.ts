@@ -95,13 +95,13 @@ export const girisYapFn = createServerFn({ method: "POST" })
   });
 
 export const mfaDogrulaFn = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ kod: z.string().regex(/^\d{6}$/) }).parse(d))
+  .validator((d) => z.object({ kod: z.string().regex(/^(?:\d{6}|[A-Z0-9]{4}-?[A-Z0-9]{4})$/i) }).parse(d))
   .handler(async ({ data }) => {
     ayniOriginDogrula();
-    const { personel, token } = await mfaDogrulaSunucu(getCookie(MFA_ADAY_COOKIE) ?? "", data.kod);
+    const { personel, token, kurtarmaKodlari } = await mfaDogrulaSunucu(getCookie(MFA_ADAY_COOKIE) ?? "", data.kod);
     setCookie(OTURUM_COOKIE, token, guvenliCookie(12 * 60 * 60));
     deleteCookie(MFA_ADAY_COOKIE, { path: "/" });
-    return { personel };
+    return { personel, kurtarmaKodlari };
   });
 
 export const cikisYapFn = createServerFn({ method: "POST" }).handler(() => {

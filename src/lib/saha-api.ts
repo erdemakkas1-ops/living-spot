@@ -89,9 +89,9 @@ export async function girisYap(telefon: string, pin: string): Promise<GirisSonuc
   return sonuc as GirisSonucu;
 }
 
-export async function mfaDogrula(kod: string): Promise<Personel> {
+export async function mfaDogrula(kod: string): Promise<{ personel: Personel; kurtarmaKodlari?: string[] }> {
   const sonuc = await mfaDogrulaFn({ data: { kod: kod.trim() } });
-  return sonuc.personel as Personel;
+  return { personel: sonuc.personel as Personel, kurtarmaKodlari: sonuc.kurtarmaKodlari };
 }
 
 export async function guvenliCikisYap() {

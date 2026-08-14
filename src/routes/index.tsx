@@ -40,6 +40,7 @@ function GirisSayfasi() {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [mfa, setMfa] = useState<{ kurulum?: { anahtar: string; uri: string } | undefined } | null>(null);
   const [mfaKodu, setMfaKodu] = useState("");
+  const [kurtarma, setKurtarma] = useState<{ kodlar: string[]; personel: Awaited<ReturnType<typeof mfaDogrula>>["personel"] } | null>(null);
 
   useEffect(() => {
     if (kullanici) {
@@ -79,7 +80,12 @@ function GirisSayfasi() {
     e.preventDefault();
     setYukleniyor(true);
     try {
-      const p = await mfaDogrula(mfaKodu);
+      const sonuc = await mfaDogrula(mfaKodu);
+      const p = sonuc.personel;
+      if (sonuc.kurtarmaKodlari?.length) {
+        setKurtarma({ kodlar: sonuc.kurtarmaKodlari, personel: p });
+        return;
+      }
       oturumYaz(p);
       toast.success(`Hoş geldin, ${p.ad_soyad}`);
       navigate({ to: "/panel" });
@@ -109,7 +115,40 @@ function GirisSayfasi() {
           onSubmit={mfa ? mfaGonder : gonder}
           className="rounded-2xl bg-card p-6 shadow-card"
         >
-          {mfa ? (
+          {kurtarma ? (
+            <div>
+              <ShieldCheck className="mx-auto h-10 w-10 text-primary" />
+              <h2 className="mt-3 text-center text-lg font-bold">Kurtarma kodlarınız</h2>
+              <p className="mt-1 text-center text-sm text-muted-foreground">
+                Telefonunuza erişemezseniz bu tek kullanımlık kodlardan biriyle giriş yapabilirsiniz.
+                Kodlar tekrar gösterilmeyecek; güvenli bir yerde saklayın.
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg border bg-muted p-3">
+                {kurtarma.kodlar.map((kod) => <code key={kod} className="text-center font-bold">{kod}</code>)}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 w-full"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(kurtarma.kodlar.join("\n"));
+                  toast.success("Kurtarma kodları kopyalandı.");
+                }}
+              >
+                Tüm Kodları Kopyala
+              </Button>
+              <Button
+                type="button"
+                className="mt-3 w-full"
+                onClick={() => {
+                  oturumYaz(kurtarma.personel);
+                  navigate({ to: "/panel" });
+                }}
+              >
+                Kodları Sakladım, Panele Geç
+              </Button>
+            </div>
+          ) : mfa ? (
             <>
               <div className="text-center">
                 <ShieldCheck className="mx-auto h-10 w-10 text-primary" />
@@ -140,22 +179,22 @@ function GirisSayfasi() {
                 </div>
               )}
               <div className="mt-4 space-y-2">
-                <Label htmlFor="mfa-kodu" className="text-sm font-semibold">Authenticator Kodu</Label>
+                <Label htmlFor="mfa-kodu" className="text-sm font-semibold">Authenticator veya Kurtarma Kodu</Label>
                 <Input
                   id="mfa-kodu"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  placeholder="000000"
+                  placeholder="000000 veya ABCD-EFGH"
                   value={mfaKodu}
-                  onChange={(e) => setMfaKodu(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) => setMfaKodu(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
                   required
                   minLength={6}
-                  maxLength={6}
+                  maxLength={9}
                   className="h-14 text-center text-xl tracking-[0.4em]"
                   autoFocus
                 />
               </div>
-              <Button type="submit" disabled={yukleniyor || mfaKodu.length !== 6} className="mt-6 h-14 w-full text-base font-semibold">
+              <Button type="submit" disabled={yukleniyor || !/^(?:\d{6}|[A-Z0-9]{4}-?[A-Z0-9]{4})$/.test(mfaKodu)} className="mt-6 h-14 w-full text-base font-semibold">
                 <ShieldCheck className="h-5 w-5" />
                 {yukleniyor ? "Doğrulanıyor..." : "Kodu Doğrula"}
               </Button>

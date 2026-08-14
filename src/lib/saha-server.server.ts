@@ -1,7 +1,7 @@
 /** Sunucu tarafı saha veri erişimi. Tüm tablo erişimi burada, yetki kontrolü ile yapılır. */
 import { mfaAdayTokenDogrula, mfaAdayTokenUret, tokenDogrula, tokenUret, type SahaClaims } from "./saha-token.server";
 import { pinDogrula, pinHashle } from "./saha-pin.server";
-import { mfaAnahtariCoz, mfaAnahtariSifrele, mfaAnahtariUret, mfaKoduDogrula, mfaKurulumUri } from "./saha-mfa.server";
+import { kurtarmaKoduBul, kurtarmaKodlariUret, mfaAnahtariCoz, mfaAnahtariSifrele, mfaAnahtariUret, mfaKoduDogrula, mfaKurulumUri, mfaVerisiCoz, mfaVerisiSifrele } from "./saha-mfa.server";
 import { auditYaz, telefonMaskele } from "./saha-audit.server";
 import { fotoMetadataTemizle } from "./saha-foto.server";
 import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
@@ -217,8 +217,35 @@ export async function mfaDogrulaSunucu(adayToken: unknown, kod: string) {
     mfa_aktif: boolean;
   };
   if (!kayit.mfa_secret_enc) throw new Error("MFA kurulumu bulunamadı.");
-  const secret = await mfaAnahtariCoz(kayit.mfa_secret_enc);
-  if (!(await mfaKoduDogrula(secret, kod.trim()))) throw new Error("Authenticator kodu hatalı.");
+  const mfaVerisi = await mfaVerisiCoz(kayit.mfa_secret_enc);
+  const girilenKod = kod.trim().toUpperCase();
+  const totpGecerli = await mfaKoduDogrula(mfaVerisi.secret, girilenKod);
+  const kurtarmaIndex = totpGecerli ? -1 : await kurtarmaKoduBul(mfaVerisi.kurtarmaHashleri, girilenKod);
+  if (!totpGecerli && kurtarmaIndex < 0) throw new Error("Authenticator veya kurtarma kodu hatalı.");
+
+  let kurtarmaKodlari: string[] | undefined;
+  let yeniMfaVerisi = mfaVerisi;
+  if (kurtarmaIndex >= 0) {
+    yeniMfaVerisi = {
+      ...mfaVerisi,
+      kurtarmaHashleri: mfaVerisi.kurtarmaHashleri.filter((_, index) => index !== kurtarmaIndex),
+    };
+  } else if (mfaVerisi.kurtarmaHashleri.length === 0) {
+    const uretilen = await kurtarmaKodlariUret();
+    kurtarmaKodlari = uretilen.kodlar;
+    yeniMfaVerisi = { secret: mfaVerisi.secret, kurtarmaHashleri: uretilen.hashler };
+  }
+  if (yeniMfaVerisi !== mfaVerisi) {
+    const yeniSifreli = await mfaVerisiSifrele(yeniMfaVerisi);
+    const { data: guncellenen, error: mfaKayitHatasi } = await sb
+      .from("personel")
+      .update({ mfa_secret_enc: yeniSifreli })
+      .eq("id", kayit.id)
+      .eq("mfa_secret_enc", kayit.mfa_secret_enc)
+      .select("id")
+      .maybeSingle();
+    if (mfaKayitHatasi || !guncellenen) throw new Error("MFA güvenlik kaydı güncellenemedi; tekrar deneyin.");
+  }
   if (!kayit.mfa_aktif) {
     const { error: updateError } = await sb.from("personel").update({ mfa_aktif: true }).eq("id", kayit.id);
     if (updateError) throw new Error("MFA kurulumu tamamlanamadı.");
@@ -239,6 +266,7 @@ export async function mfaDogrulaSunucu(adayToken: unknown, kod: string) {
   return {
     personel: personel as Personel,
     token: await tokenUret(kayit.id, "ik", oturum_surumu),
+    kurtarmaKodlari,
   };
 }
 
