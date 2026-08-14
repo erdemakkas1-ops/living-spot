@@ -340,6 +340,39 @@ export async function mesaiDurumuGetirSunucu(token: unknown): Promise<MesaiDurum
     "calisiyor") as MesaiDurumu;
 }
 
+export type BakimDurumu = {
+  sonCalisma: string | null;
+  gecikmis: boolean;
+  eskiKonum: number;
+  eskiFoto: number;
+  eskiAudit: number;
+};
+
+/** Yalnız yöneticinin görebildiği KVKK saklama/temizlik sağlık özeti. */
+export async function bakimDurumuGetirSunucu(token: unknown): Promise<BakimDurumu> {
+  await ikOturumDogrula(token);
+  const sb = await db();
+  const konumEsigi = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const fotoEsigi = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
+  const auditEsigi = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString();
+  const [bakim, konum, foto, audit] = await Promise.all([
+    sb.from("sistem_bakim_durumu").select("son_calisma").eq("anahtar", "kvkk-gunluk-temizlik").maybeSingle(),
+    sb.from("personel_konumlari").select("id", { count: "exact", head: true }).lt("kayit_tarihi", konumEsigi),
+    sb.from("is_loglari").select("id", { count: "exact", head: true }).lt("tamamlanma_tarihi", fotoEsigi),
+    sb.from("audit_loglari").select("id", { count: "exact", head: true }).lt("created_at", auditEsigi),
+  ]);
+  const hata = bakim.error ?? konum.error ?? foto.error ?? audit.error;
+  if (hata) throw new Error("Sistem bakım durumu okunamadı.");
+  const sonCalisma = (bakim.data as { son_calisma?: string } | null)?.son_calisma ?? null;
+  return {
+    sonCalisma,
+    gecikmis: !sonCalisma || Date.now() - new Date(sonCalisma).getTime() > 48 * 60 * 60 * 1000,
+    eskiKonum: konum.count ?? 0,
+    eskiFoto: foto.count ?? 0,
+    eskiAudit: audit.count ?? 0,
+  };
+}
+
 export async function konumIzniGetirSunucu(token: unknown): Promise<boolean> {
   const claims = await oturumDogrula(token);
   if (claims.rol !== "personel") return false;

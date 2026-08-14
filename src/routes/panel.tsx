@@ -13,6 +13,7 @@ import {
   Clock,
   ClipboardList,
   History,
+  ShieldCheck,
   LogOut,
   Plus,
   Search,
@@ -70,7 +71,7 @@ import { RaporIndir } from "@/components/rapor-indir";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import { FotoGoruntuleyici } from "@/components/foto-goruntuleyici";
 import { YardimButonu } from "@/components/yardim-butonu";
-import { bloklariGetir, gorevOlustur, guvenliCikisYap, personelGetir, tumGorevleriGetir } from "@/lib/saha-api";
+import { bakimDurumuGetir, bloklariGetir, gorevOlustur, guvenliCikisYap, personelGetir, tumGorevleriGetir } from "@/lib/saha-api";
 import { useOturum } from "@/lib/saha-session";
 import {
   DURUM_ETIKET,
@@ -130,6 +131,12 @@ function PanelSayfasi() {
     queryKey: ["personel"],
     queryFn: personelGetir,
     enabled: yetkili,
+  });
+  const bakim = useQuery({
+    queryKey: ["bakim-durumu"],
+    queryFn: bakimDurumuGetir,
+    enabled: yetkili,
+    refetchInterval: 15 * 60 * 1000,
   });
 
   const [blokFiltre, setBlokFiltre] = useState("hepsi");
@@ -255,6 +262,20 @@ function PanelSayfasi() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+        {bakim.data && (
+          <div className={`mb-4 flex items-start gap-3 rounded-xl border p-3 text-sm ${bakim.data.gecikmis || bakim.data.eskiKonum + bakim.data.eskiFoto + bakim.data.eskiAudit > 0 ? "border-amber-300 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-950"}`}>
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold">KVKK veri saklama kontrolü</p>
+              <p>
+                {bakim.data.gecikmis
+                  ? "Otomatik bakım 48 saati geçti veya henüz çalışmadı. Bir sonraki yönetici girişinde yeniden denenecek."
+                  : `Son bakım: ${new Date(bakim.data.sonCalisma!).toLocaleString("tr-TR")}`}
+                {` · Süresi geçmiş kayıt: ${bakim.data.eskiKonum + bakim.data.eskiFoto + bakim.data.eskiAudit}`}
+              </p>
+            </div>
+          </div>
+        )}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <OzetKart
             baslik="Toplam"

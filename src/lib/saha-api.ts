@@ -4,6 +4,7 @@
  */
 import {
   auditLoglariGetirFn,
+  bakimDurumuGetirFn,
   bloklariGetirFn,
   cikisYapFn,
   fotoUrlAlFn,
@@ -314,4 +315,16 @@ export type AuditKaydi = {
 /** İK: yönetim işlemleri denetim kayıtları (en yeniden eskiye). */
 export async function auditLoglariGetir(): Promise<AuditKaydi[]> {
   return (await cagir(auditLoglariGetirFn({ data: { token: token() } }))) as AuditKaydi[];
+}
+
+export type BakimDurumu = {
+  sonCalisma: string | null;
+  gecikmis: boolean;
+  eskiKonum: number;
+  eskiFoto: number;
+  eskiAudit: number;
+};
+
+export async function bakimDurumuGetir(): Promise<BakimDurumu> {
+  return (await cagir(bakimDurumuGetirFn({ data: { token: token() } }))) as BakimDurumu;
 }

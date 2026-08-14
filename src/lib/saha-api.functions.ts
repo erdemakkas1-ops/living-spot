@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import {
   auditLoglariGetirSunucu,
+  bakimDurumuGetirSunucu,
   bloklariGetirSunucu,
   fotoUrlAlSunucu,
   fotoYukleSunucu,
@@ -298,3 +299,7 @@ export const personelSilFn = createServerFn({ method: "POST" })
 export const auditLoglariGetirFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
   .handler(() => auditLoglariGetirSunucu(oturumTokeni()));
+
+export const bakimDurumuGetirFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
+  .handler(() => bakimDurumuGetirSunucu(oturumTokeni()));
