@@ -261,9 +261,9 @@ export type Database = {
         Relationships: []
       }
       personel_metin_onaylari: {
-        Row: { id: string; personel_id: string; metin_turu: string; metin_surumu: string; okundu_at: string }
-        Insert: { id?: string; personel_id: string; metin_turu: string; metin_surumu: string; okundu_at?: string }
-        Update: { id?: string; personel_id?: string; metin_turu?: string; metin_surumu?: string; okundu_at?: string }
+        Row: { id: string; personel_id: string; metin_turu: string; metin_surumu: string; belge_ozeti: string; hukuki_sebep: string; onceki_riza_geri_cekildi: boolean; okundu_at: string }
+        Insert: { id?: string; personel_id: string; metin_turu: string; metin_surumu: string; belge_ozeti: string; hukuki_sebep?: string; onceki_riza_geri_cekildi?: boolean; okundu_at?: string }
+        Update: { id?: string; personel_id?: string; metin_turu?: string; metin_surumu?: string; belge_ozeti?: string; hukuki_sebep?: string; onceki_riza_geri_cekildi?: boolean; okundu_at?: string }
         Relationships: [{ foreignKeyName: "personel_metin_onaylari_personel_id_fkey"; columns: ["personel_id"]; isOneToOne: false; referencedRelation: "personel"; referencedColumns: ["id"] }]
       }
       personel_bildirimleri: {

@@ -37,6 +37,7 @@ import {
 import { useCevrimici, useOturum } from "@/lib/saha-session";
 import { useKonumPaylas } from "@/lib/konum-takip";
 import { DURUM_ETIKET, DURUM_SINIF, type MesaiDurumu } from "@/lib/saha-types";
+import { PERSONEL_AYDINLATMA_METNI } from "@/lib/personel-aydinlatma";
 
 export const Route = createFileRoute("/saha/")({
   ssr: false,
@@ -117,13 +118,15 @@ function SahaListesi() {
   });
   const kvkkIlkGiris = useQuery({
     queryKey: ["kvkk-ilk-giris", kullanici?.id], queryFn: kvkkIlkGirisDurumuGetir,
-    enabled: Boolean(kullanici?.id && !onizleme && cevrimici),
+    enabled: Boolean(kullanici?.id && !onizleme),
+    networkMode: "always",
+    retry: 1,
   });
   const [kvkkOkundu, setKvkkOkundu] = useState(false);
   const ilkGirisOnayla = useMutation({
     mutationFn: kvkkIlkGirisOnayla,
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["kvkk-ilk-giris"] });
+      void qc.invalidateQueries();
       toast.success("Aydınlatma bildiriminiz güvenli biçimde kaydedildi.");
     },
     onError: (hata) => toast.error(hata instanceof Error ? hata.message : "Onaylar kaydedilemedi."),
@@ -167,7 +170,7 @@ function SahaListesi() {
 
   return (
     <div className="min-h-screen bg-background pb-10">
-      {!onizleme && kvkkIlkGiris.data && !kvkkIlkGiris.data.okundu && (
+      {!onizleme && kullanici && kvkkIlkGiris.data?.okundu !== true && (
         <Dialog open>
           <DialogContent
             className="max-h-[90vh] max-w-md overflow-y-auto [&>button]:hidden"
@@ -175,27 +178,37 @@ function SahaListesi() {
             onInteractOutside={(e) => e.preventDefault()}
           >
             <DialogHeader>
-              <DialogTitle>Bilgilendirme ve tercihler</DialogTitle>
+              <DialogTitle>KVKK ve konum takibi bilgilendirmesi</DialogTitle>
               <DialogDescription>
                 Uygulamayı kullanmaya devam etmeden önce KVKK ve çalışma saatleri içindeki konum takibi hakkında bilgilendirmeyi okuyun.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              {(!cevrimici || kvkkIlkGiris.isError) ? (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                  <p className="font-semibold">Bilgilendirme kaydı doğrulanamadı</p>
+                  <p className="mt-1">İlk kullanım çevrimdışı tamamlanamaz. İnternet bağlantınızı kontrol edip yeniden deneyin.</p>
+                  <Button className="mt-3" size="sm" variant="outline" disabled={!cevrimici || kvkkIlkGiris.isFetching} onClick={() => void kvkkIlkGiris.refetch()}>Yeniden Dene</Button>
+                </div>
+              ) : kvkkIlkGiris.isLoading ? (
+                <div className="rounded-lg border p-4 text-sm text-muted-foreground">Güncel bilgilendirme kaydı doğrulanıyor...</div>
+              ) : <>
               <div className="rounded-lg border p-4">
                 <div className="flex items-start gap-3">
                   <Checkbox id="kvkk-okundu" checked={kvkkOkundu} onCheckedChange={(v) => setKvkkOkundu(v === true)} />
                   <label htmlFor="kvkk-okundu" className="text-sm leading-5">
-                    <Link to="/kvkk" target="_blank" className="font-semibold text-primary underline">KVKK Aydınlatma Metni</Link>'ni okudum; konum verimin yalnız yöneticinin tanımladığı çalışma ve ek çalışma saatlerinde görev koordinasyonu amacıyla işleneceği konusunda bilgilendirildim. <span className="font-semibold">(Zorunlu bilgilendirme)</span>
+                    <Link to="/kvkk" target="_blank" className="font-semibold text-primary underline">KVKK Aydınlatma Metni</Link>'ni okudum. <span className="font-semibold">(Zorunlu bilgilendirme)</span>
                   </label>
                 </div>
               </div>
               <div className="rounded-lg border bg-muted/40 p-4 text-sm">
                 <p className="font-semibold">Konum takibi sınırları</p>
-                <p className="mt-2 text-muted-foreground">Takip yalnız yönetici tarafından tanımlanan işe başlangıç, iş bitiş ve ek çalışma aralığında aktiftir. Mesai dışında kapalıdır; kayıtlar en fazla 30 gün saklanır. KVKK başvuru ve itiraz haklarınız aydınlatma metninde açıklanmıştır.</p>
+                <p className="mt-2 text-muted-foreground">{PERSONEL_AYDINLATMA_METNI}</p>
               </div>
               <Button className="w-full" disabled={!kvkkOkundu || ilkGirisOnayla.isPending} onClick={() => ilkGirisOnayla.mutate()}>
-                {ilkGirisOnayla.isPending ? "Kaydediliyor..." : "Tercihlerimi Kaydet ve Devam Et"}
+                {ilkGirisOnayla.isPending ? "Kaydediliyor..." : "Okudum, Devam Et"}
               </Button>
+              </>}
             </div>
           </DialogContent>
         </Dialog>

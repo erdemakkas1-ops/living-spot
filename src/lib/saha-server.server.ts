@@ -5,12 +5,13 @@ import { kurtarmaKoduBul, kurtarmaKodlariUret, mfaAnahtariCoz, mfaAnahtariSifrel
 import { auditYaz, telefonMaskele } from "./saha-audit.server";
 import { fotoMetadataTemizle, fotoYapisiniDogrula } from "./saha-foto.server";
 import type { Blok, Gorev, MesaiDurumu, Personel, PersonelKonum } from "./saha-types";
+import { PERSONEL_AYDINLATMA_METNI, PERSONEL_AYDINLATMA_SURUMU } from "./personel-aydinlatma";
 
 const GOREV_SELECT =
   "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, is_turu, olusturma_tarihi, planlanan_tarih, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
 const PERSONEL_SELECT = "id, ad_soyad, rol, telefon, aktif, mesai_durumu, durum_guncelleme";
 export const KONUM_METIN_SURUMU = "2026-08-14-v2";
-export const KVKK_METIN_SURUMU = "2026-08-15-v1";
+export const KVKK_METIN_SURUMU = PERSONEL_AYDINLATMA_SURUMU;
 
 async function db() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -24,6 +25,20 @@ export const OTURUM_YENILENDI =
   "Oturum geçersiz: giriş bilgileriniz güncellendi. Lütfen tekrar giriş yapın.";
 
 type Sb = Awaited<ReturnType<typeof db>>;
+
+async function aydinlatmaBelgeOzeti() {
+  const ozet = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(PERSONEL_AYDINLATMA_METNI));
+  return Array.from(new Uint8Array(ozet), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function guncelAydinlatmaKaydiVar(sb: Sb, personelId: string) {
+  const belgeOzeti = await aydinlatmaBelgeOzeti();
+  const { data, error } = await sb.from("personel_metin_onaylari").select("id")
+    .eq("personel_id", personelId).eq("metin_turu", "kvkk_aydinlatma")
+    .eq("metin_surumu", PERSONEL_AYDINLATMA_SURUMU).eq("belge_ozeti", belgeOzeti).maybeSingle();
+  if (error) throw new Error(`Aydınlatma kaydı doğrulanamadı: ${error.message}`);
+  return Boolean(data);
+}
 
 /** Pasife alma nedeniyle kapatılan oturumu denetim kaydına yazar (10 dk'da bir). */
 async function oturumIptalLogla(sb: Sb, personelId: string) {
@@ -48,7 +63,7 @@ async function oturumIptalLogla(sb: Sb, personelId: string) {
  * kayıt silinmişse, pasife alınmışsa veya güncel rolü token'daki rolle uyuşmuyorsa
  * oturum geçersizdir. Böylece açık sekmeler anında devre dışı kalır.
  */
-async function oturumDogrula(token: unknown): Promise<SahaClaims> {
+async function oturumDogrula(token: unknown, aydinlatmaGerekli = true): Promise<SahaClaims> {
   const claims = await tokenDogrula(token);
   const sb = await db();
   const { data, error } = await sb
@@ -64,6 +79,9 @@ async function oturumDogrula(token: unknown): Promise<SahaClaims> {
   if (!kayit.aktif) {
     await oturumIptalLogla(sb, claims.id);
     throw new Error(HESAP_PASIF);
+  }
+  if (aydinlatmaGerekli && claims.rol === "personel" && !(await guncelAydinlatmaKaydiVar(sb, claims.id))) {
+    throw new Error("Güncel KVKK ve konum takibi aydınlatma bildirimi tamamlanmalıdır.");
   }
   return claims;
 }
@@ -378,7 +396,7 @@ async function auditSinirli(sb: Sb, actorId: string, tur: "foto_goruntule" | "ko
 
 /** İstemcide saklanan profil yalnız görüntü önbelleğidir; gerçek kullanıcıyı oturumdan döndürür. */
 export async function oturumKullanicisiGetirSunucu(token: unknown): Promise<Personel> {
-  const claims = await oturumDogrula(token);
+  const claims = await oturumDogrula(token, false);
   const sb = await db();
   const { data, error } = await sb
     .from("personel")
@@ -449,31 +467,33 @@ export async function konumIzniGetirSunucu(token: unknown) {
 }
 
 export async function kvkkIlkGirisDurumuGetirSunucu(token: unknown) {
-  const claims = await oturumDogrula(token);
+  const claims = await oturumDogrula(token, false);
   if (claims.rol !== "personel") return { okundu: true, metinSurumu: KVKK_METIN_SURUMU };
   const sb = await db();
-  const { data, error } = await sb.from("personel_metin_onaylari")
-    .select("id").eq("personel_id", claims.id).eq("metin_turu", "kvkk_aydinlatma")
-    .eq("metin_surumu", KVKK_METIN_SURUMU).maybeSingle();
-  if (error) throw new Error(`KVKK onay durumu okunamadı: ${error.message}`);
-  return { okundu: Boolean(data), metinSurumu: KVKK_METIN_SURUMU };
+  return { okundu: await guncelAydinlatmaKaydiVar(sb, claims.id), metinSurumu: KVKK_METIN_SURUMU };
 }
 
 export async function kvkkIlkGirisOnaylaSunucu(token: unknown) {
-  const claims = await oturumDogrula(token);
+  const claims = await oturumDogrula(token, false);
   if (claims.rol !== "personel") throw new Error("Bu işlem yalnız personel hesabında yapılabilir.");
   const sb = await db();
-  const { data: mevcut, error: okumaHatasi } = await sb.from("personel_metin_onaylari")
-    .select("id").eq("personel_id", claims.id).eq("metin_turu", "kvkk_aydinlatma")
-    .eq("metin_surumu", KVKK_METIN_SURUMU).maybeSingle();
-  if (okumaHatasi) throw new Error("KVKK onay durumu okunamadı.");
-  if (!mevcut) {
-    const { error } = await sb.from("personel_metin_onaylari").insert({
-      personel_id: claims.id, metin_turu: "kvkk_aydinlatma", metin_surumu: KVKK_METIN_SURUMU,
-    });
+  const belgeOzeti = await aydinlatmaBelgeOzeti();
+  const [{ data: oncekiRiza }, zatenKayitli] = await Promise.all([
+    sb.from("konum_izinleri").select("geri_cekildi_at").eq("personel_id", claims.id).maybeSingle(),
+    guncelAydinlatmaKaydiVar(sb, claims.id),
+  ]);
+  if (!zatenKayitli) {
+    const { error } = await sb.from("personel_metin_onaylari").upsert({
+      personel_id: claims.id,
+      metin_turu: "kvkk_aydinlatma",
+      metin_surumu: KVKK_METIN_SURUMU,
+      belge_ozeti: belgeOzeti,
+      hukuki_sebep: "kvkk_m5_2_sozlesme_hukuki_yukumluluk_mesru_menfaat",
+      onceki_riza_geri_cekildi: Boolean(oncekiRiza?.geri_cekildi_at),
+    }, { onConflict: "personel_id,metin_turu,metin_surumu", ignoreDuplicates: true });
     if (error) throw new Error(`KVKK onayı kaydedilemedi: ${error.message}`);
     await auditYaz(sb, { yonetici_id: claims.id, hedef_personel_id: claims.id,
-      islem_turu: "kvkk_aydinlatma_okundu", aciklama: `KVKK aydınlatma metni okundu (${KVKK_METIN_SURUMU}).` });
+      islem_turu: "kvkk_aydinlatma_okundu", aciklama: `KVKK ve konum aydınlatma metni okundu (${KVKK_METIN_SURUMU}, belge: ${belgeOzeti.slice(0, 12)}). Önceki rıza geri çekilmiş: ${Boolean(oncekiRiza?.geri_cekildi_at) ? "evet" : "hayır"}.` });
   }
   return { okundu: true };
 }

@@ -3,6 +3,9 @@ CREATE TABLE IF NOT EXISTS public.personel_metin_onaylari (
   personel_id uuid NOT NULL REFERENCES public.personel(id) ON DELETE CASCADE,
   metin_turu text NOT NULL CHECK (metin_turu IN ('kvkk_aydinlatma')),
   metin_surumu text NOT NULL,
+  belge_ozeti text NOT NULL,
+  hukuki_sebep text NOT NULL DEFAULT 'kvkk_m5_2_sozlesme_hukuki_yukumluluk_mesru_menfaat',
+  onceki_riza_geri_cekildi boolean NOT NULL DEFAULT false,
   okundu_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (personel_id, metin_turu, metin_surumu)
 );
