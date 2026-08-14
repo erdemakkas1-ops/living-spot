@@ -75,6 +75,10 @@ export function KonumTakibi() {
           </DialogDescription>
         </DialogHeader>
 
+        <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+          Personel adına dokunarak konum takibini Açık/Kapalı yapın; saatleri belirledikten sonra aynı satırdaki Kaydet düğmesine basın.
+        </p>
+
         <section className="max-h-64 overflow-auto rounded-xl border p-3">
           <div className="mb-2 grid min-w-[650px] grid-cols-[minmax(150px,1fr)_110px_110px_130px_100px] gap-2 text-xs font-semibold text-muted-foreground">
             <span>Personel</span><span>İşe başlangıç</span><span>İş bitişi</span><span>Ek çalışma bitişi</span><span>İşlem</span>
