@@ -17,6 +17,8 @@ import {
   konumGonderSunucu,
   konumIzniGetirSunucu,
   konumIzniGuncelleSunucu,
+  kvkkIlkGirisDurumuGetirSunucu,
+  kvkkIlkGirisOnaylaSunucu,
   konumRizasiYenilemeyeAcSunucu,
   konumTakipSaatleriGetirSunucu,
   konumTakipSaatiGuncelleSunucu,
@@ -176,6 +178,14 @@ export const konumIzniGetirFn = createServerFn({ method: "POST" })
 export const konumIzniGuncelleFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10), izinVerildi: z.boolean() }).parse(d))
   .handler(({ data }) => konumIzniGuncelleSunucu(oturumTokeni(), data.izinVerildi));
+
+export const kvkkIlkGirisDurumuGetirFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10) }).parse(d))
+  .handler(() => kvkkIlkGirisDurumuGetirSunucu(oturumTokeni()));
+
+export const kvkkIlkGirisOnaylaFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ token: z.string().min(10), konumRizasi: z.boolean() }).parse(d))
+  .handler(({ data }) => kvkkIlkGirisOnaylaSunucu(oturumTokeni(), data.konumRizasi));
 
 export const konumRizasiYenilemeyeAcFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({ token: z.string().min(10), personelId: z.string().uuid() }).parse(d))

@@ -18,6 +18,8 @@ import {
   konumGonderFn,
   konumIzniGetirFn,
   konumIzniGuncelleFn,
+  kvkkIlkGirisDurumuGetirFn,
+  kvkkIlkGirisOnaylaFn,
   konumRizasiYenilemeyeAcFn,
   konumTakipSaatleriGetirFn,
   konumTakipSaatiGuncelleFn,
@@ -359,6 +361,12 @@ export async function konumIzniGetir(): Promise<{ izinVerildi: boolean; guncelMe
 }
 export async function konumIzniGuncelle(izinVerildi: boolean) {
   return await cagir(konumIzniGuncelleFn({ data: { token: token(), izinVerildi } }));
+}
+export async function kvkkIlkGirisDurumuGetir(): Promise<{ okundu: boolean; metinSurumu: string }> {
+  return await cagir(kvkkIlkGirisDurumuGetirFn({ data: { token: token() } }));
+}
+export async function kvkkIlkGirisOnayla(konumRizasi: boolean) {
+  return await cagir(kvkkIlkGirisOnaylaFn({ data: { token: token(), konumRizasi } }));
 }
 export async function konumRizasiYenilemeyeAc(personelId: string) {
   await cagir(konumRizasiYenilemeyeAcFn({ data: { token: token(), personelId } }));

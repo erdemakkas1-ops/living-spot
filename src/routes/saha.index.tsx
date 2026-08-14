@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BaglantiRozeti } from "@/components/baglanti-rozeti";
 import { IsTuruRozeti } from "@/components/is-turu-rozeti";
 import { PersonelDurumCubugu } from "@/components/personel-durum-cubugu";
@@ -32,6 +34,8 @@ import {
   konumIzniGuncelle,
   personelBildirimleriGetir,
   personelBildirimiOkundu,
+  kvkkIlkGirisDurumuGetir,
+  kvkkIlkGirisOnayla,
 } from "@/lib/saha-api";
 import { useCevrimici, useOturum } from "@/lib/saha-session";
 import { useKonumPaylas } from "@/lib/konum-takip";
@@ -118,6 +122,21 @@ function SahaListesi() {
     queryKey: ["konum-acik-riza", kullanici?.id], queryFn: konumIzniGetir,
     enabled: Boolean(kullanici?.id && !onizleme),
   });
+  const kvkkIlkGiris = useQuery({
+    queryKey: ["kvkk-ilk-giris", kullanici?.id], queryFn: kvkkIlkGirisDurumuGetir,
+    enabled: Boolean(kullanici?.id && !onizleme && cevrimici),
+  });
+  const [kvkkOkundu, setKvkkOkundu] = useState(false);
+  const [ilkGirisKonumRizasi, setIlkGirisKonumRizasi] = useState(false);
+  const ilkGirisOnayla = useMutation({
+    mutationFn: () => kvkkIlkGirisOnayla(ilkGirisKonumRizasi),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["kvkk-ilk-giris"] });
+      void qc.invalidateQueries({ queryKey: ["konum-acik-riza"] });
+      toast.success("Tercihleriniz güvenli biçimde kaydedildi.");
+    },
+    onError: (hata) => toast.error(hata instanceof Error ? hata.message : "Onaylar kaydedilemedi."),
+  });
   const bildirimler = useQuery({
     queryKey: ["personel-bildirimleri", kullanici?.id], queryFn: personelBildirimleriGetir,
     enabled: Boolean(kullanici?.id && !onizleme && cevrimici), refetchInterval: cevrimici ? 60_000 : false,
@@ -162,6 +181,47 @@ function SahaListesi() {
 
   return (
     <div className="min-h-screen bg-background pb-10">
+      {!onizleme && kvkkIlkGiris.data && !kvkkIlkGiris.data.okundu && (
+        <Dialog open>
+          <DialogContent
+            className="max-h-[90vh] max-w-md overflow-y-auto [&>button]:hidden"
+            onEscapeKeyDown={(e) => e.preventDefault()}
+            onInteractOutside={(e) => e.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle>Bilgilendirme ve tercihler</DialogTitle>
+              <DialogDescription>
+                Uygulamayı kullanmaya devam etmeden önce KVKK aydınlatma metnini okuyun. Konum açık rızası isteğe bağlıdır.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="rounded-lg border p-4">
+                <div className="flex items-start gap-3">
+                  <Checkbox id="kvkk-okundu" checked={kvkkOkundu} onCheckedChange={(v) => setKvkkOkundu(v === true)} />
+                  <label htmlFor="kvkk-okundu" className="text-sm leading-5">
+                    <Link to="/kvkk" target="_blank" className="font-semibold text-primary underline">KVKK Aydınlatma Metni</Link>'ni okudum ve kişisel verilerimin işlenmesi hakkında bilgilendirildim. <span className="font-semibold">(Zorunlu)</span>
+                  </label>
+                </div>
+              </div>
+              <div className="rounded-lg border p-4">
+                <div className="flex items-start gap-3">
+                  <Checkbox id="konum-rizasi" checked={ilkGirisKonumRizasi}
+                    disabled={konumIzni.data?.geriCekildi === true}
+                    onCheckedChange={(v) => setIlkGirisKonumRizasi(v === true)} />
+                  <label htmlFor="konum-rizasi" className="text-sm leading-5">
+                    Konum verimin yalnız yöneticinin belirlediği çalışma ve ek çalışma saatlerinde görev koordinasyonu amacıyla işlenmesine açık rıza veriyorum. <span className="font-semibold">(İsteğe bağlı)</span>
+                  </label>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">Mesai saatleri dışında konum takibi kapalıdır. Kayıtlar en fazla 30 gün saklanır. Rıza vermeden de uygulamayı kullanabilirsiniz.</p>
+                {konumIzni.data?.geriCekildi && <p className="mt-2 text-xs font-medium text-amber-700">Önceki rıza geri çekildiği için yeniden açılması yönetici onayı gerektirir.</p>}
+              </div>
+              <Button className="w-full" disabled={!kvkkOkundu || ilkGirisOnayla.isPending} onClick={() => ilkGirisOnayla.mutate()}>
+                {ilkGirisOnayla.isPending ? "Kaydediliyor..." : "Tercihlerimi Kaydet ve Devam Et"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
       <header className="bg-gradient-navy px-4 pt-6 pb-8">
         <div className="mx-auto grid max-w-lg grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="min-w-0">

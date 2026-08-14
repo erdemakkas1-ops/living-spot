@@ -10,6 +10,7 @@ const GOREV_SELECT =
   "id, blok_id, personel_id, is_basligi, aciklama, durum, aciliyet, is_turu, olusturma_tarihi, planlanan_tarih, bloklar(blok_adi), personel(ad_soyad), is_loglari(id, gorev_id, foto_url, personel_notu, tamamlanma_tarihi)";
 const PERSONEL_SELECT = "id, ad_soyad, rol, telefon, aktif, mesai_durumu, durum_guncelleme";
 export const KONUM_METIN_SURUMU = "2026-08-14-v2";
+export const KVKK_METIN_SURUMU = "2026-08-15-v1";
 
 async function db() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -445,6 +446,37 @@ export async function konumIzniGetirSunucu(token: unknown) {
     .maybeSingle();
   if (error) throw error;
   return { izinVerildi: Boolean(data?.izin_verildi), guncelMetin: data?.metin_surumu === KONUM_METIN_SURUMU, geriCekildi: Boolean(data?.geri_cekildi_at) };
+}
+
+export async function kvkkIlkGirisDurumuGetirSunucu(token: unknown) {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") return { okundu: true, metinSurumu: KVKK_METIN_SURUMU };
+  const sb = await db();
+  const { data, error } = await sb.from("personel_metin_onaylari")
+    .select("id").eq("personel_id", claims.id).eq("metin_turu", "kvkk_aydinlatma")
+    .eq("metin_surumu", KVKK_METIN_SURUMU).maybeSingle();
+  if (error) throw new Error(`KVKK onay durumu okunamadı: ${error.message}`);
+  return { okundu: Boolean(data), metinSurumu: KVKK_METIN_SURUMU };
+}
+
+export async function kvkkIlkGirisOnaylaSunucu(token: unknown, konumRizasi: boolean) {
+  const claims = await oturumDogrula(token);
+  if (claims.rol !== "personel") throw new Error("Bu işlem yalnız personel hesabında yapılabilir.");
+  const sb = await db();
+  const { data: mevcut, error: okumaHatasi } = await sb.from("personel_metin_onaylari")
+    .select("id").eq("personel_id", claims.id).eq("metin_turu", "kvkk_aydinlatma")
+    .eq("metin_surumu", KVKK_METIN_SURUMU).maybeSingle();
+  if (okumaHatasi) throw new Error("KVKK onay durumu okunamadı.");
+  if (!mevcut) {
+    const { error } = await sb.from("personel_metin_onaylari").insert({
+      personel_id: claims.id, metin_turu: "kvkk_aydinlatma", metin_surumu: KVKK_METIN_SURUMU,
+    });
+    if (error) throw new Error(`KVKK onayı kaydedilemedi: ${error.message}`);
+    await auditYaz(sb, { yonetici_id: claims.id, hedef_personel_id: claims.id,
+      islem_turu: "kvkk_aydinlatma_okundu", aciklama: `KVKK aydınlatma metni okundu (${KVKK_METIN_SURUMU}).` });
+  }
+  if (konumRizasi) await konumIzniGuncelleSunucu(token, true);
+  return { okundu: true, konumRizasi };
 }
 
 export async function konumIzniGuncelleSunucu(token: unknown, izinVerildi: boolean) {

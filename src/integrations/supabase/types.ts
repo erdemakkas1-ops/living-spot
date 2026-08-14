@@ -260,6 +260,12 @@ export type Database = {
         }
         Relationships: []
       }
+      personel_metin_onaylari: {
+        Row: { id: string; personel_id: string; metin_turu: string; metin_surumu: string; okundu_at: string }
+        Insert: { id?: string; personel_id: string; metin_turu: string; metin_surumu: string; okundu_at?: string }
+        Update: { id?: string; personel_id?: string; metin_turu?: string; metin_surumu?: string; okundu_at?: string }
+        Relationships: [{ foreignKeyName: "personel_metin_onaylari_personel_id_fkey"; columns: ["personel_id"]; isOneToOne: false; referencedRelation: "personel"; referencedColumns: ["id"] }]
+      }
       personel_bildirimleri: {
         Row: { id: string; personel_id: string; tur: string; baslik: string; mesaj: string; created_at: string; okundu_at: string | null }
         Insert: { id?: string; personel_id: string; tur: string; baslik: string; mesaj: string; created_at?: string; okundu_at?: string | null }
