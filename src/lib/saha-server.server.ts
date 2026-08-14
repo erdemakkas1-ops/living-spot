@@ -85,6 +85,7 @@ async function hedefPersonelDogrula(sb: Sb, id: string) {
 }
 
 const MAKS_DENEME = 5;
+const MAKS_HESAP_DENEME = 20;
 const PENCERE_MS = 15 * 60 * 1000;
 const KILIT_MESAJI =
   "Çok fazla başarısız deneme yapıldı. Lütfen 15 dakika sonra tekrar deneyin.";
@@ -102,16 +103,33 @@ export async function girisYapSunucu(
   // Telefonlar veritabanında sadece rakam olarak tutulur ("0533 533 53 53" -> "05335335353").
   const tel = telefon.replace(/\D/g, "");
   const pencereBasi = new Date(Date.now() - PENCERE_MS).toISOString();
+  // Başarısız giriş telemetrisi yalnız güvenlik ihtiyacı kadar tutulur.
+  await sb
+    .from("giris_denemeleri")
+    .delete()
+    .lt("deneme_tarihi", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
   // Sunucu tarafı hız sınırı: aynı ağ/cihaz kaynağı + telefon için 15 dk içinde 5 deneme.
   // Böylece başka biri yalnız telefon numarasını bilerek hesabı herkese kilitleyemez.
-  const { count } = await sb
-    .from("giris_denemeleri")
-    .select("id", { count: "exact", head: true })
-    .eq("telefon", tel)
-    .eq("kaynak_ozeti", kaynakOzeti)
-    .gte("deneme_tarihi", pencereBasi);
-  if ((count ?? 0) >= MAKS_DENEME) throw new Error(KILIT_MESAJI);
+  const [kaynakSayimi, hesapSayimi] = await Promise.all([
+    sb
+      .from("giris_denemeleri")
+      .select("id", { count: "exact", head: true })
+      .eq("telefon", tel)
+      .eq("kaynak_ozeti", kaynakOzeti)
+      .gte("deneme_tarihi", pencereBasi),
+    sb
+      .from("giris_denemeleri")
+      .select("id", { count: "exact", head: true })
+      .eq("telefon", tel)
+      .gte("deneme_tarihi", pencereBasi),
+  ]);
+  if (kaynakSayimi.error || hesapSayimi.error) throw new Error("Giriş güvenlik kontrolü yapılamadı.");
+  const kaynakDenemesi = kaynakSayimi.count ?? 0;
+  const hesapDenemesi = hesapSayimi.count ?? 0;
+  if (kaynakDenemesi >= MAKS_DENEME || hesapDenemesi >= MAKS_HESAP_DENEME) {
+    throw new Error(KILIT_MESAJI);
+  }
 
   const { data, error } = await sb
     .from("personel")
@@ -140,24 +158,22 @@ export async function girisYapSunucu(
   }
   if (!kayit || !gecerli) {
     await sb.from("giris_denemeleri").insert({ telefon: tel, kaynak_ozeti: kaynakOzeti });
-    if ((count ?? 0) + 1 >= 3) {
+    if (kaynakDenemesi + 1 >= 3 || hesapDenemesi + 1 >= 10) {
       await auditYaz(sb, {
         yonetici_id: null,
         islem_turu: "basarisiz_giris",
         hedef_personel_id: kayit?.id ?? null,
-        aciklama: `Başarısız giriş denemesi: ${telefonMaskele(tel)} (son 15 dk: ${(count ?? 0) + 1})`,
+        aciklama: `Başarısız giriş denemesi: ${telefonMaskele(tel)} (kaynak: ${kaynakDenemesi + 1}, hesap geneli: ${hesapDenemesi + 1})`,
       });
     }
     // Bu denemeyle sınır dolduysa kilit mesajını ver.
-    if ((count ?? 0) + 1 >= MAKS_DENEME) throw new Error(KILIT_MESAJI);
+    if (kaynakDenemesi + 1 >= MAKS_DENEME || hesapDenemesi + 1 >= MAKS_HESAP_DENEME) {
+      throw new Error(KILIT_MESAJI);
+    }
     throw new Error(HATA_MESAJI);
   }
   // Başarılı girişte o telefona ait deneme kayıtları temizlenir.
-  await sb
-    .from("giris_denemeleri")
-    .delete()
-    .eq("telefon", tel)
-    .eq("kaynak_ozeti", kaynakOzeti);
+  await sb.from("giris_denemeleri").delete().eq("telefon", tel);
   // PIN/hash alanları asla yanıt gövdesine konmaz.
   const { pin_kodu: _pk, pin_hash: _ph, oturum_surumu: _os, mfa_secret_enc: _ms, mfa_aktif: _ma, ...temiz } = kayit;
   const personel = temiz as Personel;

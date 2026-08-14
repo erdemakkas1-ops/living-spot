@@ -55,6 +55,28 @@ function oturumTokeni() {
   return getCookie(OTURUM_COOKIE) ?? "";
 }
 
+async function girisKaynagiHmac(kaynak: string) {
+  const secret = process.env["SAHA_SESSION_SECRET"];
+  if (!secret || secret.length < 32) {
+    throw new Error("SAHA_SESSION_SECRET yapılandırılmamış.");
+  }
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const imza = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`giris-kaynagi:${kaynak}`),
+  );
+  return Array.from(new Uint8Array(imza), (b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 32);
+}
+
 export const girisYapFn = createServerFn({ method: "POST" })
   .validator((d) =>
     z.object({ telefon: z.string().min(3).max(30), pin: z.string().min(3).max(12) }).parse(d),
@@ -62,10 +84,7 @@ export const girisYapFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     ayniOriginDogrula();
     const kaynak = getRequestIP({ xForwardedFor: true }) ?? "bilinmeyen";
-    const ozetBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(kaynak));
-    const kaynakOzeti = Array.from(new Uint8Array(ozetBytes), (b) => b.toString(16).padStart(2, "0"))
-      .join("")
-      .slice(0, 32);
+    const kaynakOzeti = await girisKaynagiHmac(kaynak);
     const sonuc = await girisYapSunucu(data.telefon, data.pin, kaynakOzeti);
     if (sonuc.mfaGerekli) {
       setCookie(MFA_ADAY_COOKIE, sonuc.mfaAdayToken, guvenliCookie(5 * 60, true));
