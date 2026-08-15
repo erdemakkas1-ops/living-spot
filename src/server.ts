@@ -9,6 +9,7 @@ type ServerEntry = {
 
 async function guvenlikBasliklari(response: Response, request: Request, nonce: string): Promise<Response> {
   const headers = new Headers(response.headers);
+  const isProduction = new URL(request.url).hostname === "living-spot.lovable.app";
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(self), geolocation=(self), microphone=()");
@@ -27,7 +28,7 @@ async function guvenlikBasliklari(response: Response, request: Request, nonce: s
       "font-src 'self' data:",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
       "frame-src 'self' https://www.openstreetmap.org",
-      "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
+      isProduction ? "frame-ancestors 'self'" : "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev",
       "manifest-src 'self'",
       "worker-src 'self' blob:",
       "upgrade-insecure-requests",

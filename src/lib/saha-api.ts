@@ -111,7 +111,9 @@ export async function girisYap(telefon: string, pin: string): Promise<GirisSonuc
 
 export async function mfaDogrula(kod: string): Promise<{ personel: Personel; kurtarmaKodlari?: string[] }> {
   const sonuc = await mfaDogrulaFn({ data: { kod: kod.trim() } });
-  return { personel: sonuc.personel as Personel, kurtarmaKodlari: sonuc.kurtarmaKodlari };
+  return sonuc.kurtarmaKodlari
+    ? { personel: sonuc.personel as Personel, kurtarmaKodlari: sonuc.kurtarmaKodlari }
+    : { personel: sonuc.personel as Personel };
 }
 
 export async function guvenliCikisYap() {
@@ -448,6 +450,14 @@ export type BakimDurumu = {
   eskiKonum: number;
   eskiFoto: number;
   eskiAudit: number;
+  kritikRls: boolean;
+  publicYetkiYok: boolean;
+  kvkkCronAktif: boolean;
+  fotoBucketOzel: boolean;
+  storagePublicPolicyYok: boolean;
+  rpcPublicYok: boolean;
+  auditDegistirilemez: boolean;
+  bildirimCronAktif: boolean;
 };
 
 export async function bakimDurumuGetir(): Promise<BakimDurumu> {

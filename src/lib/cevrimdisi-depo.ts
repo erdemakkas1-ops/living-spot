@@ -16,8 +16,8 @@ type SifreliKayit = {
   id: string;
   iv: Uint8Array;
   veri: ArrayBuffer;
-  fotoIv?: Uint8Array;
-  fotoVeri?: ArrayBuffer;
+  fotoIv?: Uint8Array | undefined;
+  fotoVeri?: ArrayBuffer | undefined;
   kayitZamani: number;
 };
 
@@ -62,22 +62,22 @@ async function cihazAnahtari(): Promise<CryptoKey> {
 async function sifrele(veri: unknown): Promise<Pick<SifreliKayit, "iv" | "veri">> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const acik = new TextEncoder().encode(JSON.stringify(veri));
-  return { iv, veri: await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await cihazAnahtari(), acik) };
+  return { iv, veri: await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as BufferSource }, await cihazAnahtari(), acik) };
 }
 
 async function sifreCoz<T>(kayit: Pick<SifreliKayit, "iv" | "veri">): Promise<T> {
-  const acik = await crypto.subtle.decrypt({ name: "AES-GCM", iv: kayit.iv }, await cihazAnahtari(), kayit.veri);
+  const acik = await crypto.subtle.decrypt({ name: "AES-GCM", iv: kayit.iv as BufferSource }, await cihazAnahtari(), kayit.veri);
   return JSON.parse(new TextDecoder().decode(acik)) as T;
 }
 
 async function blobSifrele(blob: Blob) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const veri = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await cihazAnahtari(), await blob.arrayBuffer());
+  const veri = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as BufferSource }, await cihazAnahtari(), await blob.arrayBuffer());
   return { iv, veri };
 }
 
 async function blobSifreCoz(iv: Uint8Array, veri: ArrayBuffer) {
-  return new Blob([await crypto.subtle.decrypt({ name: "AES-GCM", iv }, await cihazAnahtari(), veri)], { type: "image/jpeg" });
+  return new Blob([await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv as BufferSource }, await cihazAnahtari(), veri)], { type: "image/jpeg" });
 }
 
 export async function gorevleriKaydet(personelId: string, gorevler: Gorev[]) {

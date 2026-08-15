@@ -263,7 +263,7 @@ function PanelSayfasi() {
 
       <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         {bakim.data && (
-          <div className={`mb-4 flex items-start gap-3 rounded-xl border p-3 text-sm ${bakim.data.gecikmis || !bakim.data.kritikRls || !bakim.data.publicYetkiYok || !bakim.data.kvkkCronAktif || bakim.data.eskiKonum + bakim.data.eskiFoto + bakim.data.eskiAudit > 0 ? "border-amber-300 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-950"}`}>
+          <div className={`mb-4 flex items-start gap-3 rounded-xl border p-3 text-sm ${bakim.data.gecikmis || !bakim.data.kritikRls || !bakim.data.publicYetkiYok || !bakim.data.kvkkCronAktif || !bakim.data.fotoBucketOzel || !bakim.data.storagePublicPolicyYok || !bakim.data.rpcPublicYok || !bakim.data.auditDegistirilemez || !bakim.data.bildirimCronAktif || bakim.data.eskiKonum + bakim.data.eskiFoto + bakim.data.eskiAudit > 0 ? "border-amber-300 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-950"}`}>
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p className="font-semibold">KVKK veri saklama kontrolü</p>
@@ -275,6 +275,10 @@ function PanelSayfasi() {
                 {` · RLS: ${bakim.data.kritikRls ? "aktif" : "kontrol gerekli"}`}
                 {` · Dış erişim: ${bakim.data.publicYetkiYok ? "kapalı" : "kontrol gerekli"}`}
                 {` · Günlük temizlik: ${bakim.data.kvkkCronAktif ? "aktif" : "kontrol gerekli"}`}
+                {` · Fotoğraf deposu: ${bakim.data.fotoBucketOzel && bakim.data.storagePublicPolicyYok ? "özel" : "kontrol gerekli"}`}
+                {` · Sunucu işlemleri: ${bakim.data.rpcPublicYok ? "korumalı" : "kontrol gerekli"}`}
+                {` · Denetim kaydı: ${bakim.data.auditDegistirilemez ? "kilitli" : "kontrol gerekli"}`}
+                {` · Bildirim temizliği: ${bakim.data.bildirimCronAktif ? "aktif" : "kontrol gerekli"}`}
               </p>
             </div>
           </div>

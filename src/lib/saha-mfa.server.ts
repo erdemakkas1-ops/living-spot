@@ -165,11 +165,11 @@ async function totp(secret: string, counter: number) {
   return String(binary % 1_000_000).padStart(6, "0");
 }
 
-export async function mfaKoduDogrula(secret: string, code: string) {
-  if (!/^\d{6}$/.test(code)) return false;
+export async function mfaKoduDogrula(secret: string, code: string): Promise<number | null> {
+  if (!/^\d{6}$/.test(code)) return null;
   const counter = Math.floor(Date.now() / 30_000);
-  for (const delta of [-1, 0, 1]) if ((await totp(secret, counter + delta)) === code) return true;
-  return false;
+  for (const delta of [-1, 0, 1]) if ((await totp(secret, counter + delta)) === code) return counter + delta;
+  return null;
 }
 
 export function mfaKurulumUri(secret: string, ad: string) {

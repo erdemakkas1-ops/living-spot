@@ -222,6 +222,8 @@ export type Database = {
           mesai_durumu: string
           mfa_aktif: boolean
           mfa_secret_enc: string | null
+          mfa_son_sayac: number | null
+          mfa_aday_jti: string | null
           oturum_surumu: number
           pin_hash: string | null
           pin_kodu: string | null
@@ -237,6 +239,8 @@ export type Database = {
           mesai_durumu?: string
           mfa_aktif?: boolean
           mfa_secret_enc?: string | null
+          mfa_son_sayac?: number | null
+          mfa_aday_jti?: string | null
           oturum_surumu?: number
           pin_hash?: string | null
           pin_kodu?: string | null
@@ -252,6 +256,8 @@ export type Database = {
           mesai_durumu?: string
           mfa_aktif?: boolean
           mfa_secret_enc?: string | null
+          mfa_son_sayac?: number | null
+          mfa_aday_jti?: string | null
           oturum_surumu?: number
           pin_hash?: string | null
           pin_kodu?: string | null
@@ -265,6 +271,12 @@ export type Database = {
         Insert: { id?: string; personel_id: string; metin_turu: string; metin_surumu: string; belge_ozeti: string; hukuki_sebep?: string; onceki_riza_geri_cekildi?: boolean; okundu_at?: string }
         Update: { id?: string; personel_id?: string; metin_turu?: string; metin_surumu?: string; belge_ozeti?: string; hukuki_sebep?: string; onceki_riza_geri_cekildi?: boolean; okundu_at?: string }
         Relationships: [{ foreignKeyName: "personel_metin_onaylari_personel_id_fkey"; columns: ["personel_id"]; isOneToOne: false; referencedRelation: "personel"; referencedColumns: ["id"] }]
+      }
+      api_hiz_sinirlari: {
+        Row: { id: number; personel_id: string; islem_turu: string; created_at: string }
+        Insert: { id?: number; personel_id: string; islem_turu: string; created_at?: string }
+        Update: { id?: number; personel_id?: string; islem_turu?: string; created_at?: string }
+        Relationships: []
       }
       personel_bildirimleri: {
         Row: { id: string; personel_id: string; tur: string; baslik: string; mesaj: string; created_at: string; okundu_at: string | null }
@@ -333,6 +345,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      giris_denemesi_rezerve_et: { Args: { p_kimlik: string; p_kaynak: string; p_kaynak_limit: number; p_hesap_limit: number }; Returns: Json }
+      api_hiz_hakki_kullan: { Args: { p_personel_id: string; p_tur: string; p_limit: number; p_pencere_saniye: number }; Returns: boolean }
+      gorev_olustur_atomik: { Args: { p_yonetici_id: string; p_personel_id: string; p_blok_id: string; p_is_basligi: string; p_aciklama: string; p_aciliyet: string; p_is_turu: string; p_planlanan_tarih: string }; Returns: string }
+      gorev_baslat_atomik: { Args: { p_gorev_id: string; p_personel_id: string }; Returns: boolean }
       konum_izni_guncelle: {
         Args: {
           p_izin_verildi: boolean

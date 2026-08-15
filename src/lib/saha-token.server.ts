@@ -3,7 +3,7 @@
  * Anahtar yalnızca sunucu tarafında bulunur; tarayıcıya asla gönderilmez.
  */
 export type SahaClaims = { id: string; rol: "ik" | "personel"; oturumSurumu: number; exp: number };
-export type MfaAdayClaims = { id: string; tur: "mfa-aday"; exp: number };
+export type MfaAdayClaims = { id: string; tur: "mfa-aday"; jti: string; exp: number };
 
 const GECERLILIK_MS = 12 * 60 * 60 * 1000;
 
@@ -50,8 +50,8 @@ export async function tokenUret(id: string, rol: "ik" | "personel", oturumSurumu
   return `${payload}.${await imzala(payload)}`;
 }
 
-export async function mfaAdayTokenUret(id: string) {
-  const claims: MfaAdayClaims = { id, tur: "mfa-aday", exp: Date.now() + 5 * 60 * 1000 };
+export async function mfaAdayTokenUret(id: string, jti: string) {
+  const claims: MfaAdayClaims = { id, tur: "mfa-aday", jti, exp: Date.now() + 5 * 60 * 1000 };
   const payload = b64url(new TextEncoder().encode(JSON.stringify(claims)));
   return `${payload}.${await imzala(payload)}`;
 }
@@ -102,6 +102,6 @@ export async function mfaAdayTokenDogrula(token: unknown): Promise<MfaAdayClaims
   } catch {
     yetkisiz();
   }
-  if (!claims.id || claims.tur !== "mfa-aday" || claims.exp < Date.now()) yetkisiz();
+  if (!claims.id || claims.tur !== "mfa-aday" || !claims.jti || claims.exp < Date.now()) yetkisiz();
   return claims;
 }

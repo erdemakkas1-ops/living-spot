@@ -17,7 +17,7 @@
   "maskableIconUrl": "https://living-spot.lovable.app/icons/pwa-512x512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
-    "path": "C:\\Users\\erdem\\.bubblewrap\\keys\\saha-is-takip-upload.keystore",
+    "path": ".keys/saha-is-takip-upload.keystore",
     "alias": "saha-is-takip"
   },
   "appVersionName": "1.0.1",

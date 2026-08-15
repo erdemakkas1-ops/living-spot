@@ -80,6 +80,14 @@ async function oturumDogrula(token: unknown, aydinlatmaGerekli = true): Promise<
     await oturumIptalLogla(sb, claims.id);
     throw new Error(HESAP_PASIF);
   }
+  // Saklama temizliği yalnız yönetici girişine bağlı kalmaz; herhangi bir aktif kullanımda
+  // günlük kilit üzerinden en fazla bir kez çalışır.
+  try {
+    await veriSaklamaBakimiSunucu(sb);
+  } catch (error) {
+    console.error("[KVKK] Veri saklama bakımı tamamlanamadı:", error);
+    await sb.from("sistem_bakim_durumu").update({ son_calisma: new Date(0).toISOString() }).eq("anahtar", "kvkk-gunluk-temizlik");
+  }
   if (aydinlatmaGerekli && claims.rol === "personel" && !(await guncelAydinlatmaKaydiVar(sb, claims.id))) {
     throw new Error("Güncel KVKK ve konum takibi aydınlatma bildirimi tamamlanmalıdır.");
   }
@@ -106,7 +114,6 @@ async function hedefPersonelDogrula(sb: Sb, id: string) {
 
 const MAKS_DENEME = 5;
 const MAKS_HESAP_DENEME = 20;
-const PENCERE_MS = 15 * 60 * 1000;
 const KILIT_MESAJI =
   "Çok fazla başarısız deneme yapıldı. Lütfen 15 dakika sonra tekrar deneyin.";
 const HATA_MESAJI = "Telefon veya PIN kodu hatalı.";
@@ -122,32 +129,14 @@ export async function girisYapSunucu(
   const sb = await db();
   // Telefonlar veritabanında sadece rakam olarak tutulur ("0533 533 53 53" -> "05335335353").
   const tel = telefon.replace(/\D/g, "");
-  const pencereBasi = new Date(Date.now() - PENCERE_MS).toISOString();
-  // Başarısız giriş telemetrisi yalnız güvenlik ihtiyacı kadar tutulur.
-  await sb
-    .from("giris_denemeleri")
-    .delete()
-    .lt("deneme_tarihi", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-  // Sunucu tarafı hız sınırı: aynı ağ/cihaz kaynağı + telefon için 15 dk içinde 5 deneme.
-  // Böylece başka biri yalnız telefon numarasını bilerek hesabı herkese kilitleyemez.
-  const [kaynakSayimi, hesapSayimi] = await Promise.all([
-    sb
-      .from("giris_denemeleri")
-      .select("id", { count: "exact", head: true })
-      .eq("telefon", tel)
-      .eq("kaynak_ozeti", kaynakOzeti)
-      .gte("deneme_tarihi", pencereBasi),
-    sb
-      .from("giris_denemeleri")
-      .select("id", { count: "exact", head: true })
-      .eq("telefon", tel)
-      .gte("deneme_tarihi", pencereBasi),
-  ]);
-  if (kaynakSayimi.error || hesapSayimi.error) throw new Error("Giriş güvenlik kontrolü yapılamadı.");
-  const kaynakDenemesi = kaynakSayimi.count ?? 0;
-  const hesapDenemesi = hesapSayimi.count ?? 0;
-  if (kaynakDenemesi >= MAKS_DENEME || hesapDenemesi >= MAKS_HESAP_DENEME) {
+  const { data: rezervasyonVerisi, error: rezervasyonHatasi } = await sb.rpc("giris_denemesi_rezerve_et", {
+    p_kimlik: tel, p_kaynak: kaynakOzeti, p_kaynak_limit: MAKS_DENEME, p_hesap_limit: MAKS_HESAP_DENEME,
+  });
+  if (rezervasyonHatasi) throw new Error("Giriş güvenlik kontrolü yapılamadı.");
+  const rezervasyon = rezervasyonVerisi as { izinli?: boolean; kaynak?: number; hesap?: number };
+  const kaynakDenemesi = rezervasyon.kaynak ?? 0;
+  const hesapDenemesi = rezervasyon.hesap ?? 0;
+  if (!rezervasyon.izinli) {
     throw new Error(KILIT_MESAJI);
   }
 
@@ -177,17 +166,16 @@ export async function girisYapSunucu(
     }
   }
   if (!kayit || !gecerli) {
-    await sb.from("giris_denemeleri").insert({ telefon: tel, kaynak_ozeti: kaynakOzeti });
-    if (kaynakDenemesi + 1 >= 3 || hesapDenemesi + 1 >= 10) {
+    if (kaynakDenemesi >= 3 || hesapDenemesi >= 10) {
       await auditYaz(sb, {
         yonetici_id: null,
         islem_turu: "basarisiz_giris",
         hedef_personel_id: kayit?.id ?? null,
-        aciklama: `Başarısız giriş denemesi: ${telefonMaskele(tel)} (kaynak: ${kaynakDenemesi + 1}, hesap geneli: ${hesapDenemesi + 1})`,
+        aciklama: `Başarısız giriş denemesi: ${telefonMaskele(tel)} (kaynak: ${kaynakDenemesi}, hesap geneli: ${hesapDenemesi})`,
       });
     }
     // Bu denemeyle sınır dolduysa kilit mesajını ver.
-    if (kaynakDenemesi + 1 >= MAKS_DENEME || hesapDenemesi + 1 >= MAKS_HESAP_DENEME) {
+    if (kaynakDenemesi >= MAKS_DENEME || hesapDenemesi >= MAKS_HESAP_DENEME) {
       throw new Error(KILIT_MESAJI);
     }
     throw new Error(HATA_MESAJI);
@@ -201,6 +189,9 @@ export async function girisYapSunucu(
     let secretEnc = kayit.mfa_secret_enc;
     let secret: string | undefined;
     if (!secretEnc) {
+      if (process.env["SAHA_MFA_BOOTSTRAP_ENABLED"] !== "true") {
+        throw new Error("Yönetici MFA kurulumu yönetim tarafından geçici olarak etkinleştirilmelidir.");
+      }
       secret = mfaAnahtariUret();
       secretEnc = await mfaAnahtariSifrele(secret);
       const { error: mfaError } = await sb
@@ -211,9 +202,12 @@ export async function girisYapSunucu(
     } else if (!kayit.mfa_aktif) {
       secret = await mfaAnahtariCoz(secretEnc);
     }
+    const mfaAdayJti = crypto.randomUUID();
+    const { error: adayHatasi } = await sb.from("personel").update({ mfa_aday_jti: mfaAdayJti }).eq("id", personel.id);
+    if (adayHatasi) throw new Error("MFA doğrulama isteği başlatılamadı.");
     return {
       mfaGerekli: true as const,
-      mfaAdayToken: await mfaAdayTokenUret(personel.id),
+      mfaAdayToken: await mfaAdayTokenUret(personel.id, mfaAdayJti),
       kurulum: secret ? { anahtar: secret, uri: mfaKurulumUri(secret, personel.ad_soyad) } : undefined,
     };
   }
@@ -224,20 +218,17 @@ export async function mfaDogrulaSunucu(adayToken: unknown, kod: string, kaynakOz
   const claims = await mfaAdayTokenDogrula(adayToken);
   const sb = await db();
   const mfaKimligi = `mfa:${claims.id}`;
-  const pencereBasi = new Date(Date.now() - PENCERE_MS).toISOString();
-  const [kaynakSayimi, hesapSayimi] = await Promise.all([
-    sb.from("giris_denemeleri").select("id", { count: "exact", head: true })
-      .eq("telefon", mfaKimligi).eq("kaynak_ozeti", kaynakOzeti).gte("deneme_tarihi", pencereBasi),
-    sb.from("giris_denemeleri").select("id", { count: "exact", head: true })
-      .eq("telefon", mfaKimligi).gte("deneme_tarihi", pencereBasi),
-  ]);
-  if (kaynakSayimi.error || hesapSayimi.error) throw new Error("MFA güvenlik kontrolü yapılamadı.");
-  if ((kaynakSayimi.count ?? 0) >= 5 || (hesapSayimi.count ?? 0) >= 10) {
+  const { data: rezervasyonVerisi, error: rezervasyonHatasi } = await sb.rpc("giris_denemesi_rezerve_et", {
+    p_kimlik: mfaKimligi, p_kaynak: kaynakOzeti, p_kaynak_limit: 5, p_hesap_limit: 10,
+  });
+  if (rezervasyonHatasi) throw new Error("MFA güvenlik kontrolü yapılamadı.");
+  const rezervasyon = rezervasyonVerisi as { izinli?: boolean; kaynak?: number; hesap?: number };
+  if (!rezervasyon.izinli) {
     throw new Error("Çok fazla MFA denemesi yapıldı. PIN ile yeniden giriş yapın.");
   }
   const { data, error } = await sb
     .from("personel")
-    .select(`${PERSONEL_SELECT}, oturum_surumu, mfa_secret_enc, mfa_aktif`)
+    .select(`${PERSONEL_SELECT}, oturum_surumu, mfa_secret_enc, mfa_aktif, mfa_son_sayac, mfa_aday_jti`)
     .eq("id", claims.id)
     .eq("rol", "ik")
     .eq("aktif", true)
@@ -247,16 +238,19 @@ export async function mfaDogrulaSunucu(adayToken: unknown, kod: string, kaynakOz
     oturum_surumu: number;
     mfa_secret_enc: string | null;
     mfa_aktif: boolean;
+    mfa_son_sayac: number | null;
+    mfa_aday_jti: string | null;
   };
+  if (kayit.mfa_aday_jti !== claims.jti) throw new Error("MFA doğrulama isteği daha önce kullanılmış veya geçersiz.");
   if (!kayit.mfa_secret_enc) throw new Error("MFA kurulumu bulunamadı.");
   const mfaVerisi = await mfaVerisiCoz(kayit.mfa_secret_enc);
   const girilenKod = kod.trim().toUpperCase();
-  const totpGecerli = await mfaKoduDogrula(mfaVerisi.secret, girilenKod);
+  const totpSayaci = await mfaKoduDogrula(mfaVerisi.secret, girilenKod);
+  const totpGecerli = totpSayaci !== null && (kayit.mfa_son_sayac === null || totpSayaci > kayit.mfa_son_sayac);
   const kurtarmaIndex = totpGecerli ? -1 : await kurtarmaKoduBul(mfaVerisi.kurtarmaHashleri, girilenKod);
   if (!totpGecerli && kurtarmaIndex < 0) {
-    await sb.from("giris_denemeleri").insert({ telefon: mfaKimligi, kaynak_ozeti: kaynakOzeti });
-    const yeniKaynak = (kaynakSayimi.count ?? 0) + 1;
-    const yeniHesap = (hesapSayimi.count ?? 0) + 1;
+    const yeniKaynak = rezervasyon.kaynak ?? 0;
+    const yeniHesap = rezervasyon.hesap ?? 0;
     if (yeniKaynak >= 3 || yeniHesap >= 5) {
       await auditYaz(sb, {
         yonetici_id: null, islem_turu: "basarisiz_giris", hedef_personel_id: claims.id,
@@ -282,15 +276,16 @@ export async function mfaDogrulaSunucu(adayToken: unknown, kod: string, kaynakOz
     kurtarmaKodlari = uretilen.kodlar;
     yeniMfaVerisi = { secret: mfaVerisi.secret, kurtarmaHashleri: uretilen.hashler };
   }
-  if (yeniMfaVerisi !== mfaVerisi) {
+  if (yeniMfaVerisi !== mfaVerisi || totpGecerli) {
     const yeniSifreli = await mfaVerisiSifrele(yeniMfaVerisi);
-    const { data: guncellenen, error: mfaKayitHatasi } = await sb
+    let guncelleme = sb
       .from("personel")
-      .update({ mfa_secret_enc: yeniSifreli })
+      .update({ mfa_secret_enc: yeniSifreli, mfa_son_sayac: totpGecerli ? totpSayaci : kayit.mfa_son_sayac, mfa_aday_jti: null })
       .eq("id", kayit.id)
       .eq("mfa_secret_enc", kayit.mfa_secret_enc)
-      .select("id")
-      .maybeSingle();
+      .eq("mfa_aday_jti", claims.jti);
+    guncelleme = kayit.mfa_son_sayac === null ? guncelleme.is("mfa_son_sayac", null) : guncelleme.eq("mfa_son_sayac", kayit.mfa_son_sayac);
+    const { data: guncellenen, error: mfaKayitHatasi } = await guncelleme.select("id").maybeSingle();
     if (mfaKayitHatasi || !guncellenen) throw new Error("MFA güvenlik kaydı güncellenemedi; tekrar deneyin.");
   }
   if (!kayit.mfa_aktif) {
@@ -303,12 +298,13 @@ export async function mfaDogrulaSunucu(adayToken: unknown, kod: string, kaynakOz
       aciklama: "Yönetici hesabında Authenticator ikinci faktörü etkinleştirildi.",
     });
   }
-  const { oturum_surumu, mfa_secret_enc: _secret, mfa_aktif: _aktif, ...personel } = kayit;
+  const { oturum_surumu, mfa_secret_enc: _secret, mfa_aktif: _aktif, mfa_son_sayac: _sayac, mfa_aday_jti: _aday, ...personel } = kayit;
   // Saklama temizliği girişin başarısını engellemez; günde en fazla bir kez çalışır.
   try {
     await veriSaklamaBakimiSunucu(sb);
   } catch (error) {
     console.error("[KVKK] Günlük veri saklama temizliği tamamlanamadı:", error);
+    await sb.from("sistem_bakim_durumu").update({ son_calisma: new Date(0).toISOString() }).eq("anahtar", "kvkk-gunluk-temizlik");
   }
   return {
     personel: personel as Personel,
@@ -323,25 +319,20 @@ async function veriSaklamaBakimiSunucu(sb: Sb) {
   if (!calissin) return;
 
   const fotoEsigi = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: eskiLoglar, error: logHatasi } = await sb
-    .from("is_loglari")
-    .select("id, foto_url")
-    .lt("tamamlanma_tarihi", fotoEsigi)
-    .order("tamamlanma_tarihi", { ascending: true })
-    .limit(500);
-  if (logHatasi) throw logHatasi;
-
-  const loglar = (eskiLoglar ?? []) as { id: string; foto_url: string | null }[];
-  const fotoYollari = loglar.flatMap((log) => (log.foto_url ? [log.foto_url] : []));
-  if (fotoYollari.length) {
-    const { error: storageHatasi } = await sb.storage.from("is-fotolari").remove(fotoYollari);
-    if (storageHatasi) throw storageHatasi;
+  for (let tur = 0; tur < 20; tur++) {
+    const { data: eskiLoglar, error: logHatasi } = await sb.from("is_loglari").select("id, foto_url")
+      .lt("tamamlanma_tarihi", fotoEsigi).order("tamamlanma_tarihi", { ascending: true }).limit(500);
+    if (logHatasi) throw logHatasi;
+    const loglar = (eskiLoglar ?? []) as { id: string; foto_url: string | null }[];
+    const fotoYollari = loglar.flatMap((log) => (log.foto_url ? [log.foto_url] : []));
+    if (fotoYollari.length) {
+      const { error: storageHatasi } = await sb.storage.from("is-fotolari").remove(fotoYollari);
+      if (storageHatasi) throw storageHatasi;
+    }
+    const { error: temizlikHatasi } = await sb.rpc("veri_saklama_kayitlarini_temizle", { p_log_ids: loglar.map((log) => log.id) });
+    if (temizlikHatasi) throw temizlikHatasi;
+    if (loglar.length < 500) break;
   }
-
-  const { error: temizlikHatasi } = await sb.rpc("veri_saklama_kayitlarini_temizle", {
-    p_log_ids: loglar.map((log) => log.id),
-  });
-  if (temizlikHatasi) throw temizlikHatasi;
 }
 
 export async function bloklariGetirSunucu(token: unknown): Promise<Blok[]> {
@@ -416,6 +407,11 @@ export type BakimDurumu = {
   kritikRls: boolean;
   publicYetkiYok: boolean;
   kvkkCronAktif: boolean;
+  fotoBucketOzel: boolean;
+  storagePublicPolicyYok: boolean;
+  rpcPublicYok: boolean;
+  auditDegistirilemez: boolean;
+  bildirimCronAktif: boolean;
 };
 
 /** Yalnız yöneticinin görebildiği KVKK saklama/temizlik sağlık özeti. */
@@ -440,6 +436,11 @@ export async function bakimDurumuGetirSunucu(token: unknown): Promise<BakimDurum
     kritik_rls?: boolean;
     public_yetki_yok?: boolean;
     kvkk_cron_aktif?: boolean;
+    foto_bucket_ozel?: boolean;
+    storage_public_policy_yok?: boolean;
+    rpc_public_yok?: boolean;
+    audit_degistirilemez?: boolean;
+    bildirim_cron_aktif?: boolean;
   };
   return {
     sonCalisma,
@@ -450,6 +451,11 @@ export async function bakimDurumuGetirSunucu(token: unknown): Promise<BakimDurum
     kritikRls: guvenlikDurumu.kritik_rls === true,
     publicYetkiYok: guvenlikDurumu.public_yetki_yok === true,
     kvkkCronAktif: guvenlikDurumu.kvkk_cron_aktif === true,
+    fotoBucketOzel: guvenlikDurumu.foto_bucket_ozel === true,
+    storagePublicPolicyYok: guvenlikDurumu.storage_public_policy_yok === true,
+    rpcPublicYok: guvenlikDurumu.rpc_public_yok === true,
+    auditDegistirilemez: guvenlikDurumu.audit_degistirilemez === true,
+    bildirimCronAktif: guvenlikDurumu.bildirim_cron_aktif === true,
   };
 }
 
@@ -490,7 +496,7 @@ export async function kvkkIlkGirisOnaylaSunucu(token: unknown) {
       belge_ozeti: belgeOzeti,
       hukuki_sebep: "kvkk_m5_2_sozlesme_hukuki_yukumluluk_mesru_menfaat",
       onceki_riza_geri_cekildi: Boolean(oncekiRiza?.geri_cekildi_at),
-    }, { onConflict: "personel_id,metin_turu,metin_surumu", ignoreDuplicates: true });
+    }, { onConflict: "personel_id,metin_turu,metin_surumu,belge_ozeti", ignoreDuplicates: true });
     if (error) throw new Error(`KVKK onayı kaydedilemedi: ${error.message}`);
     await auditYaz(sb, { yonetici_id: claims.id, hedef_personel_id: claims.id,
       islem_turu: "kvkk_aydinlatma_okundu", aciklama: `KVKK ve konum aydınlatma metni okundu (${KVKK_METIN_SURUMU}, belge: ${belgeOzeti.slice(0, 12)}). Önceki rıza geri çekilmiş: ${Boolean(oncekiRiza?.geri_cekildi_at) ? "evet" : "hayır"}.` });
@@ -724,6 +730,10 @@ export async function konumGonderSunucu(
   const claims = await oturumDogrula(token);
   if (claims.rol !== "personel") throw new Error("Konum yalnız personel hesabından gönderilebilir.");
   const sb = await db();
+  const { data: hizIzni, error: hizHatasi } = await sb.rpc("api_hiz_hakki_kullan", {
+    p_personel_id: claims.id, p_tur: "konum", p_limit: 3, p_pencere_saniye: 60,
+  });
+  if (hizHatasi || !hizIzni) throw new Error("Konum güncelleme sınırı aşıldı; kısa süre sonra yeniden denenecek.");
   const takip = await kendiKonumTakipDurumuGetirSunucu(token);
   if (!takip.takip_aktif || !takip.saat_icinde) throw new Error("Konum takibi çalışma saatleri dışında kapalıdır.");
   const aydinlatma = await kvkkIlkGirisDurumuGetirSunucu(token);
@@ -824,23 +834,12 @@ export async function gorevOlusturSunucu(
 ) {
   const yonetici = await ikOturumDogrula(token);
   const sb = await db();
-  const { data: hedef, error: hedefHatasi } = await sb
-    .from("personel")
-    .select("id")
-    .eq("id", input.personel_id)
-    .eq("rol", "personel")
-    .eq("aktif", true)
-    .maybeSingle();
-  if (hedefHatasi) throw hedefHatasi;
-  if (!hedef) throw new Error("Seçilen personel aktif değil veya görev almaya yetkili değil.");
-  const { data: gorev, error } = await sb.from("gorevler").insert(input).select("id").single();
-  if (error) throw error;
-  await auditYaz(sb, {
-    yonetici_id: yonetici.id,
-    hedef_personel_id: input.personel_id,
-    islem_turu: "gorev_olustur",
-    aciklama: `Görev oluşturuldu: ${gorev.id}`,
+  const { error } = await sb.rpc("gorev_olustur_atomik", {
+    p_yonetici_id: yonetici.id, p_personel_id: input.personel_id, p_blok_id: input.blok_id,
+    p_is_basligi: input.is_basligi, p_aciklama: input.aciklama ?? "", p_aciliyet: input.aciliyet,
+    p_is_turu: input.is_turu, p_planlanan_tarih: input.planlanan_tarih,
   });
+  if (error) throw new Error(`Görev oluşturulamadı: ${error.message}`);
   return { ok: true };
 }
 
@@ -849,31 +848,9 @@ export async function gorevDurumGuncelleSunucu(token: unknown, id: string) {
   // Yalnız bekliyor -> devam_ediyor geçişine izin verilir. WHERE koşulu
   // eşzamanlı/çevrimdışı eski isteklerin tamamlanmış görevi geriye almasını engeller.
   const sb = await db();
-  const { data: guncellenen, error } = await sb
-    .from("gorevler")
-    .update({ durum: "devam_ediyor" })
-    .eq("id", id)
-    .eq("personel_id", gorev.personel_id)
-    .eq("durum", "bekliyor")
-    .select("id")
-    .maybeSingle();
+  const { data: degisti, error } = await sb.rpc("gorev_baslat_atomik", { p_gorev_id: id, p_personel_id: gorev.personel_id });
   if (error) throw error;
-  if (guncellenen) {
-    await auditYaz(sb, {
-      yonetici_id: gorev.personel_id,
-      hedef_personel_id: gorev.personel_id,
-      islem_turu: "gorev_baslat",
-      aciklama: `Görev başlatıldı: ${id}`,
-    });
-    return { ok: true, degisti: true };
-  }
-  const { data: mevcut, error: mevcutHatasi } = await sb
-    .from("gorevler").select("durum").eq("id", id).eq("personel_id", gorev.personel_id).maybeSingle();
-  if (mevcutHatasi) throw mevcutHatasi;
-  if (mevcut?.durum === "devam_ediyor" || mevcut?.durum === "tamamlandi") {
-    return { ok: true, degisti: false };
-  }
-  throw new Error("Görev mevcut durumundan başlatılamaz.");
+  return { ok: true, degisti: Boolean(degisti) };
 }
 
 function base64ToBytes(base64: string) {
@@ -922,6 +899,10 @@ export async function fotoYukleSunucu(
 ) {
   const gorev = await gorevYazmaErisimiDogrula(token, input.gorevId);
   const sb = await db();
+  const { data: hizIzni, error: hizHatasi } = await sb.rpc("api_hiz_hakki_kullan", {
+    p_personel_id: gorev.personel_id, p_tur: "foto_yukle", p_limit: 10, p_pencere_saniye: 3600,
+  });
+  if (hizHatasi || !hizIzni) throw new Error("Saatlik fotoğraf yükleme sınırı aşıldı.");
   const { data: dahaOnce } = await sb.from("is_loglari").select("foto_url")
     .eq("istemci_islem_id", input.islemId).maybeSingle();
   if (dahaOnce?.foto_url) return { yol: dahaOnce.foto_url };
@@ -953,12 +934,15 @@ export async function fotoYukleSunucu(
     .from("is-fotolari")
     .upload(yol, bytes, { contentType: tur.mime, upsert: false });
   if (error) throw error;
-  await auditYaz(sb, {
-    yonetici_id: gorev.personel_id,
-    hedef_personel_id: gorev.personel_id,
-    islem_turu: "foto_yukle",
-    aciklama: `Görev fotoğrafı yüklendi: ${input.gorevId}`,
-  });
+  try {
+    await auditYaz(sb, {
+      yonetici_id: gorev.personel_id, hedef_personel_id: gorev.personel_id,
+      islem_turu: "foto_yukle", aciklama: `Görev fotoğrafı yüklendi: ${input.gorevId}`,
+    });
+  } catch (auditHatasi) {
+    await sb.storage.from("is-fotolari").remove([yol]);
+    throw auditHatasi;
+  }
   return { yol };
 }
 

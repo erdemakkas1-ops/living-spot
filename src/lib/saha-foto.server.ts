@@ -27,6 +27,7 @@ export function fotoYapisiniDogrula(bytes: Uint8Array, mime: string) {
     while (i + 9 < bytes.length) {
       if (bytes[i] !== 0xff) { i++; continue; }
       const marker = bytes[i + 1];
+      if (marker === undefined) throw new Error("JPEG yapısı geçersiz.");
       if (marker === 0xda || marker === 0xd9) break;
       const length = ((bytes[i + 2] ?? 0) << 8) | (bytes[i + 3] ?? 0);
       if (length < 2 || i + 2 + length > bytes.length) throw new Error("JPEG yapısı geçersiz.");
@@ -42,7 +43,7 @@ export function fotoYapisiniDogrula(bytes: Uint8Array, mime: string) {
     if (bytes.length < 30 || new DataView(bytes.buffer, bytes.byteOffset + 4, 4).getUint32(0, true) + 8 !== bytes.length) throw new Error("WebP yapısı geçersiz.");
     const type = String.fromCharCode(...bytes.slice(12, 16));
     if (type !== "VP8X") throw new Error("Bu WebP türü güvenli biçimde doğrulanamadı; fotoğrafı yeniden seçin.");
-    boyutDogrula(1 + bytes[24] + (bytes[25] << 8) + (bytes[26] << 16), 1 + bytes[27] + (bytes[28] << 8) + (bytes[29] << 16));
+    boyutDogrula(1 + (bytes[24] ?? 0) + ((bytes[25] ?? 0) << 8) + ((bytes[26] ?? 0) << 16), 1 + (bytes[27] ?? 0) + ((bytes[28] ?? 0) << 8) + ((bytes[29] ?? 0) << 16));
     return;
   }
   throw new Error("Desteklenmeyen fotoğraf türü.");
@@ -60,6 +61,7 @@ function jpegMetadataTemizle(bytes: Uint8Array) {
   let i = 2;
   while (i + 4 <= bytes.length && bytes[i] === 0xff) {
     const marker = bytes[i + 1];
+    if (marker === undefined) throw new Error("JPEG yapısı geçersiz.");
     if (marker === 0xda || marker === 0xd9) { parcalar.push(bytes.slice(i)); return birlestir(parcalar); }
     const uzunluk = ((bytes[i + 2] ?? 0) << 8) | (bytes[i + 3] ?? 0);
     if (uzunluk < 2 || i + 2 + uzunluk > bytes.length) throw new Error("JPEG yapısı geçersiz.");
