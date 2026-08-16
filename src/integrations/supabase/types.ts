@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_hiz_sinirlari: {
+        Row: {
+          created_at: string
+          id: number
+          islem_turu: string
+          personel_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          islem_turu: string
+          personel_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          islem_turu?: string
+          personel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_hiz_sinirlari_personel_id_fkey"
+            columns: ["personel_id"]
+            isOneToOne: false
+            referencedRelation: "personel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_loglari: {
         Row: {
           aciklama: string
@@ -220,10 +249,10 @@ export type Database = {
           durum_guncelleme: string
           id: string
           mesai_durumu: string
+          mfa_aday_jti: string | null
           mfa_aktif: boolean
           mfa_secret_enc: string | null
           mfa_son_sayac: number | null
-          mfa_aday_jti: string | null
           oturum_surumu: number
           pin_hash: string | null
           pin_kodu: string | null
@@ -237,10 +266,10 @@ export type Database = {
           durum_guncelleme?: string
           id?: string
           mesai_durumu?: string
+          mfa_aday_jti?: string | null
           mfa_aktif?: boolean
           mfa_secret_enc?: string | null
           mfa_son_sayac?: number | null
-          mfa_aday_jti?: string | null
           oturum_surumu?: number
           pin_hash?: string | null
           pin_kodu?: string | null
@@ -254,10 +283,10 @@ export type Database = {
           durum_guncelleme?: string
           id?: string
           mesai_durumu?: string
+          mfa_aday_jti?: string | null
           mfa_aktif?: boolean
           mfa_secret_enc?: string | null
           mfa_son_sayac?: number | null
-          mfa_aday_jti?: string | null
           oturum_surumu?: number
           pin_hash?: string | null
           pin_kodu?: string | null
@@ -266,23 +295,88 @@ export type Database = {
         }
         Relationships: []
       }
-      personel_metin_onaylari: {
-        Row: { id: string; personel_id: string; metin_turu: string; metin_surumu: string; belge_ozeti: string; hukuki_sebep: string; onceki_riza_geri_cekildi: boolean; okundu_at: string }
-        Insert: { id?: string; personel_id: string; metin_turu: string; metin_surumu: string; belge_ozeti: string; hukuki_sebep?: string; onceki_riza_geri_cekildi?: boolean; okundu_at?: string }
-        Update: { id?: string; personel_id?: string; metin_turu?: string; metin_surumu?: string; belge_ozeti?: string; hukuki_sebep?: string; onceki_riza_geri_cekildi?: boolean; okundu_at?: string }
-        Relationships: [{ foreignKeyName: "personel_metin_onaylari_personel_id_fkey"; columns: ["personel_id"]; isOneToOne: false; referencedRelation: "personel"; referencedColumns: ["id"] }]
-      }
-      api_hiz_sinirlari: {
-        Row: { id: number; personel_id: string; islem_turu: string; created_at: string }
-        Insert: { id?: number; personel_id: string; islem_turu: string; created_at?: string }
-        Update: { id?: number; personel_id?: string; islem_turu?: string; created_at?: string }
-        Relationships: []
-      }
       personel_bildirimleri: {
-        Row: { id: string; personel_id: string; tur: string; baslik: string; mesaj: string; created_at: string; okundu_at: string | null }
-        Insert: { id?: string; personel_id: string; tur: string; baslik: string; mesaj: string; created_at?: string; okundu_at?: string | null }
-        Update: { id?: string; personel_id?: string; tur?: string; baslik?: string; mesaj?: string; created_at?: string; okundu_at?: string | null }
-        Relationships: [{ foreignKeyName: "personel_bildirimleri_personel_id_fkey"; columns: ["personel_id"]; isOneToOne: false; referencedRelation: "personel"; referencedColumns: ["id"] }]
+        Row: {
+          baslik: string
+          created_at: string
+          id: string
+          mesaj: string
+          okundu_at: string | null
+          personel_id: string
+          tur: string
+        }
+        Insert: {
+          baslik: string
+          created_at?: string
+          id?: string
+          mesaj: string
+          okundu_at?: string | null
+          personel_id: string
+          tur: string
+        }
+        Update: {
+          baslik?: string
+          created_at?: string
+          id?: string
+          mesaj?: string
+          okundu_at?: string | null
+          personel_id?: string
+          tur?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personel_bildirimleri_personel_id_fkey"
+            columns: ["personel_id"]
+            isOneToOne: false
+            referencedRelation: "personel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personel_konum_takip_saatleri: {
+        Row: {
+          ek_calisma_bitisi: string | null
+          guncellendi_at: string
+          guncelleyen_id: string | null
+          is_bitisi: string
+          ise_baslangic: string
+          personel_id: string
+          takip_aktif: boolean
+        }
+        Insert: {
+          ek_calisma_bitisi?: string | null
+          guncellendi_at?: string
+          guncelleyen_id?: string | null
+          is_bitisi: string
+          ise_baslangic: string
+          personel_id: string
+          takip_aktif?: boolean
+        }
+        Update: {
+          ek_calisma_bitisi?: string | null
+          guncellendi_at?: string
+          guncelleyen_id?: string | null
+          is_bitisi?: string
+          ise_baslangic?: string
+          personel_id?: string
+          takip_aktif?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personel_konum_takip_saatleri_guncelleyen_id_fkey"
+            columns: ["guncelleyen_id"]
+            isOneToOne: false
+            referencedRelation: "personel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personel_konum_takip_saatleri_personel_id_fkey"
+            columns: ["personel_id"]
+            isOneToOne: true
+            referencedRelation: "personel"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       personel_konumlari: {
         Row: {
@@ -319,11 +413,46 @@ export type Database = {
           },
         ]
       }
-      personel_konum_takip_saatleri: {
-        Row: { personel_id: string; ise_baslangic: string; is_bitisi: string; ek_calisma_bitisi: string | null; takip_aktif: boolean; guncellendi_at: string; guncelleyen_id: string | null }
-        Insert: { personel_id: string; ise_baslangic: string; is_bitisi: string; ek_calisma_bitisi?: string | null; takip_aktif?: boolean; guncellendi_at?: string; guncelleyen_id?: string | null }
-        Update: { personel_id?: string; ise_baslangic?: string; is_bitisi?: string; ek_calisma_bitisi?: string | null; takip_aktif?: boolean; guncellendi_at?: string; guncelleyen_id?: string | null }
-        Relationships: []
+      personel_metin_onaylari: {
+        Row: {
+          belge_ozeti: string
+          hukuki_sebep: string
+          id: string
+          metin_surumu: string
+          metin_turu: string
+          okundu_at: string
+          onceki_riza_geri_cekildi: boolean
+          personel_id: string
+        }
+        Insert: {
+          belge_ozeti: string
+          hukuki_sebep?: string
+          id?: string
+          metin_surumu: string
+          metin_turu: string
+          okundu_at?: string
+          onceki_riza_geri_cekildi?: boolean
+          personel_id: string
+        }
+        Update: {
+          belge_ozeti?: string
+          hukuki_sebep?: string
+          id?: string
+          metin_surumu?: string
+          metin_turu?: string
+          okundu_at?: string
+          onceki_riza_geri_cekildi?: boolean
+          personel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personel_metin_onaylari_personel_id_fkey"
+            columns: ["personel_id"]
+            isOneToOne: false
+            referencedRelation: "personel"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sistem_bakim_durumu: {
         Row: {
@@ -345,33 +474,72 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      giris_denemesi_rezerve_et: { Args: { p_kimlik: string; p_kaynak: string; p_kaynak_limit: number; p_hesap_limit: number }; Returns: Json }
-      api_hiz_hakki_kullan: { Args: { p_personel_id: string; p_tur: string; p_limit: number; p_pencere_saniye: number }; Returns: boolean }
-      gorev_olustur_atomik: { Args: { p_yonetici_id: string; p_personel_id: string; p_blok_id: string; p_is_basligi: string; p_aciklama: string; p_aciliyet: string; p_is_turu: string; p_planlanan_tarih: string }; Returns: string }
-      gorev_baslat_atomik: { Args: { p_gorev_id: string; p_personel_id: string }; Returns: boolean }
-      konum_izni_guncelle: {
+      api_hiz_hakki_kullan: {
         Args: {
-          p_izin_verildi: boolean
-          p_metin_surumu: string
+          p_limit: number
+          p_pencere_saniye: number
           p_personel_id: string
+          p_tur: string
         }
-        Returns: undefined
+        Returns: boolean
       }
-      konum_takip_saati_guncelle: {
-        Args: { p_yonetici_id: string; p_personel_id: string; p_ise_baslangic: string; p_is_bitisi: string; p_ek_calisma_bitisi: string | null; p_takip_aktif: boolean }
-        Returns: undefined
-      }
-      gorev_tamamla_atomik: {
+      giris_denemesi_rezerve_et: {
         Args: {
-          p_foto_yolu: string
-          p_gorev_id: string
-          p_personel_notu: string
-          p_personel_id: string
-          p_istemci_islem_id: string
+          p_hesap_limit: number
+          p_kaynak: string
+          p_kaynak_limit: number
+          p_kimlik: string
         }
-        Returns: undefined
+        Returns: Json
       }
+      gorev_baslat_atomik: {
+        Args: { p_gorev_id: string; p_personel_id: string }
+        Returns: boolean
+      }
+      gorev_olustur_atomik: {
+        Args: {
+          p_aciklama: string
+          p_aciliyet: string
+          p_blok_id: string
+          p_is_basligi: string
+          p_is_turu: string
+          p_personel_id: string
+          p_planlanan_tarih: string
+          p_yonetici_id: string
+        }
+        Returns: string
+      }
+      gorev_tamamla_atomik:
+        | {
+            Args: {
+              p_foto_yolu: string
+              p_gorev_id: string
+              p_personel_notu: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_foto_yolu: string
+              p_gorev_id: string
+              p_istemci_islem_id: string
+              p_personel_id: string
+              p_personel_notu: string
+            }
+            Returns: undefined
+          }
       guvenlik_yapilandirmasi_dogrula: { Args: never; Returns: Json }
+      konum_takip_saati_guncelle: {
+        Args: {
+          p_ek_calisma_bitisi: string
+          p_is_bitisi: string
+          p_ise_baslangic: string
+          p_personel_id: string
+          p_takip_aktif: boolean
+          p_yonetici_id: string
+        }
+        Returns: undefined
+      }
       personel_yonet_atomik: {
         Args: {
           p_audit_aciklama: string

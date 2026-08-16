@@ -96,7 +96,7 @@ export function RaporIndir({ gorevler }: { gorevler: Gorev[] }) {
             .join("")}</tr>`,
       )
       .join("");
-    const html = `<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Selimpaşa Emlak Konutları — İş Raporu</title><style>
+    const html = `<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>X Sitesi — İş Raporu</title><style>
       *{font-family:Arial,Helvetica,sans-serif;box-sizing:border-box}
       body{margin:24px;color:#0f172a}
       h1{font-size:18px;margin:0}
@@ -108,7 +108,7 @@ export function RaporIndir({ gorevler }: { gorevler: Gorev[] }) {
       td.acil{color:#b91c1c;font-weight:bold}
       @page{size:A4 landscape;margin:12mm}
     </style></head><body>
-      <h1>Selimpaşa Emlak Konutları — Saha İş Raporu</h1>
+      <h1>X Sitesi — Saha İş Raporu</h1>
       <p class="alt">Oluşturma: ${tarih} · Toplam ${gorevler.length} kayıt</p>
       <table><thead><tr>${BASLIKLAR.map((b) => `<th>${b}</th>`).join("")}</tr></thead><tbody>${govde}</tbody></table>
       <script>window.onload=function(){window.print()}</script>
