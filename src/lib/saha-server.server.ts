@@ -661,7 +661,7 @@ export async function konumTakipSaatiGuncelleSunucu(token: unknown, input: Omit<
   const { error } = await sb.rpc("konum_takip_saati_guncelle", {
     p_yonetici_id: yonetici.id, p_personel_id: input.personel_id,
     p_ise_baslangic: input.ise_baslangic, p_is_bitisi: input.is_bitisi,
-    p_ek_calisma_bitisi: input.ek_calisma_bitisi, p_takip_aktif: input.takip_aktif,
+    p_ek_calisma_bitisi: input.ek_calisma_bitisi as string, p_takip_aktif: input.takip_aktif,
   });
   if (error) throw new Error(error.message || "Konum takip saati kaydedilemedi.");
   return { ok: true };
