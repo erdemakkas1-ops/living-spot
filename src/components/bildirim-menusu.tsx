@@ -11,10 +11,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Gorev } from "@/lib/saha-types";
 import { personelBildirimleriGetir, personelBildirimiOkundu } from "@/lib/saha-api";
+import { oturumOku } from "@/lib/saha-session";
 
 export function BildirimMenusu({ gorevler }: { gorevler: Gorev[] }) {
   const qc = useQueryClient();
-  const sistemBildirimleri = useQuery({ queryKey: ["yonetici-bildirimleri"], queryFn: personelBildirimleriGetir, refetchInterval: 30_000 });
+  // Oturum yoksa (çıkış yapılmış veya SSR) istek atılmaz; aksi halde sunucu
+  // "Oturum geçersiz" hatası atıyor ve panel beyaz ekrana düşüyor.
+  const oturumVar = typeof window !== "undefined" && Boolean(oturumOku()?.id);
+  const sistemBildirimleri = useQuery({
+    queryKey: ["yonetici-bildirimleri"],
+    queryFn: personelBildirimleriGetir,
+    enabled: oturumVar,
+    retry: false,
+    refetchInterval: oturumVar ? 30_000 : false,
+  });
   const okundu = useMutation({ mutationFn: personelBildirimiOkundu, onSuccess: () => void qc.invalidateQueries({ queryKey: ["yonetici-bildirimleri"] }) });
   const bildirimler = useMemo(() => {
     const acil = gorevler
