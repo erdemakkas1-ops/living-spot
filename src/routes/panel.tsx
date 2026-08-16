@@ -85,13 +85,13 @@ export const Route = createFileRoute("/panel")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Yönetim Paneli | Selimpaşa Emlak Konutları" },
+      { title: "Yönetim Paneli | X Sitesi" },
       {
         name: "description",
         content:
-          "Selimpaşa Emlak Konutları görev atama, blok bazlı canlı takip tablosu ve saha fotoğraf onay akışı için yönetim paneli.",
+          "X Sitesi görev atama, blok bazlı canlı takip tablosu ve saha fotoğraf onay akışı için yönetim paneli.",
       },
-      { property: "og:title", content: "Yönetim Paneli | Selimpaşa Emlak Konutları" },
+      { property: "og:title", content: "Yönetim Paneli | X Sitesi" },
       {
         property: "og:description",
         content: "Blok bazlı canlı iş takibi, görev atama ve fotoğraf onay akışı.",
@@ -225,7 +225,7 @@ function PanelSayfasi() {
             </DropdownMenu>
             <div className="min-w-0">
               <h1 className="truncate text-base font-bold text-navy-foreground sm:text-lg">
-                Selimpaşa Emlak Konutları
+                X Sitesi
               </h1>
               <p className="truncate text-xs text-navy-foreground/70">Yönetim Paneli</p>
             </div>
